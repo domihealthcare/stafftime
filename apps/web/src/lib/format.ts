@@ -145,8 +145,9 @@ export function addMonths(date: Date, months: number): Date {
   return result;
 }
 
-/// The Sunday-to-Saturday grid that contains a whole month: five or six full
-/// weeks, so every row has seven days and the month sits inside it.
+/// The Sunday-to-Saturday grid that contains a whole month: four to six full
+/// weeks (four only for a 28-day February that starts on a Sunday), so every
+/// row has seven days and the month sits inside it.
 export function monthGrid(monthStart: Date): Date[] {
   const first = startOfWeek(startOfMonth(monthStart));
   const monthEnd = addMonths(monthStart, 1);
@@ -174,12 +175,17 @@ export function localDate(date: Date): string {
 }
 
 /// "2026-10-14" as that day at local midnight, not UTC - a week that starts
-/// on Sunday must not show as Saturday west of Greenwich. Null for anything else.
+/// on Sunday must not show as Saturday west of Greenwich. Null for anything
+/// else, a day that does not exist ("2026-02-30") included: `Date` would roll
+/// it on into March.
 export function parseDay(value: string | null): Date | null {
   const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!match) return null;
-  const day = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
-  return Number.isNaN(day.getTime()) ? null : day;
+  const [year, month, date] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  const day = new Date(year, month - 1, date);
+  const rolled =
+    day.getFullYear() !== year || day.getMonth() !== month - 1 || day.getDate() !== date;
+  return Number.isNaN(day.getTime()) || rolled ? null : day;
 }
 
 /// A wall-clock "08:30", as a shift's repeating hours are kept → "8:30 AM".

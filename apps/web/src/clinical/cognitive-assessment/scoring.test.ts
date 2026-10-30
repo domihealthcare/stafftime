@@ -180,15 +180,15 @@ describe('depression screens', () => {
     });
   });
 
-  it('Cornell reads 10 to 18 as probable and over 18 as definite major depression', () => {
-    // As written today: probable from 10. Some published versions say "over
-    // 10"; see the report of October 2026.
-    expect([9, 10, 18, 19].map(cornell.band)).toEqual([
+  it('Cornell reads over 10 as probable and over 18 as definite major depression', () => {
+    // As the scale's authors wrote it; 10 itself is not positive.
+    expect([10, 11, 18, 19].map(cornell.band)).toEqual([
       'depression unlikely',
       'probable major depression',
       'probable major depression',
       'definite major depression',
     ]);
+    expect(cornell.positiveFrom).toBe(11);
   });
 
   it('every screen max is what its answers can add up to', () => {

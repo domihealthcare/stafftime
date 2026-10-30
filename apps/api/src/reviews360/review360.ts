@@ -19,8 +19,19 @@ export const MAX_SLOTS = 4;
 /// And none longer than this.
 export const MAX_SLOT_MINUTES = 180;
 
+/// The two kinds of question a 360 asks. The column is the pulse surveys'
+/// kind, which also has CHOICE; a 360 never asks or keeps one.
+export const REVIEW_360_KINDS = [SurveyQuestionKind.RATING, SurveyQuestionKind.TEXT] as const;
+export type Review360Kind = (typeof REVIEW_360_KINDS)[number];
+
+/// A stored question's kind as a 360 reads it. `checkQuestions` lets nothing
+/// else in, so anything else would be read as words.
+export function as360Kind(kind: SurveyQuestionKind): Review360Kind {
+  return kind === SurveyQuestionKind.RATING ? SurveyQuestionKind.RATING : SurveyQuestionKind.TEXT;
+}
+
 export interface QuestionInput {
-  kind: SurveyQuestionKind;
+  kind: Review360Kind;
   prompt: string;
   selfPrompt?: string | null;
   hint?: string | null;
@@ -76,7 +87,7 @@ export const STARTER_QUESTIONS: QuestionInput[] = [
 
 export interface ReportQuestion {
   id: string;
-  kind: SurveyQuestionKind;
+  kind: Review360Kind;
   prompt: string;
   hint: string | null;
 }
@@ -107,6 +118,7 @@ export function summarise(questions: ReportQuestion[], answers: ReportAnswer[]) 
         .filter((rating): rating is number => rating !== null);
       return {
         ...question,
+        kind: SurveyQuestionKind.RATING,
         answered: ratings.length,
         average: average(ratings),
         counts: [1, 2, 3, 4, 5].map((n) => ratings.filter((rating) => rating === n).length),
@@ -116,6 +128,7 @@ export function summarise(questions: ReportQuestion[], answers: ReportAnswer[]) 
     const texts = colleagues.map((answer) => answer.text).filter((text): text is string => !!text);
     return {
       ...question,
+      kind: SurveyQuestionKind.TEXT,
       answered: texts.length,
       texts: shuffle(texts),
       selfText: self?.text ?? null,

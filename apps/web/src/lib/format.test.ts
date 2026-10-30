@@ -105,7 +105,6 @@ describe('monthGrid', () => {
   });
 
   it('has four weeks for a February that starts on a Sunday', () => {
-    // What it does today: the comment above monthGrid says five or six.
     const grid = days(new Date(2026, 1, 1));
     expect(grid).toHaveLength(28);
     expect(grid[0]).toBe('2026-02-01');
@@ -140,6 +139,17 @@ describe('localDate and parseDay', () => {
     expect(parseDay('2026-3-8')).toBeNull();
     expect(parseDay('2026-03-08T00:00')).toBeNull();
     expect(parseDay('next week')).toBeNull();
+  });
+
+  it('turns a day that does not exist into null, not a day in the next month', () => {
+    expect(parseDay('2026-02-30')).toBeNull();
+    expect(parseDay('2026-02-29')).toBeNull();
+    expect(parseDay('2026-04-31')).toBeNull();
+    expect(parseDay('2026-13-01')).toBeNull();
+    expect(parseDay('2026-00-10')).toBeNull();
+    expect(parseDay('2026-03-00')).toBeNull();
+    const leapDay = parseDay('2028-02-29');
+    expect(leapDay && localDate(leapDay)).toBe('2028-02-29');
   });
 
   it('round-trips every day of a year', () => {

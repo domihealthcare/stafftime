@@ -388,11 +388,13 @@ export const SCREENS: Record<string, Screen> = {
     options: () => CORNELL_OPTIONS,
     points: pointsFrom(CORNELL_OPTIONS),
     max: 38,
-    positiveFrom: 10,
+    // Above 10, as the scale's authors wrote it (Alexopoulos, 1988), not 10
+    // or more (Dominguez, 30 October 2026).
+    positiveFrom: 11,
     band: (total) =>
       total > 18
         ? 'definite major depression'
-        : total >= 10
+        : total > 10
           ? 'probable major depression'
           : 'depression unlikely',
     safetyItem: 'suicide',

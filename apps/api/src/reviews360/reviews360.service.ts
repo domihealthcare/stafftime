@@ -27,7 +27,9 @@ import {
   QuestionInput,
   slotProblem,
   slotWords,
+  REVIEW_360_KINDS,
   STARTER_QUESTIONS,
+  as360Kind,
   summarise,
 } from './review360';
 import { A_PERSON } from '../common/people';
@@ -261,7 +263,10 @@ export class Reviews360Service {
       status: review.status,
       closesOn: review.closesOn,
       closedAt: review.closedAt,
-      questions: review.questions,
+      questions: review.questions.map((question) => ({
+        ...question,
+        kind: as360Kind(question.kind),
+      })),
       takingPart: !!inIt,
       people: inIt ? people : [],
       minRaters: MIN_RATERS,
@@ -460,7 +465,7 @@ export class Reviews360Service {
       ...base,
       available: true as const,
       questions: summarise(
-        questions,
+        questions.map((question) => ({ ...question, kind: as360Kind(question.kind) })),
         responses.flatMap((response) =>
           response.answers.map((answer) => ({ ...answer, isSelf: response.isSelf })),
         ),
@@ -761,7 +766,8 @@ export function checkQuestions(questions: QuestionInput[]) {
   if (questions.length === 0) throw new BadRequestException('Ask at least one question.');
   if (questions.length > 15) throw new BadRequestException('Fifteen questions at most.');
   return questions.map((question, index) => {
-    if (question.kind !== SurveyQuestionKind.RATING && question.kind !== SurveyQuestionKind.TEXT) {
+    // The request's own check refuses anything else; this keeps the rule here too.
+    if (!REVIEW_360_KINDS.includes(question.kind)) {
       throw new BadRequestException(`Question ${index + 1}: a 360 asks for a rating or words.`);
     }
     const prompt = question.prompt?.trim();
