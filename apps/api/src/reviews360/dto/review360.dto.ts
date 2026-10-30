@@ -1,4 +1,3 @@
-import { SurveyQuestionKind } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
@@ -6,7 +5,7 @@ import {
   IsArray,
   IsBoolean,
   IsDateString,
-  IsEnum,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -15,10 +14,11 @@ import {
   MaxLength,
   ValidateNested,
 } from 'class-validator';
+import { REVIEW_360_KINDS, type Review360Kind } from '../review360';
 
 export class Review360QuestionDto {
-  @IsEnum(SurveyQuestionKind)
-  kind!: SurveyQuestionKind;
+  @IsIn(REVIEW_360_KINDS, { message: 'A 360 asks for a rating or words.' })
+  kind!: Review360Kind;
 
   @IsString()
   @MaxLength(200)

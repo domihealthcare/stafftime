@@ -1,7 +1,16 @@
 import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { EventAudience, Prisma, Role, SurveyQuestionKind, SurveyStatus } from '@prisma/client';
 import { checkAnswers, checkQuestions, Reviews360Service } from './reviews360.service';
-import { slotProblem, STARTER_QUESTIONS, summarise } from './review360';
+import { plainToInstance } from 'class-transformer';
+import { validateSync } from 'class-validator';
+import { Review360QuestionDto } from './dto/review360.dto';
+import {
+  as360Kind,
+  slotProblem,
+  STARTER_QUESTIONS,
+  summarise,
+  type Review360Kind,
+} from './review360';
 
 const mgr = { id: 'mgr-1', email: 'm@x', role: Role.MANAGER };
 const ana = { id: 'emp-ana', email: 'a@x', role: Role.EMPLOYEE };
@@ -18,10 +27,26 @@ describe('360 questions and answers', () => {
   });
 
   it('takes only ratings and words', () => {
-    expect(() => checkQuestions([{ kind: SurveyQuestionKind.CHOICE, prompt: 'Pick one' }])).toThrow(
-      BadRequestException,
-    );
+    expect(() =>
+      checkQuestions([{ kind: SurveyQuestionKind.CHOICE as Review360Kind, prompt: 'Pick one' }]),
+    ).toThrow(BadRequestException);
     expect(() => checkQuestions([])).toThrow('at least one');
+  });
+
+  it('refuses a choice question at the door, as the screens never send one', () => {
+    const errors = (kind: string) =>
+      validateSync(plainToInstance(Review360QuestionDto, { kind, prompt: 'Pick one' }));
+    expect(errors(SurveyQuestionKind.RATING)).toHaveLength(0);
+    expect(errors(SurveyQuestionKind.TEXT)).toHaveLength(0);
+    expect(errors(SurveyQuestionKind.CHOICE)[0]?.constraints).toEqual({
+      isIn: 'A 360 asks for a rating or words.',
+    });
+  });
+
+  it('reads a stored kind as a rating or words', () => {
+    expect(as360Kind(SurveyQuestionKind.RATING)).toBe(SurveyQuestionKind.RATING);
+    expect(as360Kind(SurveyQuestionKind.TEXT)).toBe(SurveyQuestionKind.TEXT);
+    expect(as360Kind(SurveyQuestionKind.CHOICE)).toBe(SurveyQuestionKind.TEXT);
   });
 
   it('keeps ratings 1–5 and words trimmed, and wants at least one answer', () => {
