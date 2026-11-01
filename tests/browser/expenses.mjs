@@ -26,7 +26,8 @@ const step = async (name, fn) => {
  * part of payroll, and the person running payroll is asked about each one not
  * paid yet, with "defer" or "it was addressed (i.e. via paper check)").
  *
- * The seed puts Ada (admin) on the approvers list; run-all.sh removes the
+ * The seed puts Morgan (the demo manager) on the approvers list, as it does for
+ * invoices; Ada (admin, not on it) runs payroll here. run-all.sh removes the
  * requests.
  */
 async function signIn(email) {
@@ -71,8 +72,8 @@ const call = (page, path, init) =>
 
 const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 
-const admin = await signIn('admin@domihealthcare.com');
-const manager = await signIn('manager@domihealthcare.com');
+const approver = await signIn('manager@domihealthcare.com');
+const payroll = await signIn('admin@domihealthcare.com');
 const frankie = await signIn('frontdesk@domihealthcare.com');
 const max = await signIn('ma@domihealthcare.com');
 
@@ -88,9 +89,9 @@ await step('anybody asks from the account menu, and the receipt has to be emaile
   await dialog.getByLabel('Description').fill('Printer ink for the front desk');
   await dialog.getByLabel('Amount ($)').fill('42.10');
   // Says who the receipt goes to, and offers an email to them.
-  await dialog.getByText('admin@domihealthcare.com', { exact: false }).waitFor();
+  await dialog.getByText('manager@domihealthcare.com', { exact: false }).waitFor();
   const href = await dialog.getByTestId('email-receipt').getAttribute('href');
-  if (!href?.startsWith('mailto:admin@domihealthcare.com?subject=Receipt'))
+  if (!href?.startsWith('mailto:manager@domihealthcare.com?subject=Receipt'))
     throw new Error(`mailto: ${href}`);
   // Nothing is uploaded: there is no file input.
   if ((await frankie.locator('input[type=file]').count()) > 0) throw new Error('a file input');
@@ -116,7 +117,7 @@ await step('the server refuses one without the receipt, and the list is the appr
   if (noReceipt.status !== 400) throw new Error(`without receipt: ${noReceipt.status}`);
   for (const [who, page] of [
     ['staff', frankie],
-    ['a manager not on the list', manager],
+    ['an admin not on the list', payroll],
   ]) {
     const all = await call(page, '/expenses');
     if (all.status !== 403) throw new Error(`${who} read everybody's: ${all.status}`);
@@ -126,19 +127,19 @@ await step('the server refuses one without the receipt, and the list is the appr
 });
 
 await step('an approver approves once the receipt arrived, at another amount', async () => {
-  await goToManage(admin, 'Expenses');
-  const card = admin.getByTestId('expense-to-decide').filter({ hasText: 'Printer ink' });
+  await goToManage(approver, 'Expenses');
+  const card = approver.getByTestId('expense-to-decide').filter({ hasText: 'Printer ink' });
   await card.waitFor({ timeout: 15000 });
   await card.getByRole('button', { name: 'Approve…' }).click();
-  const dialog = admin.getByRole('dialog', { name: 'Approve reimbursement request' });
+  const dialog = approver.getByRole('dialog', { name: 'Approve reimbursement request' });
   await dialog.getByLabel('Amount approved ($)').fill('40');
   await dialog.getByRole('button', { name: 'Approve' }).click();
   await dialog.getByText('Confirm that the receipt was received.').waitFor();
   await dialog.getByLabel('The receipt was received by email.').check();
   await dialog.getByRole('button', { name: 'Approve' }).click();
-  await admin.getByText('Approved. Frankie Front-Desk has been notified').waitFor({ timeout: 10000 });
+  await approver.getByText('Approved. Frankie Front-Desk has been notified').waitFor({ timeout: 10000 });
   // Now on the payroll prompt, here too.
-  await admin
+  await approver
     .getByTestId('unpaid-reimbursements')
     .getByText('Printer ink for the front desk')
     .waitFor({ timeout: 10000 });
@@ -156,7 +157,7 @@ await step('a request is declined with a reason, and one still waiting is withdr
     }),
   });
   if (asked.status !== 201) throw new Error(JSON.stringify(asked));
-  const declined = await call(admin, `/expenses/${asked.body.id}/decline`, {
+  const declined = await call(approver, `/expenses/${asked.body.id}/decline`, {
     method: 'POST',
     body: JSON.stringify({ reason: 'Not a practice expense' }),
   });
@@ -185,12 +186,12 @@ await step('a request is declined with a reason, and one still waiting is withdr
 });
 
 await step('before you export names it, as never in the file', async () => {
-  const check = await call(manager, '/pay-lock/unlock', {
+  const check = await call(payroll, '/pay-lock/unlock', {
     method: 'POST',
     body: JSON.stringify({ password: 'shift-change-2026' }),
   });
   if (check.status >= 300) throw new Error(`unlock: ${check.status}`);
-  const warned = await call(manager, '/exports/timesheet/check', {
+  const warned = await call(payroll, '/exports/timesheet/check', {
     method: 'POST',
     body: JSON.stringify({ from: '2025-04-01T00:00:00Z', to: '2025-05-01T00:00:00Z' }),
   });
@@ -200,17 +201,17 @@ await step('before you export names it, as never in the file', async () => {
 });
 
 await step('whoever runs payroll puts it off, brings it back, then records a paper check', async () => {
-  await goToManage(manager, 'Export');
-  const prompt = manager.getByTestId('unpaid-reimbursements');
+  await goToManage(payroll, 'Export');
+  const prompt = payroll.getByTestId('unpaid-reimbursements');
   const line = prompt.getByTestId('payout').filter({ hasText: 'Printer ink' });
   await line.waitFor({ timeout: 15000 });
   await prompt.getByText('1 reimbursement pending payment, $40.00').waitFor();
-  await manager.screenshot({ path: `${OUT}/expenses-export-prompt.png` });
+  await payroll.screenshot({ path: `${OUT}/expenses-export-prompt.png` });
 
   await line.getByRole('button', { name: 'Defer to next payroll' }).click();
   await prompt.getByText(/reimbursement is deferred until/).waitFor({ timeout: 10000 });
   // Put off, it is no longer named before exporting.
-  const later = await call(manager, '/exports/timesheet/check', {
+  const later = await call(payroll, '/exports/timesheet/check', {
     method: 'POST',
     body: JSON.stringify({ from: '2025-04-01T00:00:00Z', to: '2025-05-01T00:00:00Z' }),
   });
@@ -229,7 +230,7 @@ await step('whoever runs payroll puts it off, brings it back, then records a pap
     .filter({ hasText: 'Printer ink' })
     .getByRole('button', { name: 'Mark as paid…' })
     .click();
-  const dialog = manager.getByRole('dialog', { name: 'Record payment' });
+  const dialog = payroll.getByRole('dialog', { name: 'Record payment' });
   await dialog.getByLabel('Payment method').selectOption('PAPER_CHECK');
   await dialog.getByLabel('Note (optional)').fill('Check #1042');
   await dialog.getByRole('button', { name: 'Record payment' }).click();
@@ -254,12 +255,12 @@ await step('the employee sees it reimbursed, and was notified on the bell', asyn
 });
 
 await step('the approvers list is kept by the people on it, never emptied', async () => {
-  const notOn = await call(manager, '/expenses/approvers');
-  if (notOn.status !== 403) throw new Error(`a manager not on it read the list: ${notOn.status}`);
-  const list = await call(admin, '/expenses/approvers');
-  const ada = list.body.holders.find((person) => person.firstName === 'Ada');
-  if (!ada) throw new Error(JSON.stringify(list.body));
-  const self = await call(admin, `/expenses/approvers/${ada.id}`, { method: 'DELETE' });
+  const notOn = await call(payroll, '/expenses/approvers');
+  if (notOn.status !== 403) throw new Error(`an admin not on it read the list: ${notOn.status}`);
+  const list = await call(approver, '/expenses/approvers');
+  const morgan = list.body.holders.find((person) => person.firstName === 'Morgan');
+  if (!morgan) throw new Error(JSON.stringify(list.body));
+  const self = await call(approver, `/expenses/approvers/${morgan.id}`, { method: 'DELETE' });
   if (self.status !== 400) throw new Error(`took themselves off: ${self.status}`);
 });
 

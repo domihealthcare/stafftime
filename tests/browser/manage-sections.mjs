@@ -116,7 +116,7 @@ await step(
     await goToManage(admin, 'Vendor payments');
     if (
       (await tabs(admin, 'Finances')).join('|') !==
-      'Export|Reimbursements|Expenses|Vendor payments|Provider productivity'
+      'Export|Reimbursements|Vendor payments|Provider productivity'
     )
       throw new Error(`finances: ${(await tabs(admin, 'Finances')).join('|')}`);
   },
@@ -153,7 +153,7 @@ await step('a manager sees the same headings with only the tabs they may open', 
   if ((await tabs(manager, 'Offices')).join('|') !== 'Closing checklists|Reps')
     throw new Error('offices');
   await goToManage(manager, 'Export');
-  if ((await tabs(manager, 'Finances')).join('|') !== 'Export|Reimbursements|Invoices')
+  if ((await tabs(manager, 'Finances')).join('|') !== 'Export|Reimbursements|Invoices|Expenses')
     throw new Error('finances');
   // What they may not open is refused as before.
   const status = await manager.evaluate(async () => (await fetch('/api/vendors')).status);
