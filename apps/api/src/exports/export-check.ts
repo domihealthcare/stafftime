@@ -160,7 +160,7 @@ export function exportWarnings(input: ExportCheckInput): ExportCheck {
     },
     reimbursements: {
       title:
-        'Reimbursements approved and not paid yet - never in this file: on the Export screen, record how each was paid or press Not this time',
+        'Reimbursements approved but not yet paid - not included in this file. Record each payment or defer it on the Export screen',
       lines: (input.unpaidReimbursements ?? []).map(
         (item) => `${item.employeeName} - ${item.what}, ${money(item.cents)}`,
       ),

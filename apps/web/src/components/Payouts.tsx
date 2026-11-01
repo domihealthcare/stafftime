@@ -13,8 +13,13 @@ export const METHOD_LABELS: Record<ReimbursementMethod, string> = {
   PAPER_CHECK: 'Paper check',
   CASH: 'Cash',
   DIRECT_DEPOSIT: 'Direct deposit',
-  OTHER: 'Another way',
+  OTHER: 'Other',
 };
+
+/// The method inside a sentence: "by paper check", "by another method".
+export function methodWords(method: ReimbursementMethod): string {
+  return method === 'OTHER' ? 'another method' : METHOD_LABELS[method].toLowerCase();
+}
 
 /**
  * The payroll prompt (November 2026, Dominguez: reimbursements "should not be
@@ -58,11 +63,11 @@ export function UnpaidReimbursements({ onChanged }: { onChanged?: () => void }) 
       if (step === 'defer') {
         const { deferredUntil } = await api.deferPayout(payout.kind, payout.id);
         changed(
-          `${payout.person.name}'s is put off until ${formatCalendarDate(deferredUntil ?? '')}.`,
+          `${payout.person.name}'s reimbursement is deferred until ${formatCalendarDate(deferredUntil ?? '')}.`,
         );
       } else {
         await api.undeferPayout(payout.kind, payout.id);
-        changed(`${payout.person.name}'s is back on the list.`);
+        changed(`${payout.person.name}'s reimbursement is back on the list.`);
       }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'That did not work.');
@@ -79,13 +84,13 @@ export function UnpaidReimbursements({ onChanged }: { onChanged?: () => void }) 
     <Card className="mb-4 border-l-4 border-amber-400 p-5" testId="unpaid-reimbursements">
       <h2 className="text-sm font-semibold text-slate-900">
         {list.due.length === 0
-          ? 'Reimbursements to pay'
-          : `${list.due.length} ${list.due.length === 1 ? 'reimbursement' : 'reimbursements'} to pay, ${money(total)}`}
+          ? 'Reimbursements pending payment'
+          : `${list.due.length} ${list.due.length === 1 ? 'reimbursement' : 'reimbursements'} pending payment, ${money(total)}`}
       </h2>
       <p className="mt-1 text-sm text-slate-600">
-        Approved expenses and CME are never part of payroll or this export. Pay each another way (a
-        paper check, say) and record it, or press <strong>Not this time</strong> to be asked again
-        at the next payroll ({formatCalendarDate(list.nextPayroll)}).
+        Approved expense and CME reimbursements are not included in payroll or this export. Record
+        each payment once it has been made (for example, by paper check), or defer it to the next
+        payroll ({formatCalendarDate(list.nextPayroll)}).
       </p>
       {error && (
         <div className="mt-3">
@@ -109,7 +114,9 @@ export function UnpaidReimbursements({ onChanged }: { onChanged?: () => void }) 
           >
             <PayoutLine payout={payout} />
             {payout.employeeId === me ? (
-              <span className="text-xs text-slate-500">Yours: somebody else records it</span>
+              <span className="text-xs text-slate-500">
+                Your own request: another approver records it
+              </span>
             ) : (
               <div className="flex gap-2">
                 <button
@@ -120,7 +127,7 @@ export function UnpaidReimbursements({ onChanged }: { onChanged?: () => void }) 
                     setPaying(payout);
                   }}
                 >
-                  Paid…
+                  Mark as paid…
                 </button>
                 <button
                   type="button"
@@ -128,7 +135,7 @@ export function UnpaidReimbursements({ onChanged }: { onChanged?: () => void }) 
                   disabled={busy === payout.id}
                   onClick={() => void act(payout, 'defer')}
                 >
-                  Not this time
+                  Defer to next payroll
                 </button>
               </div>
             )}
@@ -143,7 +150,7 @@ export function UnpaidReimbursements({ onChanged }: { onChanged?: () => void }) 
             aria-expanded={showDeferred}
             onClick={() => setShowDeferred((open) => !open)}
           >
-            {showDeferred ? 'Hide' : 'Show'} the {list.deferred.length} put off until later
+            {showDeferred ? 'Hide' : 'Show'} {list.deferred.length} deferred
           </button>
           {showDeferred && (
             <ul className="mt-2 divide-y divide-slate-100">
@@ -156,7 +163,7 @@ export function UnpaidReimbursements({ onChanged }: { onChanged?: () => void }) 
                   <PayoutLine payout={payout} />
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-slate-600">
-                      Until {formatCalendarDate(payout.deferredUntil ?? '')}
+                      Deferred until {formatCalendarDate(payout.deferredUntil ?? '')}
                     </span>
                     {payout.employeeId !== me && (
                       <button
@@ -165,7 +172,7 @@ export function UnpaidReimbursements({ onChanged }: { onChanged?: () => void }) 
                         disabled={busy === payout.id}
                         onClick={() => void act(payout, 'undefer')}
                       >
-                        Bring it back
+                        Undo deferral
                       </button>
                     )}
                   </div>
@@ -182,9 +189,7 @@ export function UnpaidReimbursements({ onChanged }: { onChanged?: () => void }) 
           onPaid={(how) => {
             setPaying(null);
             changed(
-              `Recorded: ${paying.person.name}, ${money(paying.amountCents)} by ${METHOD_LABELS[
-                how
-              ].toLowerCase()}. They have been told.`,
+              `Payment recorded: ${paying.person.name}, ${money(paying.amountCents)} by ${methodWords(how)}. They have been notified.`,
             );
           }}
         />
@@ -206,7 +211,7 @@ function PayoutLine({ payout }: { payout: Payout }) {
         <strong>{money(payout.amountCents)}</strong>
         {payout.approvedAt && <> · approved {formatCalendarDate(payout.approvedAt)}</>} ·{' '}
         <Link to={payout.link} className="text-brand-700 underline">
-          open
+          View
         </Link>
       </p>
     </div>
@@ -232,8 +237,8 @@ export function PaidDialog({
 
   const save = async () => {
     const paidCents = parseCents(amount);
-    if (paidCents === null) return setError('Give the amount, like 42.10.');
-    if (!paidOn) return setError('Give the day it was paid.');
+    if (paidCents === null) return setError('Enter the amount, for example 42.10.');
+    if (!paidOn) return setError('Enter the payment date.');
     setSaving(true);
     setError(null);
     try {
@@ -251,9 +256,9 @@ export function PaidDialog({
   };
 
   return (
-    <Modal title="Paid outside payroll" onClose={onClose} testId="payout-paid">
+    <Modal title="Record payment" onClose={onClose} testId="payout-paid">
       <p className="text-sm text-slate-600">
-        {payout.person.name} - {payout.what}. They are told once it is recorded.
+        {payout.person.name} - {payout.what}. They will be notified once it is recorded.
       </p>
       <form
         className="mt-4 space-y-3"
@@ -262,7 +267,7 @@ export function PaidDialog({
           void save();
         }}
       >
-        <Field label="How was it paid?">
+        <Field label="Payment method">
           {(props) => (
             <select
               {...props}
@@ -278,7 +283,7 @@ export function PaidDialog({
             </select>
           )}
         </Field>
-        <Field label="Day paid">
+        <Field label="Payment date">
           {(props) => (
             <input
               {...props}
@@ -318,7 +323,7 @@ export function PaidDialog({
             Cancel
           </button>
           <button type="submit" className={buttonClass('primary')} disabled={saving}>
-            {saving ? 'Saving…' : 'Record it'}
+            {saving ? 'Saving…' : 'Record payment'}
           </button>
         </div>
       </form>

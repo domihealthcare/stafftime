@@ -143,7 +143,7 @@ export class PayoutsService {
     now = new Date(),
   ) {
     if (dto.paidOn > localDateIn(now, PRACTICE_ZONE)) {
-      throw new BadRequestException('Record it once it has been paid.');
+      throw new BadRequestException('The payment date cannot be in the future.');
     }
     const how = METHOD_WORDS[dto.how ?? ReimbursementMethod.OTHER];
     const note = dto.note?.trim() || null;
@@ -170,12 +170,16 @@ export class PayoutsService {
               payDeferredUntil: null,
             },
           });
-    if (done.count === 0) throw new BadRequestException('That one has already been paid.');
+    if (done.count === 0)
+      throw new BadRequestException('That reimbursement has already been paid.');
     await this.notifications.personal(
       [target.employeeId],
       kind === 'expense' ? NotificationKind.EXPENSE : NotificationKind.CME,
       {
-        title: kind === 'expense' ? 'Your expense was paid back' : 'Your CME was paid back',
+        title:
+          kind === 'expense'
+            ? 'Your expense reimbursement has been paid'
+            : 'Your CME reimbursement has been paid',
         body: `${target.what}: ${money(dto.paidCents)}, by ${how}.`,
         link: kind === 'expense' ? '/expenses' : '/cme',
       },
@@ -225,9 +229,9 @@ export class PayoutsService {
               select: { employeeId: true, title: true },
             })
             .then((found) => found && { employeeId: found.employeeId, what: found.title });
-    if (!row) throw new NotFoundException('That one is not waiting to be paid.');
+    if (!row) throw new NotFoundException('That reimbursement is not pending payment.');
     if (row.employeeId === actor.id) {
-      throw new ForbiddenException('Ask somebody else to record your own.');
+      throw new ForbiddenException('Another approver must record your own reimbursement.');
     }
     return row;
   }

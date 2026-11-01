@@ -2015,29 +2015,30 @@ Beyond the phases, the parts worth knowing about before picking up work:
     Test only.
 - **Expense reimbursements, and the payroll prompt** (1 November 2026,
   Dominguez, version 1.34.0; asked "is there a way for staff/provider to
-  submit reimbursement requests?" - there was only CME): **anybody** asks to
-  be paid back from **Expense reimbursements** in the account menu
-  (`/expenses`): what it was for, the amount, the day, and an **optional**
-  kind. **The receipt is required, by email**: the form names the approvers
+  submit reimbursement requests?" - there was only CME): **anybody** submits
+  a **New reimbursement request** from **Expense reimbursements** in the
+  account menu (`/expenses`): description, amount, date of purchase, and an
+  **optional** category. Worded formally on purpose (Dominguez: "Ask to be
+  paid back? that doesn't feel professional"). **The receipt is required, by email**: the form names the approvers
   and their emails, with an **Email the receipt** button, and **I have
   emailed the receipt** must be ticked (the server refuses it otherwise).
   Nothing is uploaded; the schema guard pins `ExpenseRequest`. **Approved by
   a list** (`Employee.canApproveExpenses`, whatever the access level, kept by
-  the people on it under **Who approves**, like the invoices list): the
+  the people on it under **Manage approvers**, like the invoices list): the
   migration puts Dominguez on by email and **Angelica Dominguez by name, only
   if exactly one current person fits: check it on the live site**. They
   decide under Manage → Finances → **Expenses**, approving only once **The
-  receipt arrived** is ticked; never their own. Bell and email both ways.
+  receipt was received** is ticked; never their own. Bell and email both ways.
   **Never part of payroll, but whoever runs it is asked** (his words: "should
   prompt the person running payroll (usually angelica d) ... the option to
   defer or it was addressed (i.e. via paper check for instance) ... for CME
   as well"): every approved expense **and CME** not paid back yet is at the
   top of the **Export** screen (and on Expenses), named in **Before you
-  export**, and counted under **Payroll is due**. **Paid…** records how
-  (paper check, cash, direct deposit, another way), the day, amount and a
-  note, and tells the person; **Not this time** puts it off until the next
-  payroll's window opens; **Bring it back** undoes that. CME's own **Mark
-  paid back** asks how too. Managers, admins and the approvers see the
+  export**, and counted under **Payroll is due**. **Mark as paid…** records
+  the payment method (paper check, cash, direct deposit, other), date, amount
+  and a note, and notifies the person; **Defer to next payroll** sets it aside
+  until the next payroll's window opens; **Undo deferral** returns it. CME's own **Mark
+  paid back** asks the payment method too. Managers, admins and the approvers see the
   prompt. The screen is in English, like CME. Migration
   `20261101010000_expense_reimbursements`; `src/expenses/` (`expenses.ts`
   rules, `payouts.service.ts` the prompt, `unpaid.ts` one definition of

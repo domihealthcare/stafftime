@@ -18,10 +18,12 @@ describe('expenseProblem', () => {
   });
 
   it('needs what it was for, an amount and a day already past', () => {
-    expect(expenseProblem({ ...ok, description: ' a ' }, today)).toMatch(/what it was for/);
+    expect(expenseProblem({ ...ok, description: ' a ' }, today)).toMatch(/description/);
     expect(expenseProblem({ ...ok, amountCents: 0 }, today)).toMatch(/amount/);
     expect(expenseProblem({ ...ok, amountCents: 1_000_001 }, today)).toMatch(/amount/);
-    expect(expenseProblem({ ...ok, spentOn: '2026-11-02' }, today)).toMatch(/once you have paid/);
+    expect(expenseProblem({ ...ok, spentOn: '2026-11-02' }, today)).toMatch(
+      /cannot be in the future/,
+    );
     expect(expenseProblem({ ...ok, spentOn: '2025-10-01' }, today)).toMatch(/more than a year/);
   });
 });

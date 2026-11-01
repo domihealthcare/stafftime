@@ -101,7 +101,11 @@ export class ExpensesService {
   }
 
   async create(dto: ExpenseRequestInput, actor: AuthUser, now = new Date()) {
-    await assertAPerson(this.prisma, actor.id, 'A shared account cannot ask to be paid back.');
+    await assertAPerson(
+      this.prisma,
+      actor.id,
+      'A shared account cannot submit reimbursement requests.',
+    );
     const problem = expenseProblem(
       {
         description: dto.description,
@@ -130,8 +134,8 @@ export class ExpensesService {
       approvers.map((person) => person.id),
       NotificationKind.EXPENSE,
       {
-        title: `${request.person.name} asked to be paid back`,
-        body: `${summary(request)}. They say the receipt is in your email.`,
+        title: `${request.person.name} submitted a reimbursement request`,
+        body: `${summary(request)}. The receipt was emailed to you.`,
         link: '/expenses',
       },
     );
@@ -153,7 +157,7 @@ export class ExpensesService {
 
   async approve(id: string, dto: ExpenseApproveInput, actor: AuthUser, now = new Date()) {
     if (dto.receiptReceived !== true)
-      throw new BadRequestException('Tick that the receipt arrived.');
+      throw new BadRequestException('Confirm that the receipt was received.');
     const request = await this.requireWaiting(id, actor);
     const approvedCents = dto.approvedCents ?? request.amountCents;
     const note = dto.note?.trim() || null;
@@ -168,8 +172,8 @@ export class ExpensesService {
         ? money(approvedCents)
         : `${money(approvedCents)} of the ${money(request.amountCents)} asked`;
     await this.notifications.personal([request.employeeId], NotificationKind.EXPENSE, {
-      title: 'Your expense was approved',
-      body: `${request.description}: ${amount}. It is paid back separately, not on your paycheck.${
+      title: 'Your reimbursement request was approved',
+      body: `${request.description}: ${amount}. It will be paid separately from payroll.${
         note ? ` "${note}"` : ''
       }`,
       link: '/expenses',
@@ -179,7 +183,8 @@ export class ExpensesService {
 
   async decline(id: string, reason: string, actor: AuthUser, now = new Date()) {
     const words = reason?.trim();
-    if (!words || words.length < 3) throw new BadRequestException('Say why, for them.');
+    if (!words || words.length < 3)
+      throw new BadRequestException('Enter a reason for the employee.');
     const request = await this.requireWaiting(id, actor);
     await this.decide(id, actor, now, {
       status: ExpenseStatus.DECLINED,
@@ -188,7 +193,7 @@ export class ExpensesService {
       receiptReceivedAt: null,
     });
     await this.notifications.personal([request.employeeId], NotificationKind.EXPENSE, {
-      title: 'Your expense was not approved',
+      title: 'Your reimbursement request was not approved',
       body: `${summary(request)}. "${words}"`,
       link: '/expenses',
     });
@@ -215,10 +220,10 @@ export class ExpensesService {
     });
     if (!row) throw new NotFoundException('That request does not exist.');
     if (row.status !== ExpenseStatus.PENDING) {
-      throw new BadRequestException('That one has already been decided.');
+      throw new BadRequestException('That request has already been decided.');
     }
     if (row.employeeId === actor.id) {
-      throw new ForbiddenException('Ask somebody else on the list to decide your own.');
+      throw new ForbiddenException('Another approver must decide your own request.');
     }
     return presentExpense(row);
   }
@@ -239,7 +244,7 @@ export class ExpensesService {
       where: { id, status: ExpenseStatus.PENDING },
       data: { ...data, decidedById: actor.id, decidedAt: now },
     });
-    if (done.count === 0) throw new BadRequestException('That one has already been decided.');
+    if (done.count === 0) throw new BadRequestException('That request has already been decided.');
     this.logger.log(`Expense request ${id} ${data.status.toLowerCase()} by ${actor.id}`);
   }
 }

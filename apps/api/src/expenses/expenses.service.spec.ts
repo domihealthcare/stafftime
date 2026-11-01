@@ -79,7 +79,10 @@ describe('ExpensesService', () => {
     expect(notifications.personal).toHaveBeenCalledWith(
       ['a1'],
       NotificationKind.EXPENSE,
-      expect.objectContaining({ title: 'Casey Lee asked to be paid back', link: '/expenses' }),
+      expect.objectContaining({
+        title: 'Casey Lee submitted a reimbursement request',
+        link: '/expenses',
+      }),
     );
   });
 
@@ -105,7 +108,7 @@ describe('ExpensesService', () => {
         decidedById: 'a1',
       }),
     });
-    expect(notifications.personal.mock.calls[0][2].body).toMatch(/not on your paycheck/);
+    expect(notifications.personal.mock.calls[0][2].body).toMatch(/separately from payroll/);
     await expect(
       service.approve('x1', { receiptReceived: true }, { ...angelica, id: 'e1' }, now),
     ).rejects.toThrow(ForbiddenException);

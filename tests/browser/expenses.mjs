@@ -83,9 +83,9 @@ await step('anybody asks from the account menu, and the receipt has to be emaile
   await frankie
     .getByRole('heading', { name: 'Expense reimbursements', level: 1 })
     .waitFor({ timeout: 15000 });
-  await frankie.getByRole('button', { name: '+ Ask to be paid back' }).click();
-  const dialog = frankie.getByRole('dialog', { name: 'Ask to be paid back' });
-  await dialog.getByLabel('What was it for?').fill('Printer ink for the front desk');
+  await frankie.getByRole('button', { name: '+ New reimbursement request' }).click();
+  const dialog = frankie.getByRole('dialog', { name: 'New reimbursement request' });
+  await dialog.getByLabel('Description').fill('Printer ink for the front desk');
   await dialog.getByLabel('Amount ($)').fill('42.10');
   // Says who the receipt goes to, and offers an email to them.
   await dialog.getByText('admin@domihealthcare.com', { exact: false }).waitFor();
@@ -95,10 +95,10 @@ await step('anybody asks from the account menu, and the receipt has to be emaile
   // Nothing is uploaded: there is no file input.
   if ((await frankie.locator('input[type=file]').count()) > 0) throw new Error('a file input');
   await dialog.getByRole('button', { name: 'Send' }).click();
-  await dialog.getByText('Email the receipt first, then tick that you have.').waitFor();
-  await dialog.getByLabel('I have emailed the receipt.').check();
+  await dialog.getByText('Email the receipt to the approvers, then confirm it below.').waitFor();
+  await dialog.getByLabel('I have emailed the receipt to the approvers.').check();
   await dialog.getByRole('button', { name: 'Send' }).click();
-  await frankie.getByText('Sent. The approvers have been told').waitFor({ timeout: 10000 });
+  await frankie.getByText('Request submitted. The approvers have been notified.').waitFor({ timeout: 10000 });
   await frankie.getByTestId('my-expense').getByText('Waiting for a decision').waitFor();
   await frankie.screenshot({ path: `${OUT}/expenses-asked.png` });
 });
@@ -130,13 +130,13 @@ await step('an approver approves once the receipt arrived, at another amount', a
   const card = admin.getByTestId('expense-to-decide').filter({ hasText: 'Printer ink' });
   await card.waitFor({ timeout: 15000 });
   await card.getByRole('button', { name: 'Approve…' }).click();
-  const dialog = admin.getByRole('dialog', { name: 'Approve this expense' });
+  const dialog = admin.getByRole('dialog', { name: 'Approve reimbursement request' });
   await dialog.getByLabel('Amount approved ($)').fill('40');
   await dialog.getByRole('button', { name: 'Approve' }).click();
-  await dialog.getByText('Tick that the receipt arrived.').waitFor();
-  await dialog.getByLabel('The receipt arrived by email.').check();
+  await dialog.getByText('Confirm that the receipt was received.').waitFor();
+  await dialog.getByLabel('The receipt was received by email.').check();
   await dialog.getByRole('button', { name: 'Approve' }).click();
-  await admin.getByText('Approved. Frankie Front-Desk has been told').waitFor({ timeout: 10000 });
+  await admin.getByText('Approved. Frankie Front-Desk has been notified').waitFor({ timeout: 10000 });
   // Now on the payroll prompt, here too.
   await admin
     .getByTestId('unpaid-reimbursements')
@@ -204,11 +204,11 @@ await step('whoever runs payroll puts it off, brings it back, then records a pap
   const prompt = manager.getByTestId('unpaid-reimbursements');
   const line = prompt.getByTestId('payout').filter({ hasText: 'Printer ink' });
   await line.waitFor({ timeout: 15000 });
-  await prompt.getByText('1 reimbursement to pay, $40.00').waitFor();
+  await prompt.getByText('1 reimbursement pending payment, $40.00').waitFor();
   await manager.screenshot({ path: `${OUT}/expenses-export-prompt.png` });
 
-  await line.getByRole('button', { name: 'Not this time' }).click();
-  await prompt.getByText(/is put off until/).waitFor({ timeout: 10000 });
+  await line.getByRole('button', { name: 'Defer to next payroll' }).click();
+  await prompt.getByText(/reimbursement is deferred until/).waitFor({ timeout: 10000 });
   // Put off, it is no longer named before exporting.
   const later = await call(manager, '/exports/timesheet/check', {
     method: 'POST',
@@ -217,22 +217,22 @@ await step('whoever runs payroll puts it off, brings it back, then records a pap
   if (later.body.sections?.some((s) => s.key === 'reimbursements'))
     throw new Error('still named once put off');
 
-  await prompt.getByRole('button', { name: /Show the 1 put off/ }).click();
+  await prompt.getByRole('button', { name: 'Show 1 deferred' }).click();
   await prompt
     .getByTestId('payout-deferred')
-    .getByRole('button', { name: 'Bring it back' })
+    .getByRole('button', { name: 'Undo deferral' })
     .click();
-  await prompt.getByText('is back on the list').waitFor({ timeout: 10000 });
+  await prompt.getByText('reimbursement is back on the list').waitFor({ timeout: 10000 });
 
   await prompt
     .getByTestId('payout')
     .filter({ hasText: 'Printer ink' })
-    .getByRole('button', { name: 'Paid…' })
+    .getByRole('button', { name: 'Mark as paid…' })
     .click();
-  const dialog = manager.getByRole('dialog', { name: 'Paid outside payroll' });
-  await dialog.getByLabel('How was it paid?').selectOption('PAPER_CHECK');
+  const dialog = manager.getByRole('dialog', { name: 'Record payment' });
+  await dialog.getByLabel('Payment method').selectOption('PAPER_CHECK');
   await dialog.getByLabel('Note (optional)').fill('Check #1042');
-  await dialog.getByRole('button', { name: 'Record it' }).click();
+  await dialog.getByRole('button', { name: 'Record payment' }).click();
   await prompt.waitFor({ state: 'detached', timeout: 10000 });
 
   const mine = await call(frankie, '/expenses/mine');
@@ -241,15 +241,15 @@ await step('whoever runs payroll puts it off, brings it back, then records a pap
     throw new Error(JSON.stringify(paid));
 });
 
-await step('the person sees it paid back, and was told on the bell', async () => {
+await step('the employee sees it reimbursed, and was notified on the bell', async () => {
   await frankie.goto(`${BASE}/expenses`, { waitUntil: 'networkidle' });
   await frankie
     .getByTestId('my-expense')
-    .getByText(/Paid back \$40\.00 on .* by paper check \(Check #1042\)/)
+    .getByText(/Reimbursed \$40\.00 on .* by paper check \(Check #1042\)/)
     .waitFor({ timeout: 10000 });
   const bell = await call(frankie, '/notifications');
   const titles = (bell.body.items ?? []).map((item) => item.title);
-  for (const title of ['Your expense was approved', 'Your expense was paid back'])
+  for (const title of ['Your reimbursement request was approved', 'Your expense reimbursement has been paid'])
     if (!titles.includes(title)) throw new Error(`no "${title}": ${titles.join(', ')}`);
 });
 

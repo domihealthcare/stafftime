@@ -99,7 +99,7 @@ export function describePayrollDue(due: PayrollDue, today: string): string[] {
       : []),
     ...(due.unpaidReimbursements
       ? [
-          `${plural(due.unpaidReimbursements, 'reimbursement', 'reimbursements')} approved and not paid yet - not part of payroll, see the Export screen`,
+          `${plural(due.unpaidReimbursements, 'reimbursement', 'reimbursements')} approved but not yet paid - not included in payroll, see the Export screen`,
         ]
       : []),
   ];

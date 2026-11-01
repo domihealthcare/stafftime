@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useConfirm } from '../components/ConfirmDialog';
 import { Modal } from '../components/Modal';
-import { METHOD_LABELS, UnpaidReimbursements } from '../components/Payouts';
+import { UnpaidReimbursements, methodWords } from '../components/Payouts';
 import {
   Alert,
   Badge,
@@ -28,10 +28,10 @@ import type {
 const KIND_LABELS: Record<ExpenseKind, string> = {
   SUPPLIES: 'Supplies',
   MILEAGE: 'Mileage',
-  TRAINING: 'Training or a course',
+  TRAINING: 'Training or courses',
   MEALS: 'Meals',
   TRAVEL: 'Travel',
-  OTHER: 'Something else',
+  OTHER: 'Other',
 };
 
 const STATUS = {
@@ -92,7 +92,7 @@ export function ExpensesPage() {
   const withdraw = async (request: ExpenseRequest) => {
     const ok = await confirm({
       title: 'Withdraw this request?',
-      body: `${request.description}, ${money(request.amountCents)}. It is taken back from the approvers.`,
+      body: `${request.description}, ${money(request.amountCents)}. It will be withdrawn from review.`,
       confirmLabel: 'Yes, withdraw',
       cancelLabel: 'Keep it',
       tone: 'danger',
@@ -122,7 +122,7 @@ export function ExpensesPage() {
     <div className="max-w-4xl space-y-6">
       <PageHeading
         title="Expense reimbursements"
-        subtitle="Paid for something for the practice with your own money? Ask to be paid back here. It is paid separately, never on your paycheck."
+        subtitle="Submit business expenses you paid for personally. Approved reimbursements are paid separately from payroll."
       />
       {error && <Alert>{error}</Alert>}
       {notice && (
@@ -135,18 +135,18 @@ export function ExpensesPage() {
         <section className="space-y-4" aria-labelledby="to-decide">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 id="to-decide" className="text-lg font-semibold text-slate-900">
-              To decide{waiting.length > 0 ? ` (${waiting.length})` : ''}
+              Awaiting decision{waiting.length > 0 ? ` (${waiting.length})` : ''}
             </h2>
             <button
               type="button"
               className={buttonClass('secondary', 'sm')}
               onClick={() => setManagingList(true)}
             >
-              Who approves
+              Manage approvers
             </button>
           </div>
           {waiting.length === 0 ? (
-            <p className="text-sm text-slate-600">Nothing waiting.</p>
+            <p className="text-sm text-slate-600">No requests are awaiting a decision.</p>
           ) : (
             <div className="space-y-3">
               {waiting.map((request) => (
@@ -154,7 +154,7 @@ export function ExpensesPage() {
                   <RequestDetails request={request} showPerson />
                   {request.employeeId === employee?.id ? (
                     <p className="mt-3 text-xs text-slate-600">
-                      Yours: somebody else on the list decides it.
+                      Your own request: another approver decides it.
                     </p>
                   ) : (
                     <div className="mt-3 flex flex-wrap gap-2">
@@ -195,11 +195,13 @@ export function ExpensesPage() {
               setAsking(true);
             }}
           >
-            + Ask to be paid back
+            + New reimbursement request
           </button>
         </div>
         {mine.requests.length === 0 ? (
-          <p className="text-sm text-slate-600">You have not asked for anything yet.</p>
+          <p className="text-sm text-slate-600">
+            You have not submitted any reimbursement requests.
+          </p>
         ) : (
           mine.requests.map((request) => (
             <Card key={request.id} className="p-4" testId="my-expense">
@@ -221,7 +223,7 @@ export function ExpensesPage() {
       {isApprover && decided.length > 0 && (
         <details className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
           <summary className="cursor-pointer text-sm font-semibold text-slate-900">
-            Decided ({decided.length})
+            Completed ({decided.length})
           </summary>
           <div className="mt-3 divide-y divide-slate-100">
             {decided.map((request) => (
@@ -239,7 +241,7 @@ export function ExpensesPage() {
           onClose={() => setAsking(false)}
           onSent={() => {
             setAsking(false);
-            done('Sent. The approvers have been told, and you will hear back here.');
+            done('Request submitted. The approvers have been notified.');
           }}
         />
       )}
@@ -291,12 +293,12 @@ function RequestDetails({
           {request.decidedBy && <> by {request.decidedBy.name}</>}
           {request.paidOn ? (
             <>
-              . Paid back {money(request.paidCents ?? 0)} on {formatCalendarDate(request.paidOn)}
-              {request.paidHow && <> by {METHOD_LABELS[request.paidHow].toLowerCase()}</>}
+              . Reimbursed {money(request.paidCents ?? 0)} on {formatCalendarDate(request.paidOn)}
+              {request.paidHow && <> by {methodWords(request.paidHow)}</>}
               {request.paidNote && <> ({request.paidNote})</>}.
             </>
           ) : (
-            <>. Not paid back yet.</>
+            <>. Payment pending.</>
           )}
         </p>
       )}
@@ -310,7 +312,7 @@ function RequestDetails({
   );
 }
 
-/// Somebody asking to be paid back. The receipt goes by email, never here.
+/// A new reimbursement request. The receipt goes by email, never here.
 function AskDialog({
   approvers,
   onClose,
@@ -337,10 +339,11 @@ function AskDialog({
   const mailto = `mailto:${emails.join(',')}?subject=${encodeURIComponent(subject)}`;
 
   const send = async () => {
-    if (description.trim().length < 3) return setError('Say what it was for.');
-    if (!cents) return setError('Give the amount, like 42.10.');
+    if (description.trim().length < 3) return setError('Enter a description.');
+    if (!cents) return setError('Enter the amount, for example 42.10.');
     if (!spentOn) return setError('Give the day you paid.');
-    if (!receiptEmailed) return setError('Email the receipt first, then tick that you have.');
+    if (!receiptEmailed)
+      return setError('Email the receipt to the approvers, then confirm it below.');
     setSaving(true);
     setError(null);
     try {
@@ -360,7 +363,7 @@ function AskDialog({
   };
 
   return (
-    <Modal title="Ask to be paid back" onClose={onClose} testId="expense-ask" wide>
+    <Modal title="New reimbursement request" onClose={onClose} testId="expense-ask" wide>
       <form
         className="space-y-3"
         onSubmit={(event) => {
@@ -368,7 +371,7 @@ function AskDialog({
           void send();
         }}
       >
-        <Field label="What was it for?" hint="Never a patient's name.">
+        <Field label="Description" hint="Never a patient's name.">
           {(props) => (
             <input
               {...props}
@@ -393,7 +396,7 @@ function AskDialog({
               />
             )}
           </Field>
-          <Field label="Day you paid">
+          <Field label="Date of purchase">
             {(props) => (
               <input
                 {...props}
@@ -405,7 +408,7 @@ function AskDialog({
               />
             )}
           </Field>
-          <Field label="Kind (optional)">
+          <Field label="Category (optional)">
             {(props) => (
               <select
                 {...props}
@@ -413,7 +416,7 @@ function AskDialog({
                 value={kind}
                 onChange={(event) => setKind(event.target.value as ExpenseKind | '')}
               >
-                <option value="">Not saying</option>
+                <option value="">Not specified</option>
                 {(Object.keys(KIND_LABELS) as ExpenseKind[]).map((key) => (
                   <option key={key} value={key}>
                     {KIND_LABELS[key]}
@@ -423,7 +426,7 @@ function AskDialog({
             )}
           </Field>
         </div>
-        <Field label="Anything else (optional)">
+        <Field label="Notes (optional)">
           {(props) => (
             <textarea
               {...props}
@@ -437,22 +440,22 @@ function AskDialog({
         </Field>
 
         <div className="rounded-lg bg-amber-50 p-3 text-sm text-slate-800 ring-1 ring-amber-200">
-          <p className="font-semibold">The receipt is required, by email</p>
+          <p className="font-semibold">Receipt required</p>
           {approvers.length === 0 ? (
             <p className="mt-1">
-              Nobody has been chosen to approve expenses yet. Ask a manager who to send it to.
+              No approvers have been set up yet. Please ask a manager where to send the receipt.
             </p>
           ) : (
             <>
               <p className="mt-1">
-                Email a photo or PDF of it to{' '}
+                Email a photo or PDF of the receipt to{' '}
                 {approvers.map((person, index) => (
                   <span key={person.id}>
                     {index > 0 && (index === approvers.length - 1 ? ' and ' : ', ')}
                     {person.name} ({person.email})
                   </span>
                 ))}
-                . Nothing is uploaded here.
+                . Receipts are not uploaded to Domi Staff.
               </p>
               <a
                 href={mailto}
@@ -470,7 +473,7 @@ function AskDialog({
               checked={receiptEmailed}
               onChange={(event) => setReceiptEmailed(event.target.checked)}
             />
-            <span>I have emailed the receipt.</span>
+            <span>I have emailed the receipt to the approvers.</span>
           </label>
         </div>
 
@@ -509,8 +512,8 @@ function DecideDialog({
     setError(null);
     if (approve) {
       const approvedCents = parseCents(amount);
-      if (approvedCents === null) return setError('Give the amount, like 42.10.');
-      if (!receiptReceived) return setError('Tick that the receipt arrived.');
+      if (approvedCents === null) return setError('Enter the amount, for example 42.10.');
+      if (!receiptReceived) return setError('Confirm that the receipt was received.');
       setSaving(true);
       try {
         await api.approveExpense(request.id, {
@@ -519,18 +522,18 @@ function DecideDialog({
           receiptReceived,
         });
         onDone(
-          `Approved. ${request.person.name} has been told; it is now waiting to be paid back.`,
+          `Approved. ${request.person.name} has been notified; the reimbursement is now pending payment.`,
         );
       } catch (err) {
         setError(errorText(err, 'Could not approve it.'));
         setSaving(false);
       }
     } else {
-      if (note.trim().length < 3) return setError('Say why, for them.');
+      if (note.trim().length < 3) return setError('Enter a reason for the employee.');
       setSaving(true);
       try {
         await api.declineExpense(request.id, note.trim());
-        onDone(`Declined. ${request.person.name} has been told why.`);
+        onDone(`Declined. ${request.person.name} has been notified with the reason.`);
       } catch (err) {
         setError(errorText(err, 'Could not decline it.'));
         setSaving(false);
@@ -540,7 +543,7 @@ function DecideDialog({
 
   return (
     <Modal
-      title={approve ? 'Approve this expense' : 'Decline this expense'}
+      title={approve ? 'Approve reimbursement request' : 'Decline reimbursement request'}
       onClose={onClose}
       testId="expense-decide"
     >
@@ -567,7 +570,7 @@ function DecideDialog({
             )}
           </Field>
         )}
-        <Field label={approve ? 'Note for them (optional)' : 'Why, for them'}>
+        <Field label={approve ? 'Note to the employee (optional)' : 'Reason for declining'}>
           {(props) => (
             <textarea
               {...props}
@@ -587,7 +590,7 @@ function DecideDialog({
               checked={receiptReceived}
               onChange={(event) => setReceiptReceived(event.target.checked)}
             />
-            <span>The receipt arrived by email.</span>
+            <span>The receipt was received by email.</span>
           </label>
         )}
         {error && <Alert>{error}</Alert>}
@@ -649,7 +652,7 @@ function ApproversDialog({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Modal title="Who approves expenses" onClose={onClose} testId="expense-approvers">
+    <Modal title="Expense approvers" onClose={onClose} testId="expense-approvers">
       <p className="text-sm text-slate-600">
         They see everybody's requests, approve or decline them, and receive the receipts by email.
         Only the people on this list can change it, and nobody takes themselves off.

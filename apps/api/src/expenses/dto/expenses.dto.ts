@@ -25,7 +25,7 @@ export class ExpenseRequestInput {
   @IsEnum(ExpenseKind)
   kind?: ExpenseKind | null;
 
-  @Matches(DATE_ONLY, { message: 'Give the day you paid.' })
+  @Matches(DATE_ONLY, { message: 'Enter the date of purchase.' })
   spentOn!: string;
 
   @IsInt()
@@ -56,7 +56,7 @@ export class ExpenseApproveInput {
   @MaxLength(500)
   note?: string;
 
-  @Equals(true, { message: 'Tick that the receipt arrived.' })
+  @Equals(true, { message: 'Confirm that the receipt was received.' })
   receiptReceived!: boolean;
 }
 
@@ -68,7 +68,7 @@ export class ExpenseDeclineInput {
 
 /// Paid outside payroll: the day, the amount and how.
 export class PayoutPaidInput {
-  @Matches(DATE_ONLY, { message: 'Give the day it was paid.' })
+  @Matches(DATE_ONLY, { message: 'Enter the payment date.' })
   paidOn!: string;
 
   @IsInt()

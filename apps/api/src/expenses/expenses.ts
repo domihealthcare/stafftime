@@ -35,9 +35,9 @@ const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
 /// What is wrong with a request, in words for the person, or null.
 export function expenseProblem(input: ExpenseInput, today: string): string | null {
-  if (input.description.trim().length < 3) return 'Say what it was for.';
-  if (!DATE_ONLY.test(input.spentOn)) return 'Give the day you paid.';
-  if (input.spentOn > today) return 'Ask once you have paid.';
+  if (input.description.trim().length < 3) return 'Enter a description.';
+  if (!DATE_ONLY.test(input.spentOn)) return 'Enter the date of purchase.';
+  if (input.spentOn > today) return 'The date of purchase cannot be in the future.';
   if (input.spentOn < addDaysTo(today, -EXPENSE_DAYS_BACK)) {
     return 'That was more than a year ago.';
   }
@@ -48,7 +48,7 @@ export function expenseProblem(input: ExpenseInput, today: string): string | nul
   ) {
     return 'The amount is from $0.01 to $10,000.';
   }
-  if (!input.receiptEmailed) return 'Email the receipt first, then tick that you have.';
+  if (!input.receiptEmailed) return 'Email the receipt to the approvers, then confirm it.';
   return null;
 }
 
@@ -73,5 +73,5 @@ export const METHOD_WORDS = {
   PAPER_CHECK: 'a paper check',
   CASH: 'cash',
   DIRECT_DEPOSIT: 'direct deposit',
-  OTHER: 'another way',
+  OTHER: 'another method',
 } as const;

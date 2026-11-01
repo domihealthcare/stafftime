@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { useConfirm } from '../components/ConfirmDialog';
 import { Modal } from '../components/Modal';
-import { METHOD_LABELS } from '../components/Payouts';
+import { METHOD_LABELS, methodWords } from '../components/Payouts';
 import {
   Alert,
   Badge,
@@ -496,7 +496,7 @@ function RequestSummary({ request, showWho = false }: { request: CmeRequest; sho
         {request.reimbursedOn &&
           request.reimbursedCents !== null &&
           ` · paid back ${money(request.reimbursedCents)} on ${datesWords(request.reimbursedOn, request.reimbursedOn)}${
-            request.reimbursedHow ? ` by ${METHOD_LABELS[request.reimbursedHow].toLowerCase()}` : ''
+            request.reimbursedHow ? ` by ${methodWords(request.reimbursedHow)}` : ''
           }${request.reimbursedNote ? ` (${request.reimbursedNote})` : ''}`}
       </p>
       {request.reason && <p className="mt-0.5 text-slate-600">“{request.reason}”</p>}
@@ -853,7 +853,7 @@ function PaidDialog({
           </Field>
         </div>
         {/* Never through payroll (November 2026): how it was paid instead. */}
-        <Field label="How was it paid?">
+        <Field label="Payment method">
           {(props) => (
             <select
               {...props}
