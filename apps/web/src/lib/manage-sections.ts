@@ -15,7 +15,8 @@
 /// the people on the invoices list (26 October 2026), or the people an admin
 /// chose to see the rota's cost (pay, October 2026), both whatever their
 /// access level.
-export type ManageNeed = 'manager' | 'admin' | 'productivity' | 'invoices' | 'rotaCost';
+export type ManageNeed =
+  'manager' | 'admin' | 'productivity' | 'invoices' | 'rotaCost' | 'expenses';
 
 export interface ManageTab {
   to: string;
@@ -68,6 +69,9 @@ export const MANAGE_SECTIONS: ManageSection[] = [
       { to: '/export', label: 'Export', need: 'manager' },
       { to: '/reimbursements', label: 'Reimbursements', need: 'manager' },
       { to: '/invoices', label: 'Invoices', need: 'invoices' },
+      // Expense reimbursements, for the people chosen to approve them
+      // (November 2026); everybody asks from the account menu.
+      { to: '/expenses', label: 'Expenses', need: 'expenses' },
       { to: '/vendors', label: 'Vendor payments', need: 'admin' },
       { to: '/productivity', label: 'Provider productivity', need: 'productivity' },
     ],
@@ -80,6 +84,7 @@ export interface ManageAccess {
   canManageProductivity: boolean;
   canSeeRotaCost?: boolean;
   canSeeInvoices?: boolean;
+  canApproveExpenses?: boolean;
 }
 
 const allowed = (need: ManageNeed, access: ManageAccess) =>
@@ -91,7 +96,9 @@ const allowed = (need: ManageNeed, access: ManageAccess) =>
         ? access.canSeeInvoices === true
         : need === 'rotaCost'
           ? access.canSeeRotaCost === true
-          : access.canManageProductivity || access.isAdmin;
+          : need === 'expenses'
+            ? access.canApproveExpenses === true
+            : access.canManageProductivity || access.isAdmin;
 
 /// The sections this person can open, each with only the tabs they may use;
 /// a section with nothing for them is left out.

@@ -41,6 +41,9 @@ const REQUEST_SELECT = {
   decisionNote: true,
   reimbursedOn: true,
   reimbursedCents: true,
+  reimbursedHow: true,
+  reimbursedNote: true,
+  payDeferredUntil: true,
   createdAt: true,
   employee: { select: PERSON },
   decidedBy: { select: PERSON },
@@ -49,12 +52,22 @@ const REQUEST_SELECT = {
 type RequestRow = Prisma.CmeRequestGetPayload<{ select: typeof REQUEST_SELECT }>;
 
 function present(row: RequestRow) {
-  const { employee, decidedBy, credits, startsOn, endsOn, reimbursedOn, ...rest } = row;
+  const {
+    employee,
+    decidedBy,
+    credits,
+    startsOn,
+    endsOn,
+    reimbursedOn,
+    payDeferredUntil,
+    ...rest
+  } = row;
   return {
     ...rest,
     startsOn: isoDate(startsOn),
     endsOn: isoDate(endsOn),
     reimbursedOn: reimbursedOn ? isoDate(reimbursedOn) : null,
+    payDeferredUntil: payDeferredUntil ? isoDate(payDeferredUntil) : null,
     credits: credits === null ? null : Number(credits),
     askedCents: askedCents(row),
     provider: named(employee),
@@ -237,7 +250,17 @@ export class CmeService {
     const first = row.reimbursedOn === null;
     await this.prisma.cmeRequest.update({
       where: { id },
-      data: { reimbursedOn: toUtcDate(dto.reimbursedOn), reimbursedCents: dto.reimbursedCents },
+      data: {
+        reimbursedOn: toUtcDate(dto.reimbursedOn),
+        reimbursedCents: dto.reimbursedCents,
+        // How, never through payroll (November 2026); kept as it was when
+        // only the day and amount are being put right.
+        ...(dto.reimbursedHow ? { reimbursedHow: dto.reimbursedHow } : {}),
+        ...(dto.reimbursedNote !== undefined
+          ? { reimbursedNote: dto.reimbursedNote.trim() || null }
+          : {}),
+        payDeferredUntil: null,
+      },
     });
     if (first) {
       const request = present(row);

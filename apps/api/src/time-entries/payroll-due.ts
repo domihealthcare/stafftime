@@ -6,6 +6,7 @@ import {
   PRACTICE_ZONE,
   zonedTimeToUtc,
 } from '../common/util/zoned-time.util';
+import { countUnpaid } from '../expenses/unpaid';
 import { PrismaService } from '../prisma/prisma.service';
 import { DateRange, payPeriodContaining } from '../settings/pay-period';
 import { payDayFor } from '../settings/pay-days';
@@ -34,6 +35,9 @@ export interface PayrollDue {
   toCorrect: number;
   /// Punches still open from a day before today.
   stillIn: number;
+  /// Approved expenses and CME not paid back yet, not put off (November
+  /// 2026): never in payroll, so a reminder to pay them another way.
+  unpaidReimbursements?: number;
 }
 
 /// The `n`th Monday–Friday before `date` (not counting it).
@@ -93,6 +97,11 @@ export function describePayrollDue(due: PayrollDue, today: string): string[] {
           `${plural(due.stillIn, 'punch', 'punches')} still open from an earlier day - nobody clocked out`,
         ]
       : []),
+    ...(due.unpaidReimbursements
+      ? [
+          `${plural(due.unpaidReimbursements, 'reimbursement', 'reimbursements')} approved and not paid yet - not part of payroll, see the Export screen`,
+        ]
+      : []),
   ];
   if (left.length === 0) return [];
   const ends =
@@ -128,7 +137,7 @@ export async function loadPayrollDue(
   const todayStart = zonedTimeToUtc(today, '00:00', PRACTICE_ZONE);
   const inPeriod = { clockInAt: { gte: from, lt: until } };
 
-  const [notApproved, toCorrect, stillIn] = await Promise.all([
+  const [notApproved, toCorrect, stillIn, unpaidReimbursements] = await Promise.all([
     prisma.timeEntry.groupBy({
       by: ['employeeId'],
       where: {
@@ -154,6 +163,7 @@ export async function loadPayrollDue(
         clockOutAt: null,
       },
     }),
+    countUnpaid(prisma, today),
   ]);
 
   return describePayrollDue(
@@ -163,6 +173,7 @@ export async function loadPayrollDue(
       people: notApproved.length,
       toCorrect,
       stillIn,
+      unpaidReimbursements,
     },
     today,
   );

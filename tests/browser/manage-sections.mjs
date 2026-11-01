@@ -108,7 +108,7 @@ await step('Locations and Kiosks share Offices, with Closing checklists and Reps
 });
 
 await step(
-  'Surveys, Required reading and Quizzes share a heading; Export, Reimbursements, Vendor payments and Provider productivity are Finances for an admin (Invoices only for the people on its list)',
+  'Surveys, Required reading and Quizzes share a heading; Export, Reimbursements, Vendor payments and Provider productivity are Finances for an admin (Invoices and Expenses only for the people on their lists)',
   async () => {
     await goToManage(admin, 'Required reading');
     if ((await tabs(admin, 'Surveys & reading')).join('|') !== 'Surveys|Required reading|Quizzes')
@@ -116,7 +116,7 @@ await step(
     await goToManage(admin, 'Vendor payments');
     if (
       (await tabs(admin, 'Finances')).join('|') !==
-      'Export|Reimbursements|Vendor payments|Provider productivity'
+      'Export|Reimbursements|Expenses|Vendor payments|Provider productivity'
     )
       throw new Error(`finances: ${(await tabs(admin, 'Finances')).join('|')}`);
   },

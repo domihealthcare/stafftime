@@ -169,6 +169,12 @@ import type {
   SupplyRequest,
   CmeMine,
   CmeOverview,
+  ExpenseMine,
+  ExpenseRequest,
+  ExpenseRequestInput,
+  PayoutList,
+  PayoutPaidInput,
+  ReimbursementMethod,
   CmeRequest,
   CmeRequestInput,
   OfficeAdminDays,
@@ -574,6 +580,7 @@ export interface AppNotification {
     | 'CORRECTION'
     | 'WEEKLY_SUMMARY'
     | 'CME'
+    | 'EXPENSE'
     | 'DOWNTIME';
   title: string;
   body: string | null;
@@ -1582,7 +1589,15 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ reason }),
     }),
-  cmeReimbursed: (id: string, body: { reimbursedOn: string; reimbursedCents: number }) =>
+  cmeReimbursed: (
+    id: string,
+    body: {
+      reimbursedOn: string;
+      reimbursedCents: number;
+      reimbursedHow?: ReimbursementMethod;
+      reimbursedNote?: string;
+    },
+  ) =>
     request<{ reimbursed: boolean }>(`/cme/${id}/reimbursed`, {
       method: 'POST',
       body: JSON.stringify(body),
@@ -1591,6 +1606,50 @@ export const api = {
     request<{ amountCents: number | null }>(`/cme/allowances/${employeeId}`, {
       method: 'PUT',
       body: JSON.stringify({ amountCents }),
+    }),
+  /// Expense reimbursements (November 2026): anybody asks about their own;
+  /// the approvers list decides.
+  myExpenses: () => request<ExpenseMine>('/expenses/mine'),
+  askForExpense: (body: ExpenseRequestInput) =>
+    request<ExpenseRequest>('/expenses', { method: 'POST', body: JSON.stringify(body) }),
+  withdrawExpense: (id: string) =>
+    request<{ withdrawn: boolean }>(`/expenses/${id}/withdraw`, { method: 'POST' }),
+  allExpenses: () => request<{ requests: ExpenseRequest[] }>('/expenses'),
+  approveExpense: (
+    id: string,
+    body: { approvedCents?: number; note?: string; receiptReceived: boolean },
+  ) =>
+    request<{ approved: boolean }>(`/expenses/${id}/approve`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  declineExpense: (id: string, reason: string) =>
+    request<{ declined: boolean }>(`/expenses/${id}/decline`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
+  expenseApprovers: () =>
+    request<{ holders: PersonName[]; others: PersonName[] }>('/expenses/approvers'),
+  addExpenseApprover: (employeeId: string) =>
+    request<{ holders: PersonName[]; others: PersonName[] }>(`/expenses/approvers/${employeeId}`, {
+      method: 'PUT',
+    }),
+  removeExpenseApprover: (employeeId: string) =>
+    request<{ holders: PersonName[]; others: PersonName[] }>(`/expenses/approvers/${employeeId}`, {
+      method: 'DELETE',
+    }),
+  /// The payroll prompt: approved expenses and CME not paid back yet.
+  payouts: () => request<PayoutList>('/payouts'),
+  payoutPaid: (kind: 'expense' | 'cme', id: string, body: PayoutPaidInput) =>
+    request<{ paid: boolean }>(`/payouts/${kind}/${id}/paid`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  deferPayout: (kind: 'expense' | 'cme', id: string) =>
+    request<{ deferredUntil: string | null }>(`/payouts/${kind}/${id}/defer`, { method: 'POST' }),
+  undeferPayout: (kind: 'expense' | 'cme', id: string) =>
+    request<{ deferredUntil: string | null }>(`/payouts/${kind}/${id}/undefer`, {
+      method: 'POST',
     }),
   /// The provider on-call schedule: providers, managers and admins.
   onCall: (from: string, to: string) => request<OnCallSchedule>(`/on-call${toQuery({ from, to })}`),

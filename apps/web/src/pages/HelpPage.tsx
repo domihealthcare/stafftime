@@ -1389,6 +1389,35 @@ const CME: Section[] = [
   },
 ];
 
+const EXPENSES: Section[] = [
+  {
+    title: 'Getting paid back',
+    topics: [
+      {
+        question: 'I paid for something for the practice. How do I get the money back?',
+        answer: (
+          <>
+            <p>
+              <Screen>Expense reimbursements</Screen>, in the account menu →{' '}
+              <strong>+ Ask to be paid back</strong>: what it was for, the amount, the day you paid,
+              and, if you like, what kind of expense it was. The receipt is required: email a photo
+              or PDF of it to the people named on the form (<strong>Email the receipt</strong>{' '}
+              starts the email for you), then tick that you have. Nothing is uploaded to the app.
+            </p>
+            <p>
+              They are told at once. You hear back under the bell and by email when it is approved
+              (perhaps at another amount) or not, and again once it is paid back. It is paid
+              separately, by check for example, never on your paycheck. While it is still waiting
+              you can <strong>Withdraw</strong> it. Providers ask for CME under{' '}
+              <Screen>Your CME</Screen> instead.
+            </p>
+          </>
+        ),
+      },
+    ],
+  },
+];
+
 const PRODUCTIVITY: Section[] = [
   {
     title: 'Your productivity',
@@ -2350,6 +2379,31 @@ const MANAGERS: Section[] = [
         ),
       },
       {
+        question: 'Expense reimbursements, and paying them and CME back',
+        answer: (
+          <>
+            <p>
+              Anybody can ask to be paid back for their own money spent for the practice, from{' '}
+              <Screen>Expense reimbursements</Screen> in the account menu, emailing the receipt. The
+              people on the approvers list (Dominguez and Angelica Dominguez to start) decide them
+              under <Screen>Manage → Finances → Expenses</Screen>: <strong>Approve</strong> once the
+              receipt has arrived (tick it), at the amount asked or another, or{' '}
+              <strong>Decline</strong> with a reason they will read. Never your own.{' '}
+              <strong>Who approves</strong> changes the list; only the people on it can.
+            </p>
+            <p>
+              Reimbursements are never part of payroll or the export. Every approved expense and CME
+              not paid back yet is listed at the top of <Screen>Manage → Finances → Export</Screen>{' '}
+              (and on the Expenses screen), is named in <strong>Before you export</strong>, and is
+              counted under <strong>Payroll is due</strong>. For each, <strong>Paid…</strong>{' '}
+              records how it was paid (paper check, cash, direct deposit or another way), the day
+              and the amount, and tells the person; <strong>Not this time</strong> puts it off until
+              the next payroll, and <strong>Bring it back</strong> undoes that.
+            </p>
+          </>
+        ),
+      },
+      {
         question: 'An admin in the office each day',
         answer: (
           <p>
@@ -3106,6 +3160,7 @@ function staffGuide(employee: Reader): Section[] {
     ...STAFF,
     ...(employee?.usesClinicalForms ? PROVIDERS : []),
     ...(employee?.usesClinicalForms ? CME : []),
+    ...(employee && !employee.isSharedAccount ? EXPENSES : []),
     ...(employee && canUseCarePlan(employee) ? CARE_PLAN : []),
     ...(employee && canUseWellnessForm(employee) ? WELLNESS : []),
     ...(employee?.hasProductivity ? PRODUCTIVITY : []),

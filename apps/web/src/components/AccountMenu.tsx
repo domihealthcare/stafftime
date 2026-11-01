@@ -131,6 +131,17 @@ export function AccountMenu() {
                 {t('Your CME')}
               </NavLink>
             )}
+            {/* Expense reimbursements: everybody but a shared account (November 2026). */}
+            {employee && !employee.isSharedAccount && (
+              <NavLink
+                to="/expenses"
+                role="menuitem"
+                className={item}
+                onClick={() => setOpen(false)}
+              >
+                {t('Expense reimbursements')}
+              </NavLink>
+            )}
             {employee?.hasProductivity && (
               <NavLink
                 to="/my-productivity"
