@@ -1,4 +1,4 @@
-import { CmeFormat } from '@prisma/client';
+import { CmeFormat, ReimbursementMethod } from '@prisma/client';
 import {
   IsEnum,
   IsInt,
@@ -99,6 +99,16 @@ export class CmeReimbursedInput {
   @Min(0)
   @Max(MAX_CENTS * 4)
   reimbursedCents!: number;
+
+  /// How it was paid (a paper check, cash ...): never through payroll.
+  @IsOptional()
+  @IsEnum(ReimbursementMethod)
+  reimbursedHow?: ReimbursementMethod;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  reimbursedNote?: string;
 }
 
 /// A provider's yearly allowance; null takes it away.

@@ -174,7 +174,10 @@ describe('what this app deliberately does not store', () => {
         'place',
         'reason',
         'registrationCents',
+        'payDeferredUntil',
         'reimbursedCents',
+        'reimbursedHow',
+        'reimbursedNote',
         'reimbursedOn',
         'startsOn',
         'status',
@@ -185,6 +188,46 @@ describe('what this app deliberately does not store', () => {
     );
     expect(fieldsOf('CmeAllowance')).toEqual(
       ['amountCents', 'employee', 'employeeId', 'updatedAt', 'updatedById'].sort(),
+    );
+  });
+
+  /// Expense reimbursements (November 2026, Dominguez): what it was for, the
+  /// money and the steps. The receipt is emailed, never kept here, and a new
+  /// column (a receipt file, a card number) has to be decided out loud.
+  it('keeps expense reimbursements to money and steps, with no receipt', () => {
+    const fieldsOf = (name: string) =>
+      model(name)
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('//') && !line.startsWith('@@'))
+        .map((line) => line.split(/\s+/)[0])
+        .sort();
+    expect(fieldsOf('ExpenseRequest')).toEqual(
+      [
+        'amountCents',
+        'approvedCents',
+        'createdAt',
+        'decidedAt',
+        'decidedBy',
+        'decidedById',
+        'decisionNote',
+        'description',
+        'employee',
+        'employeeId',
+        'id',
+        'kind',
+        'note',
+        'paidCents',
+        'paidHow',
+        'paidNote',
+        'paidOn',
+        'payDeferredUntil',
+        'receiptEmailedAt',
+        'receiptReceivedAt',
+        'spentOn',
+        'status',
+        'updatedAt',
+      ].sort(),
     );
   });
 

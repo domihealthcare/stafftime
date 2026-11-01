@@ -162,6 +162,7 @@ export const SECTION_OF = {
   Reimbursements: 'Finances',
   'Vendor payments': 'Finances',
   Invoices: 'Finances',
+  Expenses: 'Finances',
 };
 
 /// Opens one of Manage's screens the way a person does: Manage, its heading,

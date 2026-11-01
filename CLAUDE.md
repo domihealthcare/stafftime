@@ -59,6 +59,8 @@ app does not hold*, its own database) are unchanged by this.
   nothing lapses unnoticed. Dates only
 - **CmeRequest** / **CmeAllowance** (October 2026) - a provider's CME activity
   sent for approval with its costs, and their yearly allowance. No receipts
+- **ExpenseRequest** (November 2026) - somebody's own money spent for the
+  practice, asked back; the receipt goes by email, never into the app
 - **PayrollExport** — export batch record: date range, target system, status,
   generated file reference (for audit trail / re-export)
 
@@ -140,6 +142,10 @@ schema guard hold it). A provider paid directly may have their home address
 saved as an invoice **pay-to** (October 2026, Dominguez), which is why
 invoices are for **three named people only** (Jonathan Dominguez, Angelica
 Dominguez, Kayla Bermeo, 26 October 2026), not every admin or manager.
+
+**Expense reimbursements** (November 2026, Dominguez) keep **no receipt**:
+it is emailed to the approvers, and the request records only that it was
+sent and that it arrived.
 
 Apart from that, the only files the app stores are the payroll export
 spreadsheets it generates itself. The practice's own spreadsheets brought onto
@@ -2007,6 +2013,38 @@ Beyond the phases, the parts worth knowing about before picking up work:
     time is already tomorrow; since 1.33.1 the Export reads its days as New
     Jersey's, so it found no hours. The suite now takes New Jersey's today.
     Test only.
+- **Expense reimbursements, and the payroll prompt** (1 November 2026,
+  Dominguez, version 1.34.0; asked "is there a way for staff/provider to
+  submit reimbursement requests?" - there was only CME): **anybody** submits
+  a **New reimbursement request** from **Expense reimbursements** in the
+  account menu (`/expenses`): description, amount, date of purchase, and an
+  **optional** category. Worded formally on purpose (Dominguez: "Ask to be
+  paid back? that doesn't feel professional"). **The receipt is required, by email**: the form names the approvers
+  and their emails, with an **Email the receipt** button, and **I have
+  emailed the receipt** must be ticked (the server refuses it otherwise).
+  Nothing is uploaded; the schema guard pins `ExpenseRequest`. **Approved by
+  a list** (`Employee.canApproveExpenses`, whatever the access level, kept by
+  the people on it under **Manage approvers**, like the invoices list): the
+  migration puts Dominguez on by email and **Angelica Dominguez by name, only
+  if exactly one current person fits: check it on the live site**. They
+  decide under Manage → Finances → **Expenses**, approving only once **The
+  receipt was received** is ticked; never their own. Bell and email both ways.
+  **Never part of payroll, but whoever runs it is asked** (his words: "should
+  prompt the person running payroll (usually angelica d) ... the option to
+  defer or it was addressed (i.e. via paper check for instance) ... for CME
+  as well"): every approved expense **and CME** not paid back yet is at the
+  top of the **Export** screen (and on Expenses), named in **Before you
+  export**, and counted under **Payroll is due**. **Mark as paid…** records
+  the payment method (paper check, cash, direct deposit, other), date, amount
+  and a note, and notifies the person; **Defer to next payroll** sets it aside
+  until the next payroll's window opens; **Undo deferral** returns it. CME's own **Mark
+  paid back** asks the payment method too. Managers, admins and the approvers see the
+  prompt. The screen is in English, like CME. Migration
+  `20261101010000_expense_reimbursements`; `src/expenses/` (`expenses.ts`
+  rules, `payouts.service.ts` the prompt, `unpaid.ts` one definition of
+  "not paid yet"), `pages/ExpensesPage.tsx`, `components/Payouts.tsx`; see
+  *Expense reimbursements, and the payroll prompt* in `docs/architecture.md`;
+  `tests/browser/expenses.mjs`. Worth carrying to the EMR module with CME.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.
@@ -2752,7 +2790,7 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Counts only — never a patient (the schema guard pins the fields; the note is
   the one free-text box and says so). **Not in the payroll export** (decided). See *Provider
   productivity* in `docs/architecture.md`.
-- **Tests**: ~1,960 API unit tests (Jest), ~180 web unit tests (Vitest), and ~1,300 end-to-end checks (127 suites) in `tests/browser`
+- **Tests**: ~1,980 API unit tests (Jest), ~180 web unit tests (Vitest), and ~1,300 end-to-end checks (128 suites) in `tests/browser`
   driven against a real API, a real Postgres and a real Chromium. Both run in CI
   on every push. The convention is to run the browser suites twice — once
   against the dev server, once against `vite preview`, which applies the

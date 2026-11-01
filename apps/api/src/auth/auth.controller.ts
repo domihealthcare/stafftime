@@ -234,6 +234,7 @@ export class AuthController {
         canManageProductivity: true,
         canSeeRotaCost: true,
         canSeeInvoices: true,
+        canApproveExpenses: true,
         canPostNews: true,
         canSeeEveryonesSchedule: true,
         lastLoginAt: true,

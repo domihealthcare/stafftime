@@ -395,6 +395,10 @@ model Employee {
   /// Invoices screen by the people already on it, whatever their access level;
   /// an admin not on it does not see invoices.
   canSeeInvoices            Boolean                  @default(false)
+  /// Decides expense reimbursements (1 November 2026, Dominguez: "admin (me
+  /// and angelica dominguez)"). Kept on the Expenses screen by the people
+  /// already on it, whatever their access level, like the invoices list.
+  canApproveExpenses        Boolean                  @default(false)
   /// October 2026, Dominguez: Administrative staff who are not admins post
   /// News (schedule and pay-period notices) and read everybody's published
   /// rota. Two switches an admin sets on the Staff editor, separate from the
@@ -460,9 +464,11 @@ model Employee {
 
   /// CME activities a provider asks to have approved, and their allowance
   /// (October 2026).
-  cmeRequests        CmeRequest[]  @relation("CmeRequestProvider")
-  cmeRequestsDecided CmeRequest[]  @relation("CmeRequestDecidedBy")
-  cmeAllowance       CmeAllowance? @relation("CmeAllowanceProvider")
+  cmeRequests        CmeRequest[]     @relation("CmeRequestProvider")
+  cmeRequestsDecided CmeRequest[]     @relation("CmeRequestDecidedBy")
+  cmeAllowance       CmeAllowance?    @relation("CmeAllowanceProvider")
+  expenseRequests    ExpenseRequest[] @relation("ExpenseRequester")
+  expensesDecided    ExpenseRequest[] @relation("ExpenseDecidedBy")
 
   /// Phones and computers that get the bell's notifications as push
   /// notifications (October 2026).
@@ -2537,6 +2543,9 @@ enum NotificationKind {
   /// A CME activity asked for (to managers), or decided or reimbursed (to the
   /// provider).
   CME
+  /// An expense reimbursement asked for (to its approvers), or decided or
+  /// paid (to the person), November 2026.
+  EXPENSE
   /// To the people who look after closing checklists: a clock-out came in
   /// with something missed, or without the checklist.
   CLOSING
@@ -4072,36 +4081,42 @@ enum CmeFormat {
 /// decline it, and mark it reimbursed once paid. No receipts or certificates:
 /// those stay outside the app. Money in cents.
 model CmeRequest {
-  id                String    @id @default(uuid()) @db.Uuid
-  employeeId        String    @db.Uuid
+  id                String               @id @default(uuid()) @db.Uuid
+  employeeId        String               @db.Uuid
   title             String
   /// Who runs it: "AAFP", "Harvard Medical School".
   organizer         String?
   format            CmeFormat
   /// Where, for one in person: "Orlando, FL".
   place             String?
-  startsOn          DateTime  @db.Date
-  endsOn            DateTime  @db.Date
+  startsOn          DateTime             @db.Date
+  endsOn            DateTime             @db.Date
   /// CME credits (hours) it gives, if known.
-  credits           Decimal?  @db.Decimal(6, 2)
-  registrationCents Int       @default(0)
-  travelCents       Int       @default(0)
-  lodgingCents      Int       @default(0)
-  otherCents        Int       @default(0)
+  credits           Decimal?             @db.Decimal(6, 2)
+  registrationCents Int                  @default(0)
+  travelCents       Int                  @default(0)
+  lodgingCents      Int                  @default(0)
+  otherCents        Int                  @default(0)
   /// Why this one, in the provider's words.
   reason            String?
-  status            CmeStatus @default(PENDING)
+  status            CmeStatus            @default(PENDING)
   /// What a manager approved, which may be less than asked; null until then.
   approvedCents     Int?
-  decidedById       String?   @db.Uuid
+  decidedById       String?              @db.Uuid
   decidedAt         DateTime?
   /// The manager's words: required to decline, optional to approve.
   decisionNote      String?
   /// Once the practice has paid it back.
-  reimbursedOn      DateTime? @db.Date
+  reimbursedOn      DateTime?            @db.Date
   reimbursedCents   Int?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  /// How it was paid back (a paper check, cash ...), never through payroll.
+  reimbursedHow     ReimbursementMethod?
+  /// "Check #1042". Never a patient's name.
+  reimbursedNote    String?
+  /// "Not this time" on the payroll prompt: left alone until this day.
+  payDeferredUntil  DateTime?            @db.Date
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
 
   employee  Employee  @relation("CmeRequestProvider", fields: [employeeId], references: [id], onDelete: Cascade)
   decidedBy Employee? @relation("CmeRequestDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
@@ -4122,6 +4137,81 @@ model CmeAllowance {
   employee Employee @relation("CmeAllowanceProvider", fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@map("cme_allowances")
+}
+
+// --------------------------------------------------- expense reimbursements
+
+/// How an approved reimbursement (an expense or CME) was paid. Never through
+/// payroll (1 November 2026, Dominguez): the payroll prompt asks about each.
+enum ReimbursementMethod {
+  PAPER_CHECK
+  CASH
+  DIRECT_DEPOSIT
+  OTHER
+}
+
+/// What an expense was, if the person says (optional, Dominguez).
+enum ExpenseKind {
+  SUPPLIES
+  MILEAGE
+  TRAINING
+  MEALS
+  TRAVEL
+  OTHER
+}
+
+enum ExpenseStatus {
+  PENDING
+  APPROVED
+  DECLINED
+  /// Taken back by the person before it was decided.
+  WITHDRAWN
+}
+
+/// Somebody's own money spent for the practice, asked back (1 November
+/// 2026, Dominguez: everyone may ask, the kind is optional, he and Angelica
+/// Dominguez approve, the receipt is emailed, never part of payroll). No
+/// receipt is kept here: the person says they emailed it and the approver
+/// says it arrived. Never a patient's name in the words.
+model ExpenseRequest {
+  id                String               @id @default(uuid()) @db.Uuid
+  employeeId        String               @db.Uuid
+  /// "Printer ink for the front desk".
+  description       String
+  kind              ExpenseKind?
+  /// The day they paid.
+  spentOn           DateTime             @db.Date
+  amountCents       Int
+  /// Anything else for the approver, in their words.
+  note              String?
+  /// When they said the receipt was emailed: needed to send the request.
+  receiptEmailedAt  DateTime
+  status            ExpenseStatus        @default(PENDING)
+  /// What was approved, which may differ from what was asked.
+  approvedCents     Int?
+  decidedById       String?              @db.Uuid
+  decidedAt         DateTime?
+  /// Required to decline, optional to approve.
+  decisionNote      String?
+  /// The approver had the receipt when approving.
+  receiptReceivedAt DateTime?
+  /// Once it has been paid back, outside payroll.
+  paidOn            DateTime?            @db.Date
+  paidCents         Int?
+  paidHow           ReimbursementMethod?
+  /// "Check #1042".
+  paidNote          String?
+  /// "Not this time" on the payroll prompt: left alone until this day.
+  payDeferredUntil  DateTime?            @db.Date
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  employee  Employee  @relation("ExpenseRequester", fields: [employeeId], references: [id], onDelete: Cascade)
+  decidedBy Employee? @relation("ExpenseDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  @@index([employeeId, spentOn])
+  @@index([status])
+  @@map("expense_requests")
 }
 
 // ---------------------------------------------------------------- downtime

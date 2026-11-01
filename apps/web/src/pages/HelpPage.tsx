@@ -1389,6 +1389,35 @@ const CME: Section[] = [
   },
 ];
 
+const EXPENSES: Section[] = [
+  {
+    title: 'Expense reimbursements',
+    topics: [
+      {
+        question: 'How do I submit a reimbursement request?',
+        answer: (
+          <>
+            <p>
+              <Screen>Expense reimbursements</Screen>, in the account menu →{' '}
+              <strong>+ New reimbursement request</strong>: a description, the amount, the date of
+              purchase and, optionally, a category. A receipt is required: email a photo or PDF of
+              it to the approvers named on the form (<strong>Email the receipt</strong> starts the
+              email for you), then confirm that you have. Receipts are not uploaded to Domi Staff.
+            </p>
+            <p>
+              The approvers are notified at once. You are notified under the bell and by email when
+              the request is approved (possibly for a different amount) or declined, and again once
+              it has been paid. Reimbursements are paid separately from payroll, for example by
+              check. While a request is awaiting a decision you can <strong>Withdraw</strong> it.
+              Providers submit CME requests under <Screen>Your CME</Screen> instead.
+            </p>
+          </>
+        ),
+      },
+    ],
+  },
+];
+
 const PRODUCTIVITY: Section[] = [
   {
     title: 'Your productivity',
@@ -2350,6 +2379,32 @@ const MANAGERS: Section[] = [
         ),
       },
       {
+        question: 'Expense reimbursements, and paying reimbursements',
+        answer: (
+          <>
+            <p>
+              Anybody can submit a reimbursement request for business expenses they paid for
+              personally, from <Screen>Expense reimbursements</Screen> in the account menu, emailing
+              the receipt. The approvers (Dominguez and Angelica Dominguez to start) review them
+              under <Screen>Manage → Finances → Expenses</Screen>: <strong>Approve</strong> once the
+              receipt has been received (confirm it), for the amount requested or another, or{' '}
+              <strong>Decline</strong> with a reason the employee will read. Nobody decides their
+              own. <strong>Manage approvers</strong> changes the list; only the people on it can.
+            </p>
+            <p>
+              Reimbursements are not included in payroll or the export. Every approved expense and
+              CME reimbursement not yet paid is listed at the top of{' '}
+              <Screen>Manage → Finances → Export</Screen> (and on the Expenses screen), is named in{' '}
+              <strong>Before you export</strong>, and is counted under{' '}
+              <strong>Payroll is due</strong>. For each, <strong>Mark as paid…</strong> records the
+              payment method (paper check, cash, direct deposit or other), the date and the amount,
+              and notifies the employee; <strong>Defer to next payroll</strong> sets it aside until
+              the next payroll, and <strong>Undo deferral</strong> returns it to the list.
+            </p>
+          </>
+        ),
+      },
+      {
         question: 'An admin in the office each day',
         answer: (
           <p>
@@ -3106,6 +3161,7 @@ function staffGuide(employee: Reader): Section[] {
     ...STAFF,
     ...(employee?.usesClinicalForms ? PROVIDERS : []),
     ...(employee?.usesClinicalForms ? CME : []),
+    ...(employee && !employee.isSharedAccount ? EXPENSES : []),
     ...(employee && canUseCarePlan(employee) ? CARE_PLAN : []),
     ...(employee && canUseWellnessForm(employee) ? WELLNESS : []),
     ...(employee?.hasProductivity ? PRODUCTIVITY : []),

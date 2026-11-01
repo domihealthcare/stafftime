@@ -83,6 +83,7 @@ export function Layout() {
     canManageProductivity: Boolean(employee?.canManageProductivity),
     canSeeRotaCost: Boolean(employee?.canSeeRotaCost),
     canSeeInvoices: Boolean(employee?.canSeeInvoices),
+    canApproveExpenses: Boolean(employee?.canApproveExpenses),
   });
   const manageItems: NavMenuItem[] = sections.map((section) => ({
     to: section.tabs[0].to,

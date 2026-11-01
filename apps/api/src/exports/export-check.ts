@@ -1,5 +1,6 @@
 import { TimeEntryStatus } from '@prisma/client';
 import { twelveHour } from '../availability/availability.rules';
+import { money } from '../cme/cme';
 import { shortDate } from '../pto/time-off-clashes';
 
 /**
@@ -13,7 +14,14 @@ import { shortDate } from '../pto/time-off-clashes';
  */
 
 export type ExportCheckKey =
-  'adp' | 'review' | 'open' | 'unapproved' | 'handEntries' | 'corrected' | 'overtime';
+  | 'adp'
+  | 'review'
+  | 'open'
+  | 'unapproved'
+  | 'handEntries'
+  | 'corrected'
+  | 'overtime'
+  | 'reimbursements';
 
 export interface ExportCheckSection {
   key: ExportCheckKey;
@@ -52,6 +60,9 @@ export interface ExportCheckInput {
   overtime: { employeeName: string; overtimeHours: number }[];
   /// Only for the ADP import: people going in with no File #.
   missingFileNumbers: string[];
+  /// Approved expenses and CME not paid back yet, and not put off (November
+  /// 2026, Dominguez): never in the file, paid another way.
+  unpaidReimbursements?: { employeeName: string; what: string; cents: number }[];
 }
 
 const ORDER: ExportCheckKey[] = [
@@ -62,6 +73,7 @@ const ORDER: ExportCheckKey[] = [
   'handEntries',
   'corrected',
   'overtime',
+  'reimbursements',
 ];
 
 export function exportWarnings(input: ExportCheckInput): ExportCheck {
@@ -145,6 +157,13 @@ export function exportWarnings(input: ExportCheckInput): ExportCheck {
         .filter((person) => person.overtimeHours > 0)
         .sort((a, b) => b.overtimeHours - a.overtimeHours)
         .map((person) => `${person.employeeName} - ${hoursText(person.overtimeHours)} of overtime`),
+    },
+    reimbursements: {
+      title:
+        'Reimbursements approved but not yet paid - not included in this file. Record each payment or defer it on the Export screen',
+      lines: (input.unpaidReimbursements ?? []).map(
+        (item) => `${item.employeeName} - ${item.what}, ${money(item.cents)}`,
+      ),
     },
   };
 

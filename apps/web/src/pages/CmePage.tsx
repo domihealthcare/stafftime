@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { useConfirm } from '../components/ConfirmDialog';
 import { Modal } from '../components/Modal';
+import { METHOD_LABELS, methodWords } from '../components/Payouts';
 import {
   Alert,
   Badge,
@@ -24,7 +25,14 @@ import {
 } from '../lib/cme';
 import { practiceDate } from '../lib/practice-time';
 import { useIsManager, useSession } from '../lib/session';
-import type { CmeFormat, CmeMine, CmeOverview, CmeRequest, CmeYear } from '../lib/types';
+import type {
+  CmeFormat,
+  CmeMine,
+  CmeOverview,
+  CmeRequest,
+  CmeYear,
+  ReimbursementMethod,
+} from '../lib/types';
 
 const STATUS_TONE = {
   PENDING: 'warning',
@@ -487,7 +495,9 @@ function RequestSummary({ request, showWho = false }: { request: CmeRequest; sho
           ` · approved ${money(request.approvedCents)}`}
         {request.reimbursedOn &&
           request.reimbursedCents !== null &&
-          ` · paid back ${money(request.reimbursedCents)} on ${datesWords(request.reimbursedOn, request.reimbursedOn)}`}
+          ` · paid back ${money(request.reimbursedCents)} on ${datesWords(request.reimbursedOn, request.reimbursedOn)}${
+            request.reimbursedHow ? ` by ${methodWords(request.reimbursedHow)}` : ''
+          }${request.reimbursedNote ? ` (${request.reimbursedNote})` : ''}`}
       </p>
       {request.reason && <p className="mt-0.5 text-slate-600">“{request.reason}”</p>}
       {request.decisionNote && (
@@ -781,6 +791,7 @@ function PaidDialog({
 }) {
   const [day, setDay] = useState(practiceDate());
   const [amount, setAmount] = useState(centsText(request.approvedCents ?? request.askedCents));
+  const [how, setHow] = useState<ReimbursementMethod>('PAPER_CHECK');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -793,7 +804,11 @@ function PaidDialog({
     }
     setBusy(true);
     try {
-      await api.cmeReimbursed(request.id, { reimbursedOn: day, reimbursedCents: cents });
+      await api.cmeReimbursed(request.id, {
+        reimbursedOn: day,
+        reimbursedCents: cents,
+        reimbursedHow: how,
+      });
       onDone(`Recorded as paid back. ${request.provider.name} has been told.`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not record it.');
@@ -837,6 +852,23 @@ function PaidDialog({
             )}
           </Field>
         </div>
+        {/* Never through payroll (November 2026): how it was paid instead. */}
+        <Field label="Payment method">
+          {(props) => (
+            <select
+              {...props}
+              value={how}
+              onChange={(event) => setHow(event.target.value as ReimbursementMethod)}
+              className={inputClass}
+            >
+              {(Object.keys(METHOD_LABELS) as ReimbursementMethod[]).map((key) => (
+                <option key={key} value={key}>
+                  {METHOD_LABELS[key]}
+                </option>
+              ))}
+            </select>
+          )}
+        </Field>
         {error && <Alert>{error}</Alert>}
         <div className="flex flex-wrap gap-2">
           <button type="submit" disabled={busy} className={buttonClass('primary', 'sm')}>

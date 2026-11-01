@@ -5613,6 +5613,63 @@ chose a yearly allowance per provider.
 
 Worth carrying to the EMR module if it takes the Staff module's provider side.
 
+## Expense reimbursements, and the payroll prompt (November 2026)
+
+Asked: "is there a way for staff/provider to submit reimbursement requests?"
+There was only CME. Dominguez's answers for a general one: **everyone** may
+ask; what kind of expense it was is **optional**; **he and Angelica
+Dominguez** approve; the **receipt is required, by email**; and it is **not
+part of payroll**, "though should prompt the person running payroll (usually
+angelica d) that there is an unpaid reimbursement (which she should have the
+option to defer or it was addressed (i.e. via paper check for instance))
+this should be for CME as well".
+
+- **Asking** (`ExpenseRequest`, `expenses/`): what it was for, the amount,
+  the date of purchase, an optional category (supplies, mileage, training,
+  meals, travel, other) and notes. The screen is worded formally (Dominguez:
+  "Ask to be paid back? that doesn't feel professional"): **+ New
+  reimbursement request**. Anybody but a shared account, from **Expense
+  reimbursements** in the account menu (`/expenses`). The form names the
+  approvers with their work emails and offers **Email the receipt** (a
+  `mailto:` to them with the subject filled in); **I have emailed the
+  receipt to the approvers** has to be ticked, and the server refuses a request without it
+  (`receiptEmailedAt`). No receipt reaches the app: the schema guard pins
+  the fields and the suite checks there is no file input. Withdrawn while it
+  waits.
+- **Approving**: the people on a list (`Employee.canApproveExpenses`), whatever
+  their access level, kept by the people on it under **Manage approvers** (the
+  invoices list's rules: nobody else can join, nobody takes themselves off).
+  The migration puts Dominguez on by email and Angelica Dominguez by name,
+  only when exactly one current person fits. **Approve** needs the tick
+  **The receipt was received by email** (`receiptReceivedAt`), at the amount asked
+  or another; **Decline** needs a reason. Never your own; settled only while
+  still `PENDING`. Approvers are told on the bell and by email when one comes
+  in, the person when it is decided and when it is paid
+  (`NotificationKind.EXPENSE`). Approvers find it under Manage → Finances →
+  **Expenses**.
+- **The payroll prompt** (`PayoutsService`, `components/Payouts.tsx`):
+  every approved expense **and CME request** not paid back yet, at the top
+  of the **Export** screen and on the Expenses screen, for managers, admins
+  and the approvers. **Mark as paid…** records the date, amount, **payment method**
+  (`ReimbursementMethod`: paper check, cash, direct deposit, other) and a
+  short note, and tells the person; for CME it fills the existing
+  `reimbursedOn` / `reimbursedCents` and the new `reimbursedHow` /
+  `reimbursedNote` (CME's own **Mark paid back** now asks the payment method too).
+  **Defer to next payroll** sets `payDeferredUntil` to the day the next payroll's
+  window opens (`nextPayrollFrom`: two working days before the next pay
+  period ends, as for *Payroll is due*; two weeks on with no pay period set),
+  and **Undo deferral** clears it. Never your own.
+- **Also named** where payroll is done, counting only those not put off
+  (`expenses/unpaid.ts`, one definition): **Before you export** has a section
+  *Reimbursements approved but not yet paid - not included in this file*,
+  and **Payroll is due** a count ("2 reimbursements approved but not yet
+  paid"),
+  with no names, since that line reaches every manager down for Hours.
+- Reimbursements are never in the export file. Spanish: the screen is in
+  English, like CME; the account menu item goes through `t()`.
+
+Worth carrying to the EMR module with CME.
+
 ## The admin in the office, and minimums on chosen weekdays (October 2026)
 
 Dominguez: "we need to have an admin in WNY location daily except Friday -

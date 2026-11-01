@@ -20,6 +20,7 @@ import type {
 import { DateRangePicker, presetRanges, usePresetRange } from '../components/DateRangePicker';
 import { useConfirm } from '../components/ConfirmDialog';
 import { WarningsDialog } from '../components/WarningsDialog';
+import { UnpaidReimbursements } from '../components/Payouts';
 import {
   Alert,
   Badge,
@@ -331,6 +332,10 @@ export function ExportPage() {
         title="Export timesheets"
         subtitle="Produce a spreadsheet of hours for a period. Choose what goes in it."
       />
+
+      {/* Approved expenses and CME not paid back yet: never in this file, so
+          whoever runs payroll is asked about each (November 2026). */}
+      <UnpaidReimbursements />
 
       <Card className="p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">

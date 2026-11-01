@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PayType, PayrollExportStatus } from '@prisma/client';
-import { localDateIn, localTimeIn } from '../common/util/zoned-time.util';
+import { localDateIn, localTimeIn, PRACTICE_ZONE } from '../common/util/zoned-time.util';
+import { askedCents } from '../cme/cme';
+import { unpaidCme, unpaidExpenses } from '../expenses/unpaid';
 import { PrismaService } from '../prisma/prisma.service';
 import { payrollStateOf } from '../time-entries/payroll-state';
 import { ExportTimesheetDto } from './dto/export-timesheet.dto';
@@ -56,7 +58,10 @@ export class ExportCheckService {
       (total) => total.hours > 0 && (dto.includeSalaried || total.payType !== PayType.SALARY),
     );
 
+    const unpaidReimbursements = await this.unpaidReimbursements(dto.employeeIds);
+
     return exportWarnings({
+      unpaidReimbursements,
       entries: entries.map((entry) => {
         const zone = entry.location.timezone;
         const payroll = payrollStateOf(entry);
@@ -88,5 +93,50 @@ export class ExportCheckService {
         ? people.filter((total) => !total.adpFileNumber).map((total) => total.employee)
         : [],
     });
+  }
+
+  /// Approved expenses and CME not paid back yet (and not put off): never in
+  /// the file, so the person running payroll is reminded (November 2026).
+  private async unpaidReimbursements(employeeIds?: string[]) {
+    const today = localDateIn(new Date(), PRACTICE_ZONE);
+    const people = employeeIds?.length ? { employeeId: { in: employeeIds } } : {};
+    const person = { select: { firstName: true, preferredName: true, lastName: true } };
+    const [expenses, cme] = await Promise.all([
+      this.prisma.expenseRequest.findMany({
+        where: { ...unpaidExpenses(today), ...people },
+        select: { description: true, amountCents: true, approvedCents: true, employee: person },
+        orderBy: { decidedAt: 'asc' },
+      }),
+      this.prisma.cmeRequest.findMany({
+        where: { ...unpaidCme(today), ...people },
+        select: {
+          title: true,
+          registrationCents: true,
+          travelCents: true,
+          lodgingCents: true,
+          otherCents: true,
+          approvedCents: true,
+          employee: person,
+        },
+        orderBy: { decidedAt: 'asc' },
+      }),
+    ]);
+    const nameOf = (employee: {
+      firstName: string;
+      preferredName: string | null;
+      lastName: string;
+    }) => `${employee.preferredName ?? employee.firstName} ${employee.lastName}`;
+    return [
+      ...expenses.map((row) => ({
+        employeeName: nameOf(row.employee),
+        what: row.description,
+        cents: row.approvedCents ?? row.amountCents,
+      })),
+      ...cme.map((row) => ({
+        employeeName: nameOf(row.employee),
+        what: `CME: ${row.title}`,
+        cents: row.approvedCents ?? askedCents(row),
+      })),
+    ];
   }
 }

@@ -136,6 +136,8 @@ export interface Employee extends EmployeeSummary {
   canSeeRotaCost?: boolean;
   /// Signed-in person only: on the list of people who see invoices.
   canSeeInvoices?: boolean;
+  /// Signed-in person only: on the list of people who approve expenses.
+  canApproveExpenses?: boolean;
   /// An admin has switched on News posting for them (admins always can).
   canPostNews?: boolean;
   /// An admin has switched on the read-only whole schedule for them.
@@ -1706,7 +1708,15 @@ export interface PublishCheck {
 /// "Before you export" - see `exports/export-check.ts` in the API.
 export interface ExportCheck {
   sections: {
-    key: 'adp' | 'review' | 'open' | 'unapproved' | 'handEntries' | 'corrected' | 'overtime';
+    key:
+      | 'adp'
+      | 'review'
+      | 'open'
+      | 'unapproved'
+      | 'handEntries'
+      | 'corrected'
+      | 'overtime'
+      | 'reimbursements';
     title: string;
     lines: string[];
   }[];
@@ -2541,6 +2551,11 @@ export interface CmeRequest {
   decisionNote: string | null;
   reimbursedOn: string | null;
   reimbursedCents: number | null;
+  /// How it was paid back (never through payroll), November 2026.
+  reimbursedHow: ReimbursementMethod | null;
+  reimbursedNote: string | null;
+  /// Put off on the payroll prompt until this day.
+  payDeferredUntil: string | null;
   createdAt: string;
   provider: OnCallPerson;
   decidedBy: OnCallPerson | null;
@@ -2828,4 +2843,81 @@ export interface KioskDowntime {
   id: string;
   headline: string;
   startsAt: string;
+}
+
+// ------------------------------------------------- expense reimbursements
+
+/// How an approved reimbursement (an expense or CME) was paid back: never
+/// through payroll (November 2026).
+export type ReimbursementMethod = 'PAPER_CHECK' | 'CASH' | 'DIRECT_DEPOSIT' | 'OTHER';
+export type ExpenseKind = 'SUPPLIES' | 'MILEAGE' | 'TRAINING' | 'MEALS' | 'TRAVEL' | 'OTHER';
+export type ExpenseStatus = 'PENDING' | 'APPROVED' | 'DECLINED' | 'WITHDRAWN';
+
+export interface ExpenseRequest {
+  id: string;
+  employeeId: string;
+  description: string;
+  kind: ExpenseKind | null;
+  spentOn: string;
+  amountCents: number;
+  note: string | null;
+  receiptEmailedAt: string;
+  status: ExpenseStatus;
+  approvedCents: number | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
+  receiptReceivedAt: string | null;
+  paidOn: string | null;
+  paidCents: number | null;
+  paidHow: ReimbursementMethod | null;
+  paidNote: string | null;
+  payDeferredUntil: string | null;
+  createdAt: string;
+  person: OnCallPerson;
+  decidedBy: OnCallPerson | null;
+}
+
+export interface ExpenseApprover extends OnCallPerson {
+  email: string;
+}
+
+export interface ExpenseMine {
+  approvers: ExpenseApprover[];
+  requests: ExpenseRequest[];
+}
+
+export interface ExpenseRequestInput {
+  description: string;
+  kind?: ExpenseKind | null;
+  spentOn: string;
+  amountCents: number;
+  note?: string;
+  receiptEmailed: boolean;
+}
+
+/// An approved expense or CME request not paid back yet: the payroll prompt.
+export interface Payout {
+  kind: 'expense' | 'cme';
+  id: string;
+  employeeId: string;
+  person: OnCallPerson;
+  what: string;
+  amountCents: number;
+  approvedAt: string | null;
+  deferredUntil: string | null;
+  link: string;
+}
+
+export interface PayoutList {
+  due: Payout[];
+  deferred: Payout[];
+  /// The day "Not this time" puts one off to: the next payroll.
+  nextPayroll: string;
+}
+
+export interface PayoutPaidInput {
+  paidOn: string;
+  paidCents: number;
+  how: ReimbursementMethod;
+  note?: string;
 }

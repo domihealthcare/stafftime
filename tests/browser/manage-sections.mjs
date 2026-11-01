@@ -108,7 +108,7 @@ await step('Locations and Kiosks share Offices, with Closing checklists and Reps
 });
 
 await step(
-  'Surveys, Required reading and Quizzes share a heading; Export, Reimbursements, Vendor payments and Provider productivity are Finances for an admin (Invoices only for the people on its list)',
+  'Surveys, Required reading and Quizzes share a heading; Export, Reimbursements, Vendor payments and Provider productivity are Finances for an admin (Invoices and Expenses only for the people on their lists)',
   async () => {
     await goToManage(admin, 'Required reading');
     if ((await tabs(admin, 'Surveys & reading')).join('|') !== 'Surveys|Required reading|Quizzes')
@@ -153,7 +153,7 @@ await step('a manager sees the same headings with only the tabs they may open', 
   if ((await tabs(manager, 'Offices')).join('|') !== 'Closing checklists|Reps')
     throw new Error('offices');
   await goToManage(manager, 'Export');
-  if ((await tabs(manager, 'Finances')).join('|') !== 'Export|Reimbursements|Invoices')
+  if ((await tabs(manager, 'Finances')).join('|') !== 'Export|Reimbursements|Invoices|Expenses')
     throw new Error('finances');
   // What they may not open is refused as before.
   const status = await manager.evaluate(async () => (await fetch('/api/vendors')).status);

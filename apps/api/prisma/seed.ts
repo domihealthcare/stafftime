@@ -233,6 +233,9 @@ async function main() {
         pinLockedUntil: null,
         // The demo manager keeps invoices, so the screen can be tried.
         canSeeInvoices: person.email === 'manager@domihealthcare.com',
+        // ... and approves expenses, so that screen can be tried too (not the
+        // demo admin, whose View as must show a plain employee's menus).
+        canApproveExpenses: person.email === 'manager@domihealthcare.com',
       },
       create: {
         firstName: person.firstName,
@@ -249,6 +252,7 @@ async function main() {
         pinHash,
         pinUpdatedAt: new Date(),
         canSeeInvoices: person.email === 'manager@domihealthcare.com',
+        canApproveExpenses: person.email === 'manager@domihealthcare.com',
       },
     });
 
