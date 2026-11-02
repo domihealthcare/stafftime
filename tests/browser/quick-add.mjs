@@ -165,7 +165,10 @@ await step('"Add time off" opens the request for Frankie, from that day', async 
 await step('the month: right-clicking a day offers the same', async () => {
   await mgr.getByRole('button', { name: 'Month', exact: true }).click();
   const day = mgr.getByTestId('month-grid').getByRole('button').nth(10);
-  await day.click({ button: 'right' });
+  // On the date in its corner, not the middle: in some months (November 2026)
+  // the middle is one of the suite's own shifts, whose right-click opens the
+  // person menu instead.
+  await day.click({ button: 'right', position: { x: 10, y: 10 } });
   const menu = mgr.getByTestId('context-menu');
   await menu.waitFor({ timeout: 5000 });
   const items = await menu.getByRole('menuitem').allTextContents();

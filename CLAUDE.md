@@ -2045,6 +2045,19 @@ Beyond the phases, the parts worth knowing about before picking up work:
   "not paid yet"), `pages/ExpensesPage.tsx`, `components/Payouts.tsx`; see
   *Expense reimbursements, and the payroll prompt* in `docs/architecture.md`;
   `tests/browser/expenses.mjs`. Worth carrying to the EMR module with CME.
+- **Three browser suites mended for the date** (1 November 2026, Dominguez:
+  "fix the three date tests too", version 1.34.1): on Sunday 1 November in
+  the evening, `presets`, `quick-add` and `weekly` failed on `main` as well
+  as on #126, each a test assuming something about the day. `presets` waited
+  for "N entries" and the period held exactly one ("1 entry"); it now takes
+  either. `quick-add` right-clicked the middle of the month grid's 11th day,
+  which in November is one of the suite's own shifts (that opens the person
+  menu); it now right-clicks the date in the corner. `weekly` expected "Your
+  week" on a Sunday evening, but on a fresh database Frankie had no hours or
+  shifts, so nothing was rightly sent; it now gives her a published shift
+  tomorrow first (noted `weekly-suite`, and `run-all.sh` clears it and
+  `weekly_summaries`). Each failed on the old code and passes on the new.
+  Test only; the app is unchanged.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

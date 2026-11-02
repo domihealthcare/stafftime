@@ -95,7 +95,9 @@ await step('the saved report still produces a working file', async () => {
   await mgr.getByRole('button', { name: 'Custom', exact: true }).click();
   await mgr.getByLabel('From').fill(PERIOD_FROM);
   await mgr.getByLabel('To (included)').fill(PERIOD_TO);
-  await mgr.getByText(/entries ·/).waitFor({ timeout: 15000 });
+  // "1 entry" as well as "3 entries": how many depends on the day the suite
+  // runs (one on Sunday 1 November 2026, which failed the plural-only match).
+  await mgr.getByText(/\d+ entr(?:y|ies) ·/).waitFor({ timeout: 15000 });
 
   const [download] = await Promise.all([
     mgr.waitForEvent('download', { timeout: 30000 }),

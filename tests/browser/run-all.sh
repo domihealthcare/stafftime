@@ -74,6 +74,7 @@ reset_state() {
     -c "delete from time_entries where \"handEntryNote\" = 'payroll-due-suite';" \
     -c "delete from employees where email like '%.signin@example.com';" \
     -c "delete from shifts where notes = 'tomorrow-suite';" \
+    -c "delete from shifts where notes = 'weekly-suite'; delete from weekly_summaries;" \
     -c "update employees set \"wantsShiftReminders\" = true;" \
     -c "delete from employees where email like '%.onboard@example.com';" \
     -c "delete from reviews_360;" \

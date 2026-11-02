@@ -47,6 +47,47 @@ const nj = Object.fromEntries(
 );
 const sundayEvening = nj.weekday === 'Sun' && Number(nj.hour) >= 18;
 
+// "Your week" goes only to somebody with hours last week or shifts this week,
+// and on a fresh database Frankie has neither, so on a Sunday evening it
+// rightly sent nothing and the step failed (1 November 2026). Give Frankie a
+// published shift tomorrow, 9 to 5 in New Jersey, noted 'weekly-suite'
+// (run-all.sh removes it).
+const managerCtx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+const morgan = await managerCtx.newPage();
+await morgan.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+await morgan.getByLabel('Email').fill('manager@domihealthcare.com');
+await morgan.getByLabel('Password', { exact: true }).fill('shift-change-2026');
+await morgan.getByRole('button', { name: 'Sign in' }).click();
+await morgan.getByText(/Not clocked in|On the clock/).first().waitFor({ timeout: 20000 });
+const send = (page, path, init) =>
+  page.evaluate(
+    async ({ path, init }) => {
+      const r = await fetch(`/api${path}`, { ...init, headers: { 'Content-Type': 'application/json' } });
+      return { status: r.status, body: await r.json().catch(() => null) };
+    },
+    { path, init },
+  );
+const njDay = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date());
+const tomorrow = new Date(Date.parse(`${njDay}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+const offset = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', timeZoneName: 'longOffset' })
+  .formatToParts(new Date(`${tomorrow}T16:00:00Z`))
+  .find((part) => part.type === 'timeZoneName')
+  .value.replace('GMT', '');
+const frankieId = (await send(morgan, '/employees')).body.find((p) => p.email === 'frontdesk@domihealthcare.com').id;
+const nb = (await send(morgan, '/locations')).body.find((l) => l.name === 'North Bergen').id;
+const made = await send(morgan, '/shifts', {
+  method: 'POST',
+  body: JSON.stringify({
+    employeeId: frankieId,
+    locationId: nb,
+    startsAt: new Date(`${tomorrow}T09:00:00${offset}`).toISOString(),
+    endsAt: new Date(`${tomorrow}T17:00:00${offset}`).toISOString(),
+    status: 'PUBLISHED',
+    notes: 'weekly-suite',
+  }),
+});
+if (made.status !== 201) errors.push(`set-up: making the shift answered ${made.status}`);
+
 await step('Email settings has "Your week", on to start with; turned off it stays off', async () => {
   await frankie.goto(`${BASE}/notifications`, { waitUntil: 'networkidle' });
   const card = frankie.getByTestId('weekly-summary');
