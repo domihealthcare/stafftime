@@ -16,6 +16,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { workweekStartsOn } from '../settings/pay-period';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
 import { overtimeSpan, rotaCost, type CostPerson } from './rota-cost';
+import { AuthUser, isViewingAs } from '../common/auth/auth-user';
 
 /// Providers are left out of the rota's cost for now (October 2026,
 /// Dominguez: "the only caveat here would be to exclude the providers from
@@ -41,8 +42,8 @@ export class RotaCostService {
     private readonly settings: PracticeSettingsService,
   ) {}
 
-  async cost(employeeId: string, from: string, to: string) {
-    await this.assertAllowed(employeeId);
+  async cost(viewer: AuthUser, from: string, to: string) {
+    await this.assertAllowed(viewer);
     if (!DATE_ONLY.test(from ?? '') || !DATE_ONLY.test(to ?? '') || to < from) {
       throw new BadRequestException(
         'Give the days as from and to, the first no later than the last.',
@@ -159,11 +160,13 @@ export class RotaCostService {
     return this.accessList();
   }
 
-  async assertAllowed(employeeId: string) {
-    const person = await this.prisma.employee.findUnique({
-      where: { id: employeeId },
-      select: { canSeeRotaCost: true },
-    });
+  async assertAllowed(viewer: AuthUser) {
+    const person = isViewingAs(viewer)
+      ? null
+      : await this.prisma.employee.findUnique({
+          where: { id: viewer.id },
+          select: { canSeeRotaCost: true },
+        });
     if (!person?.canSeeRotaCost) {
       throw new ForbiddenException('The rota’s cost is only for the people an admin has chosen.');
     }

@@ -19,6 +19,17 @@ import { ConfigService } from '@nestjs/config';
 import { Role } from '@prisma/client';
 import type { Request, Response } from 'express';
 import { AuthUser } from '../common/auth/auth-user';
+
+/// While an admin views as somebody (`isViewingAs`), their own places on the
+/// per-person lists count as off, so every menu shows what that person sees.
+const NOT_ON_ANY_LIST = {
+  canManageProductivity: false,
+  canSeeRotaCost: false,
+  canSeeInvoices: false,
+  canApproveExpenses: false,
+  canPostNews: false,
+  canSeeEveryonesSchedule: false,
+} as const;
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Public } from '../common/auth/public.decorator';
 import { Roles } from '../common/auth/roles.decorator';
@@ -297,6 +308,9 @@ export class AuthController {
       : ownJobRoles;
     return {
       ...employee,
+      // While viewing as somebody, the admin's own places on the per-person
+      // lists count as off, so the menus show what that person sees.
+      ...(viewing ? NOT_ON_ANY_LIST : {}),
       role: viewing ? viewing.role : employee.role,
       /// Set while an admin views the app as somebody else (October 2026):
       /// their real access level, and what they chose.

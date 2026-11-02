@@ -25,7 +25,7 @@ export class RotaCostController {
   @Get()
   @UseGuards(PayLockGuard)
   cost(@Query('from') from: string, @Query('to') to: string, @CurrentUser() user: AuthUser) {
-    return this.rotaCost.cost(user.id, from, to);
+    return this.rotaCost.cost(user, from, to);
   }
 
   @Get('access')

@@ -10,6 +10,7 @@ import { EmploymentStatus } from '@prisma/client';
 import type { Request } from 'express';
 import { A_PERSON } from '../common/people';
 import { PrismaService } from '../prisma/prisma.service';
+import { isViewingAs } from '../common/auth/auth-user';
 
 /**
  * Who approves expense reimbursements (1 November 2026, Dominguez: "admin (me
@@ -98,7 +99,7 @@ export class ExpenseApproverGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const user = context.switchToHttp().getRequest<Request>().user;
-    if (user && (await this.access.allowed(user.id))) return true;
+    if (user && !isViewingAs(user) && (await this.access.allowed(user.id))) return true;
     throw new ForbiddenException('Only the people chosen to approve expenses can do that.');
   }
 }

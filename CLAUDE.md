@@ -1302,15 +1302,13 @@ Beyond the phases, the parts worth knowing about before picking up work:
   (`role`, `viewingAs`, the job-role flags and `tools`), Resources
   (`JobRolesService.idsHeldBy`), tool access and the closing checklist preview
   all answer as that person is answered; the person's own data (shifts,
-  hours, name) is still theirs. Invoices go by the admin's own place on the
-  invoices list, whatever the view (since 26 October 2026; see *Invoices
-  for three people only*). An amber banner
+  hours, name) is still theirs. An amber banner
   (`components/ViewAsBanner.tsx`) says whose view it is, with **Change** and
   **Back to yourself**; `useIsActualAdmin` is the one thing that stays the
   admin's. Signing out clears it. `components/ViewAsDialog.tsx`; Help has
   *Seeing the app as somebody else sees it*; `tests/browser/view-as.mjs`.
-  Not reflected while viewing: the per-person switches (rota cost,
-  productivity, News posting) stay the admin's own.
+  **The admin's own lists count as off while viewing** (since 2 November
+  2026, see *View as shows exactly what they see*).
 - **Pay behind the PIN** (23 October 2026, Dominguez: "anything that shows
   pay ... even if the certain user has access to view it, should prompt them
   to insert pin to view - sometimes a log in is left open"): Pay & raises,
@@ -1376,7 +1374,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Dominguez himself out as an admin. **The list is kept by the people on
   it**, under **Who sees invoices** on the Invoices screen, not in Practice
   settings, so no other admin can add themselves; nobody takes themselves
-  off, so it is never empty. View as does not change it. Migration
+  off, so it is never empty. While viewing as somebody it counts as off
+  (since 2 November 2026). Migration
   `20261026010000_invoice_access` puts Dominguez on by email and Angelica
   Dominguez and Kayla Bermeo by name, **only if exactly one current person
   fits: check the list on the live site**. `invoices/invoice-access.service.ts`;
@@ -2077,6 +2076,23 @@ Beyond the phases, the parts worth knowing about before picking up work:
   unread (dropping it would need two releases, for nothing).
   `time-off-feedback.mjs` now checks no pop-up opens. Do not bring it back
   without asking.
+- **View as shows exactly what they see** (2 November 2026, Dominguez,
+  viewing as a provider and seeing Finances: "the view-as.. is meant for me
+  to be able to see everything exactly as they would", version 1.36.0): the
+  per-person lists the admin is on had stayed theirs whatever the view, so
+  Pay & raises, Invoices, Expenses and Provider productivity showed while
+  viewing as a provider (real providers never saw them). Now
+  `isViewingAs(user)` (`common/auth/auth-user.ts`) turns every such list off
+  while viewing, on the server and in `/auth/me` (`NOT_ON_ANY_LIST`): pay and
+  the rota's cost, invoices, expense approvals and the payroll prompt,
+  provider productivity, News posting, everyone's schedule, and being chosen
+  to clear closing checklists. Back to yourself brings them back. Help's
+  *View as* says so. Any new per-person list should check `isViewingAs` too.
+  `tests/browser/view-as.mjs`. Same release: `auto-clock-out.mjs` allowed a
+  forgotten punch at most 24 hours to its midnight clock-out, but the day the
+  clocks go back is 25 hours long, so it failed on 2 November 2026 for a punch
+  just after midnight on the 1st (the app was right); the limit is now 25.
+  Test only.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

@@ -4763,18 +4763,27 @@ read in a handful of places, and each takes the chosen ones instead:
 Resources (`JobRolesService.idsHeldBy`), the guides, phone book and
 diagnostics (`assertCanUse`) and the closing checklist for an open punch
 (`ClosingService.applicableFor`, the first chosen role as the main one). Their
-own data stays theirs: shifts, hours, time off, name on anything saved, and
-the per-person switches (rota cost, productivity, News posting). `/auth/me`
+own data stays theirs: shifts, hours, time off and name on anything saved.
+(Until 2 November 2026 the per-person switches stayed theirs too; see below.) `/auth/me`
 also returns `viewingAs`, which the web reads for the banner
 (`components/ViewAsBanner.tsx`: whose view, Change, Back to yourself) and for
 `useIsActualAdmin`, the one thing that stays the admin's while viewing.
 
-**Invoices go by the person.** Since 26 October 2026 Invoices are for the
-people on the invoices list (`Employee.canSeeInvoices`), like the other
-per-person switches, so viewing as somebody changes nothing there: the
-admin's own place on the list decides. (From 21 to 26 October it was Manager
-access only, and `ManagerAccessOnlyGuard` refused an admin viewing as a
-manager; that guard is gone.) Help says so.
+**The admin's own lists count as off while viewing** (2 November 2026,
+Dominguez, viewing as a provider and seeing Finances: "the view-as.. is meant
+for me to be able to see everything exactly as they would"). Until then the
+per-person switches stayed the admin's own whatever the view, so an admin on
+the rota-cost, invoices, expense approvers and productivity lists saw Finances
+while viewing as an employee. Now `isViewingAs(user)` (`common/auth/auth-user.ts`,
+true when `actualRole` is set) turns them all off, on the server and in
+`/auth/me` (`NOT_ON_ANY_LIST`, which the menus read): pay and the rota's cost
+(`PayService`, `RotaCostService`), invoices (`InvoiceAccessGuard`), expense
+approvals and the payroll prompt (`ExpenseApproverGuard`,
+`PayoutsService.allowed`), provider productivity, News posting, everyone's
+schedule, and being chosen to clear closing checklists
+(`ClosingService.mayClear`). A list nobody else could reach while viewing is
+also never changed while viewing, since its screen is refused. Back to
+yourself brings them back. `tests/browser/view-as.mjs`.
 
 ## Who looks after what (October 2026)
 

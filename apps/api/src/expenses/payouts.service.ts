@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { NotificationKind, ReimbursementMethod, Role } from '@prisma/client';
-import { AuthUser } from '../common/auth/auth-user';
+import { AuthUser, isViewingAs } from '../common/auth/auth-user';
 import { isoDate, toUtcDate } from '../common/util/calendar-date.util';
 import { localDateIn, PRACTICE_ZONE } from '../common/util/zoned-time.util';
 import { askedCents, money } from '../cme/cme';
@@ -58,6 +58,7 @@ export class PayoutsService {
   /// Managers and admins, and the people on the expense approvers list.
   async allowed(actor: AuthUser): Promise<boolean> {
     if (actor.role === Role.MANAGER || actor.role === Role.ADMIN) return true;
+    if (isViewingAs(actor)) return false;
     const person = await this.prisma.employee.findUnique({
       where: { id: actor.id },
       select: { canApproveExpenses: true },

@@ -10,6 +10,7 @@ import { EmploymentStatus } from '@prisma/client';
 import type { Request } from 'express';
 import { A_PERSON } from '../common/people';
 import { PrismaService } from '../prisma/prisma.service';
+import { isViewingAs } from '../common/auth/auth-user';
 
 /**
  * Who sees invoices (26 October 2026, Dominguez: "the only people who should
@@ -94,16 +95,15 @@ export class InvoiceAccessService {
 }
 
 /// Every invoices route: only the people on the list. Runs before the pay lock,
-/// so somebody not on it is told so rather than asked for a PIN. Reads the
-/// person themselves, so an admin "viewing as" somebody keeps their own answer
-/// (like the rota's cost).
+/// so somebody not on it is told so rather than asked for a PIN. An admin
+/// viewing as somebody is refused, as that person would be (`isViewingAs`).
 @Injectable()
 export class InvoiceAccessGuard implements CanActivate {
   constructor(private readonly access: InvoiceAccessService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const user = context.switchToHttp().getRequest<Request>().user;
-    if (user && (await this.access.allowed(user.id))) return true;
+    if (user && !isViewingAs(user) && (await this.access.allowed(user.id))) return true;
     throw new ForbiddenException('Invoices are only for the people chosen to see them.');
   }
 }
