@@ -325,6 +325,21 @@ export interface PtoRequestPart {
   days: number;
 }
 
+/// Time off approved past the balance before 2 November 2026, and what
+/// splitting it into paid and unpaid days does.
+export interface PastBalanceFix {
+  id: string;
+  employee: { id: string; firstName: string; lastName: string; preferredName: string | null };
+  type: PtoType;
+  startDate: string;
+  endDate: string;
+  isHalfDay: boolean;
+  paidDays: number;
+  unpaidDays: number;
+  paid: { startDate: string; endDate: string } | null;
+  unpaid: { startDate: string; endDate: string };
+}
+
 /// A change made to somebody's time off, and who made it.
 export interface PtoChange {
   id: string;

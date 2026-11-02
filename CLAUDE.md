@@ -2180,7 +2180,7 @@ Beyond the phases, the parts worth knowing about before picking up work:
 - **Days off on the Timesheet** (2 November 2026, Dominguez, from Selena's
   timesheet: "Please ... note PTO/SICK when searching through timesheets ...
   10/27 is missing but she took a pto day this day. I still need to alter it
-  bc this is unpaid as she has no days left"; version 1.40.0): each day of
+  bc this is unpaid as she has no days left"; version 1.41.0): each day of
   approved or waiting time off is a line among the punches - "Day off" (or
   half), a PTO / Sick / Unpaid badge, "Waiting to be decided" - narrowed by
   the same Day and Employee filters, for managers and for staff on their own.
@@ -2191,6 +2191,22 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `GET /pto/days` (`PtoService.daysOff`, staff only their own),
   `TimeOffRow` / `TimeOffCard` in `TimesheetPage.tsx`; see *Days off on the
   Timesheet* in `docs/architecture.md`; `tests/browser/timesheet-time-off.mjs`.
+- **Old approved requests past the balance, put right** (2 November 2026,
+  Dominguez: "fix the old approved requests that went past the balance",
+  version 1.40.0): requests approved whole before the split existed show as
+  fully paid. A card at the top of **Time off requests** (managers and admins,
+  never their own) lists each one this policy year or later that went past
+  the balance, with what splitting it does, and **Split them into paid and
+  unpaid days** does it in one press, by the same rule as approving: each
+  person's requests walked in date order, the earliest paid first. Time off
+  an admin recorded, or a manager has changed since, uses its days but is
+  left alone. Each is recorded ("Split past the sick balance: ...") and the
+  person told. The card is gone once none are left. Earlier policy years are
+  left as they were. `pto/past-balance-repair.service.ts`, `walkApproved` in
+  `pto/past-balance-split.ts`, `GET /pto/past-balance`, `POST
+  /pto/past-balance/split`, `components/PastBalanceFixes.tsx`; no migration;
+  `tests/browser/time-off-edit.mjs`. **A manager has to press it on the live
+  site** once this is out.
 - **Face ID sign-in** (2 November 2026, Dominguez: "is there a way we can
   add that staff can use face id through their phone to login to portal?";
   his choices: optional with the password kept, and Face ID opens the PIN in

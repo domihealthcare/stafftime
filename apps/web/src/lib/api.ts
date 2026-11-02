@@ -143,6 +143,7 @@ import type {
   PtoPolicy,
   PtoRequest,
   PtoType,
+  PastBalanceFix,
   ReportPreset,
   DriveFolderListing,
   Resource,
@@ -819,6 +820,13 @@ export const api = {
     request<PtoRequest>(`/pto/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(changes),
+    }).then(timeOffChanged),
+  /// Time off approved past the balance before the split existed (managers).
+  pastBalanceFixes: () => request<PastBalanceFix[]>('/pto/past-balance'),
+  splitPastBalance: (ids: string[]) =>
+    request<{ split: number }>('/pto/past-balance/split', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
     }).then(timeOffChanged),
   ptoConflicts: (id: string) => request<ConflictingShift[]>(`/pto/${id}/conflicts`),
   /// Too many from the same job role and office off on those days, this one counted.

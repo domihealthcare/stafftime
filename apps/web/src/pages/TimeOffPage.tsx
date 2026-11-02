@@ -28,6 +28,7 @@ import { ApproveCleanTimeOff } from '../components/ApproveCleanTimeOff';
 import { ScheduleTabs } from '../components/ScheduleTabs';
 import { useDeclineTimeOff } from '../components/DeclineTimeOff';
 import { EditTimeOffDialog, TimeOffDetails } from '../components/EditTimeOff';
+import { PastBalanceFixes } from '../components/PastBalanceFixes';
 import {
   Alert,
   Badge,
@@ -144,6 +145,9 @@ export function TimeOffPage() {
             </Alert>
           </div>
         )}
+
+        {/* Approved before unpaid days were split off (November 2026). */}
+        {isManager && <PastBalanceFixes onDone={() => void load()} />}
 
         {/* Who hears of a new request (October 2026, Dominguez: "I don't want to
           always be notified of PTO requests"). Folded: set once in a while. */}
