@@ -28,6 +28,53 @@ async function signIn(page, email) {
   await page.getByText('Not clocked in').waitFor({ timeout: 20000 });
 }
 
+/**
+ * Presses a button and waits for the request it sends, as one step (2
+ * November 2026). Once in CI the profile's Save sent nothing for 30 seconds:
+ * the response the step was waiting on had been set up before the press, so
+ * its time-out crashed the whole suite instead of failing the step, and left
+ * no trace of why. It could not be made to happen again locally (seven runs,
+ * the same suites before it, the CPU kept busy). Now the button has to wake
+ * first (Save only wakes once something has changed), the press and the
+ * response are awaited together with a limit, and a repeat fails this one
+ * step saying what was on the screen, with a screenshot.
+ */
+async function pressAndWait(page, button, matches, what) {
+  const woke = Date.now() + 10000;
+  while (!(await button.isEnabled().catch(() => false))) {
+    if (Date.now() > woke) throw new Error(`${what}: the button never woke. ${await onScreen(page)}`);
+    await page.waitForTimeout(200);
+  }
+  try {
+    const [response] = await Promise.all([
+      page.waitForResponse(matches, { timeout: 15000 }),
+      button.click({ timeout: 15000 }),
+    ]);
+    return response;
+  } catch (e) {
+    throw new Error(`${what}: ${e.message.split('\n')[0]}. ${await onScreen(page)}`);
+  }
+}
+
+/// What a stuck step saw: the address, the profile fields, any message, and
+/// a screenshot.
+async function onScreen(page) {
+  await page.screenshot({ path: `${OUT}/profile-stuck.png`, fullPage: true }).catch(() => undefined);
+  const seen = await page
+    .evaluate(() => ({
+      at: location.pathname,
+      fields: [...document.querySelectorAll('input')]
+        .filter((input) => input.type !== 'password' && input.type !== 'file')
+        .map((input) => `${input.id || input.name}=${JSON.stringify(input.value)}`)
+        .join(' '),
+      alerts: [...document.querySelectorAll('[role=alert],[role=status],[role=dialog]')]
+        .map((node) => node.textContent?.trim().slice(0, 120))
+        .join(' | '),
+    }))
+    .catch((e) => ({ error: e.message }));
+  return `On screen: ${JSON.stringify(seen)} (screenshot profile-stuck.png)`;
+}
+
 async function openDirectory(page) {
   await goTo(page, 'Directory');
   await page.getByRole('heading', { name: 'Directory' }).waitFor({ timeout: 15000 });
@@ -47,9 +94,13 @@ await step('Your profile is in the account menu', async () => {
 
 await step('a phone number with letters in it is refused, saying why', async () => {
   await frankie.getByLabel('Phone number').fill('call the desk');
-  const saved = frankie.waitForResponse((r) => r.url().endsWith('/api/profile') && r.request().method() === 'PATCH');
-  await frankie.getByRole('button', { name: 'Save profile' }).click();
-  if ((await saved).status() !== 400) throw new Error('letters were accepted as a phone number');
+  const saved = await pressAndWait(
+    frankie,
+    frankie.getByRole('button', { name: 'Save profile' }),
+    (r) => r.url().endsWith('/api/profile') && r.request().method() === 'PATCH',
+    'Save profile',
+  );
+  if (saved.status() !== 400) throw new Error('letters were accepted as a phone number');
   await frankie.getByText(/A phone number is digits/).waitFor({ timeout: 5000 });
 });
 
@@ -58,9 +109,13 @@ await step('name, pronouns, phone and a line about you are saved', async () => {
   await frankie.getByLabel('Pronouns').fill('they/them');
   await frankie.getByLabel('Phone number').fill('(201) 555-0199');
   await frankie.getByLabel('About you').fill('Spanish speaker · covers MA on Fridays');
-  const saved = frankie.waitForResponse((r) => r.url().endsWith('/api/profile') && r.request().method() === 'PATCH');
-  await frankie.getByRole('button', { name: 'Save profile' }).click();
-  if (!(await saved).ok()) throw new Error('the profile was refused');
+  const saved = await pressAndWait(
+    frankie,
+    frankie.getByRole('button', { name: 'Save profile' }),
+    (r) => r.url().endsWith('/api/profile') && r.request().method() === 'PATCH',
+    'Save profile',
+  );
+  if (!saved.ok()) throw new Error('the profile was refused');
   await frankie.getByText('Profile saved.', { exact: true }).waitFor({ timeout: 5000 });
 });
 
@@ -87,6 +142,10 @@ await step('a large photo is cropped square and shrunk before it is sent', async
   });
   const sent = frankie.waitForRequest((r) => r.url().endsWith('/api/profile/photo') && r.method() === 'PUT');
   const saved = frankie.waitForResponse((r) => r.url().endsWith('/api/profile/photo') && r.request().method() === 'PUT');
+  // Set up before the photo is chosen; if an earlier line fails, they must
+  // not later crash the suite as unhandled time-outs.
+  sent.catch(() => undefined);
+  saved.catch(() => undefined);
   await frankie.locator('#profilePhoto').setInputFiles({ name: 'me.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') });
   // Nothing is sent until the picture has been fitted to the circle and saved.
   const crop = frankie.getByTestId('photo-crop');
@@ -156,9 +215,13 @@ await step('the wrong password is refused, saying so', async () => {
   const card = frankie.getByTestId('pin-card');
   await card.getByLabel('Same again').fill('3719');
   await card.getByLabel('Your password').fill('not-my-password-1');
-  const saved = frankie.waitForResponse((r) => r.url().endsWith('/api/profile/pin'));
-  await card.getByRole('button', { name: 'Change PIN' }).click();
-  if ((await saved).status() < 400) throw new Error('a PIN was changed with the wrong password');
+  const saved = await pressAndWait(
+    frankie,
+    card.getByRole('button', { name: 'Change PIN' }),
+    (r) => r.url().endsWith('/api/profile/pin'),
+    'Change PIN',
+  );
+  if (saved.status() < 400) throw new Error('a PIN was changed with the wrong password');
   await card.getByText(/password/i).first().waitFor({ timeout: 5000 });
 });
 
@@ -167,9 +230,13 @@ await step('an easy PIN is refused, saying why', async () => {
   await card.getByLabel('New PIN').fill('1234');
   await card.getByLabel('Same again').fill('1234');
   await card.getByLabel('Your password').fill('shift-change-2026');
-  const saved = frankie.waitForResponse((r) => r.url().endsWith('/api/profile/pin'));
-  await card.getByRole('button', { name: 'Change PIN' }).click();
-  if ((await saved).status() !== 400) throw new Error('1234 was accepted as a PIN');
+  const saved = await pressAndWait(
+    frankie,
+    card.getByRole('button', { name: 'Change PIN' }),
+    (r) => r.url().endsWith('/api/profile/pin'),
+    'Change PIN',
+  );
+  if (saved.status() !== 400) throw new Error('1234 was accepted as a PIN');
 });
 
 await step('with your password, you choose your own PIN', async () => {
@@ -177,9 +244,13 @@ await step('with your password, you choose your own PIN', async () => {
   await card.getByLabel('New PIN').fill('3719');
   await card.getByLabel('Same again').fill('3719');
   await card.getByLabel('Your password').fill('shift-change-2026');
-  const saved = frankie.waitForResponse((r) => r.url().endsWith('/api/profile/pin'));
-  await card.getByRole('button', { name: 'Change PIN' }).click();
-  const answer = await saved;
+  const saved = await pressAndWait(
+    frankie,
+    card.getByRole('button', { name: 'Change PIN' }),
+    (r) => r.url().endsWith('/api/profile/pin'),
+    'Change PIN',
+  );
+  const answer = saved;
   if (!answer.ok()) throw new Error(`the PIN was refused: ${await answer.text()}`);
   await frankie.getByText('Tablet PIN saved.', { exact: true }).waitFor({ timeout: 5000 });
   if ((await card.getByLabel('New PIN').inputValue()) !== '') throw new Error('the PIN stayed on the screen');

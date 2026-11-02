@@ -2167,6 +2167,19 @@ Beyond the phases, the parts worth knowing about before picking up work:
   *Can I sign in with Face ID?*; see *Face ID sign-in* in
   `docs/architecture.md`; `tests/browser/passkeys.mjs` (Chromium's virtual
   authenticator, on `localhost`). Worth carrying to the EMR module.
+- **The profile browser check, steadied** (2 November 2026, Dominguez: "fix
+  that flaky profile test too", version 1.38.1): once in CI, on #133,
+  `profile.mjs` pressed **Save profile** and no request came in 30 seconds.
+  The response it awaited had been set up before the press, so its time-out
+  crashed the whole suite instead of failing the step, with nothing to say
+  why. It passed on a re-run and could not be made to happen locally (seven
+  runs, the same suites before it, the CPU kept busy). Every press that saves
+  (Save profile, Change PIN) now goes through `pressAndWait`: it waits for the
+  button to wake, presses and waits for the request together with a limit,
+  and on a repeat fails that step alone with the address, the profile's
+  fields, any message and a screenshot (`profile-stuck.png`). Forcing a miss
+  showed that one step failing and the other 17 still running. Test only;
+  the app is unchanged. If it comes back, its message says what was there.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.
