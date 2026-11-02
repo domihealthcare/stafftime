@@ -11,8 +11,7 @@ import { addUtcDays, isoDate, toUtcDate } from '../common/util/calendar-date.uti
 import { PRACTICE_ZONE, practiceToday, zonedTimeToUtc } from '../common/util/zoned-time.util';
 import { NotificationsService } from '../email/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { balanceName, dayCount, describeDates, TIME_OFF_KIND } from './describe-time-off';
-import { PastBalanceSplit } from './past-balance-split';
+import { describeDates, describeSplit, TIME_OFF_KIND } from './describe-time-off';
 import { loadTimeOffClashes } from './time-off-clashes';
 import { TimeOffDaysService } from './time-off-days.service';
 import {
@@ -463,7 +462,7 @@ export class PtoService {
             data: {
               requestId: id,
               changedById: actor.id,
-              summary: describeSplit(request, split),
+              summary: describeSplit(request, split, 'Approved past the'),
             },
             select: { id: true },
           }),
@@ -838,18 +837,6 @@ interface SplitPart {
   startDate: Date;
   endDate: Date;
   isHalfDay: boolean;
-}
-
-/// "Approved past the sick balance: 3 days Sick, Mon, Nov 2 to Wed, Nov 4;
-/// 2 days Unpaid, Thu, Nov 5 to Fri, Nov 6".
-function describeSplit(
-  request: { type: PtoType; startDate: Date; endDate: Date; isHalfDay: boolean },
-  split: PastBalanceSplit,
-): string {
-  const heading = `Approved past the ${balanceName(request.type)} balance`;
-  const unpaid = `${dayCount(split.unpaidDays)} Unpaid, ${describeDates(split.unpaid)}`;
-  if (!split.paid) return `${heading}: ${unpaid}`;
-  return `${heading}: ${dayCount(split.paidDays)} ${TIME_OFF_KIND[request.type]}, ${describeDates({ ...split.paid, isHalfDay: false })}; ${unpaid}`;
 }
 
 // ---------------------------------------------------------------------------

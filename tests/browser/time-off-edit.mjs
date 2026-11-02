@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { execFileSync } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
@@ -84,6 +85,32 @@ const MON = (() => {
 })();
 const NEXT_MON = plusDays(MON, 7);
 const NEXT_TUE = plusDays(MON, 8);
+
+function sql(statement) {
+  return execFileSync(
+    'psql',
+    [
+      '-h',
+      process.env.PGHOST_LOCAL || '127.0.0.1',
+      '-p',
+      process.env.PGPORT_LOCAL || '5433',
+      '-U',
+      process.env.PGUSER_LOCAL || 'postgres',
+      '-d',
+      process.env.PGDATABASE_LOCAL || 'stafftime',
+      '-q',
+      '-t',
+      '-A',
+      '-v',
+      'ON_ERROR_STOP=1',
+      '-c',
+      statement,
+    ],
+    { stdio: ['ignore', 'pipe', 'inherit'] },
+  )
+    .toString()
+    .trim();
+}
 
 const manager = await signIn('manager@domihealthcare.com');
 const desk = await signIn('frontdesk@domihealthcare.com');
@@ -246,6 +273,47 @@ await step('a manager still turns somebody’s PTO into Sick (October 2026)', as
   if (changed.status !== 200 || changed.body.type !== 'SICK')
     throw new Error(`answered ${changed.status} ${JSON.stringify(changed.body)}`);
   await call(desk, `/pto/${made.body.id}/cancel`, { method: 'PATCH' });
+});
+
+await step('an old request approved whole past the balance is found, split in one press, and the person told', async () => {
+  // As it was before 2 November 2026: 7 sick days approved as one, with 5 a year.
+  const frankieId = sql("select id from employees where email = 'frontdesk@domihealthcare.com'");
+  const morganId = sql("select id from employees where email = 'manager@domihealthcare.com'");
+  const oldId = sql(
+    `insert into pto_requests (id, "employeeId", type, status, "startDate", "endDate", "isHalfDay", "reviewedById", "reviewedAt", "updatedAt")
+     values (gen_random_uuid(), '${frankieId}', 'SICK', 'APPROVED', '${iso(MON)}', '${iso(NEXT_TUE)}', false, '${morganId}', now(), now())
+     returning id`,
+  ).split('\n')[0];
+  await manager.goto(`${BASE}/time-off`, { waitUntil: 'networkidle' });
+  const row = manager.getByTestId(`past-balance-fix-${oldId}`);
+  await row.waitFor({ timeout: 10000 });
+  const said = await row.innerText();
+  if (!/5 days Sick, .*then 2 days Unpaid/.test(said)) throw new Error(`said "${said}"`);
+  await manager.screenshot({ path: `${OUT}/time-off-past-balance-fixes.png`, fullPage: true });
+  // Staff never see the list, nor can they split.
+  const refused = await call(desk, '/pto/past-balance');
+  if (refused.status !== 403) throw new Error(`staff reading answered ${refused.status}`);
+
+  await manager.getByRole('button', { name: 'Split them into paid and unpaid days' }).click();
+  const split = manager.waitForResponse((r) => r.url().endsWith('/api/pto/past-balance/split'));
+  await manager.getByRole('button', { name: 'Yes, split them' }).click();
+  if ((await split).status() !== 200) throw new Error('splitting failed');
+  await manager.getByTestId('past-balance-fixed').waitFor({ timeout: 10000 });
+
+  const after = (await call(manager, `/pto/${oldId}`)).body;
+  if (after.days !== 5 || after.endDate !== iso(plusDays(MON, 6)) || after.type !== 'SICK')
+    throw new Error(`paid part: ${JSON.stringify(after)}`);
+  const unpaid = after.splitParts?.[0];
+  if (!unpaid || unpaid.type !== 'UNPAID' || unpaid.days !== 2 || unpaid.startDate !== iso(NEXT_MON))
+    throw new Error(`unpaid part: ${JSON.stringify(after.splitParts)}`);
+  if (!/^Split past the sick balance/.test(after.changes?.[0]?.summary ?? ''))
+    throw new Error(`no record: ${JSON.stringify(after.changes)}`);
+  const bell = JSON.stringify((await call(desk, '/notifications')).body);
+  if (!/Split past the sick balance/.test(bell)) throw new Error(`not told: ${bell.slice(0, 300)}`);
+  // Nothing left to put right.
+  const left = await call(manager, '/pto/past-balance');
+  if (left.body.length !== 0) throw new Error(`still listed: ${JSON.stringify(left.body)}`);
+  await call(desk, `/pto/${oldId}/cancel`, { method: 'PATCH' });
 });
 
 await browser.close();

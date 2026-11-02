@@ -986,6 +986,23 @@ they are one absence.
 still goes negative, because the past-balance checks need it; only the
 display stops at 0, with "None left: any more days off are unpaid."
 
+**Requests approved before the split** (2 November 2026, Dominguez: "fix
+the old approved requests that went past the balance"): the app cannot see
+them as they happen, so `PastBalanceRepairService` finds them. For the
+current policy year and later only (earlier years' payroll is done and their
+balances have started again), each person's approved requests drawing on a
+balance are walked in date order (`walkApproved` in
+`pto/past-balance-split.ts`), starting from `available - usedBefore`, each
+paid from what is left until it runs out, split by the same rule as approving.
+Time off an admin recorded, one a manager has changed since (any
+`PtoChange`), or one running into another policy year uses up its days but is
+never split: those were somebody's deliberate choice. A manager sees the list
+first, at the top of Time off requests (`GET /pto/past-balance`), never their
+own, and one press splits them (`POST /pto/past-balance/split`), worked out
+afresh, each in its own transaction guarded on the request still being
+approved with the same kind and dates. Each split is a `PtoChange` ("Split
+past the sick balance: ...") and the person is told, as for an edit.
+
 ### Editing time off (November 2026)
 
 Dominguez: "I need to be able to edit PTO/SICK - can have notes option for a

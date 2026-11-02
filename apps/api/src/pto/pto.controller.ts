@@ -30,7 +30,15 @@ import {
 import { PtoPolicyService } from './pto-policy.service';
 import { PtoService } from './pto.service';
 import { CleanTimeOffService } from './clean-time-off.service';
+import { PastBalanceRepairService } from './past-balance-repair.service';
 import { ArrayMaxSize, IsArray, IsUUID } from 'class-validator';
+
+class SplitPastBalanceDto {
+  @IsArray()
+  @ArrayMaxSize(500)
+  @IsUUID('all', { each: true })
+  ids!: string[];
+}
 
 class ApproveCleanTimeOffDto {
   @IsArray()
@@ -46,6 +54,7 @@ export class PtoController {
     private readonly pto: PtoService,
     private readonly policy: PtoPolicyService,
     private readonly cleanTimeOff: CleanTimeOffService,
+    private readonly pastBalanceRepair: PastBalanceRepairService,
   ) {}
 
   /// The rules. Readable by everyone - staff should be able to see what they
@@ -151,6 +160,22 @@ export class PtoController {
   @HttpCode(HttpStatus.OK)
   approveClean(@Body() dto: ApproveCleanTimeOffDto, @CurrentUser() user: AuthUser) {
     return this.cleanTimeOff.approve(dto.ids, user);
+  }
+
+  /// Time off approved before 2 November 2026 that went past the balance,
+  /// and what splitting it into paid and unpaid days would do. Managers.
+  @Get('past-balance')
+  @Roles(Role.MANAGER)
+  pastBalance(@CurrentUser() user: AuthUser) {
+    return this.pastBalanceRepair.list(user);
+  }
+
+  /// Splits the ones named, worked out afresh. Each person is told.
+  @Post('past-balance/split')
+  @Roles(Role.MANAGER)
+  @HttpCode(HttpStatus.OK)
+  splitPastBalance(@Body() dto: SplitPastBalanceDto, @CurrentUser() user: AuthUser) {
+    return this.pastBalanceRepair.split(dto.ids, user);
   }
 
   @Get(':id')
