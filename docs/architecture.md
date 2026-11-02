@@ -889,6 +889,12 @@ left and anything waiting (`components/MonthBalancePopup.tsx`, `GET
 have just started; it also keeps it off the browser suites), anybody with no
 time off at all, or anybody who has left.
 
+**Taken out on 2 November 2026** (Dominguez: "why am i getting a pop up when
+i sign in about my PTO? i dont want that to be happening"; chosen: removed for
+everyone, not an off switch). The component, the two routes and the service
+are gone; balances are still on the Schedule and the Time off screen. The
+`balanceReminderMonth` column stays in the database, unread.
+
 ### The switch-over: time taken before Domi Staff
 
 Domi Staff went live in September 2026, three-quarters of the way through a

@@ -85,7 +85,6 @@ reset_state() {
     -c "delete from employees where email like '%.clean@example.com';" \
     -c "update employees set \"wantsWeeklySummary\" = true;" \
     -c "update employees set \"clocksIn\" = true, \"isSharedAccount\" = false;" \
-    -c "update employees set \"balanceReminderMonth\" = to_char(now() at time zone 'America/New_York', 'YYYY-MM');" \
     -c "delete from shifts where notes = 'clocks-in-suite';" \
     -c "delete from shifts where notes = 'event-replies-suite';" \
     -c "delete from time_entries where \"editReason\" = 'time-off-feedback-suite';" \
