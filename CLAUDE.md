@@ -2125,6 +2125,18 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `pages/StaffNotesPage.tsx`; `pay-routes.spec.ts` pins the PIN; Help has
   *Confidential notes on staff*; `tests/browser/staff-notes.mjs`. Worth
   carrying to the EMR module.
+- **The idle sign-out browser check, steadied** (2 November 2026,
+  Dominguez: "fix that test too", version 1.37.1): `idle-signout.mjs` failed
+  once in CI on #130 with "lastUsedAt moved". After signing in it called
+  `waitForLoadState('networkidle')`, which a page reaches once on its first
+  load and then returns at once, so the steps began while Home was still
+  loading, and a late `GET /events` touched the session just after
+  `lastUsedAt` was pushed back. The suite now tracks its page's own `/api`
+  requests and waits a quiet second before each step (`settled`). Slowing
+  that request by 150 to 500 ms made the old suite fail every time and the
+  new one passes at every delay. Test only; the app was right. Other suites
+  use `networkidle` after signing in too: worth the same treatment if one
+  turns up flaky.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

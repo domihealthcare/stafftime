@@ -65,6 +65,7 @@ async function signIn(email) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(`${email} pageerror: ${e.message}`));
+  watchApi(page);
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password', { exact: true }).fill('shift-change-2026');
@@ -80,6 +81,32 @@ async function signIn(email) {
     await unlocked.waitFor({ timeout: 15000 });
   }
   return page;
+}
+
+/// The page's own /api requests still on their way. `waitForLoadState
+/// ('networkidle')` cannot tell: it was reached on the first load, before
+/// signing in, so afterwards it returns at once, while Home is still loading
+/// (2 November 2026: a late GET /events touched the session after lastUsedAt
+/// was pushed back, and the first step failed in CI).
+const inFlight = new WeakMap();
+function watchApi(page) {
+  inFlight.set(page, new Set());
+  const isApi = (r) => new URL(r.url()).pathname.startsWith('/api/');
+  page.on('request', (r) => isApi(r) && inFlight.get(page).add(r));
+  page.on('requestfinished', (r) => inFlight.get(page).delete(r));
+  page.on('requestfailed', (r) => inFlight.get(page).delete(r));
+}
+/// Waits until none of the page's own requests has been on its way for a
+/// whole second, so nothing the page does lands in the middle of a step.
+async function settled(page, quietMs = 1000, timeoutMs = 20000) {
+  const start = Date.now();
+  let quietSince = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    if (inFlight.get(page).size > 0) quietSince = Date.now();
+    else if (Date.now() - quietSince >= quietMs) return;
+    await page.waitForTimeout(100);
+  }
+  throw new Error(`the page kept asking the server for ${timeoutMs / 1000}s`);
 }
 
 /// From the page, so the session cookie goes with it; `background` adds the
@@ -100,7 +127,7 @@ const call = (page, path, { method = 'GET', background = false } = {}) =>
   );
 
 const page = await signIn('frontdesk@domihealthcare.com');
-await page.waitForLoadState('networkidle');
+await settled(page);
 
 // This browser's own session, found by its token as the server stores it.
 const cookie = (await page.context().cookies()).find((c) => c.name === 'stafftime_session');
@@ -126,6 +153,7 @@ const comeBackIntoView = () =>
   page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
 
 await step('a background read is answered but does not count as use', async () => {
+  await settled(page);
   lastUsed('2 hours');
   const status = await call(page, '/notifications/unread-count', { background: true });
   if (status !== 200) throw new Error(`answered ${status}`);
@@ -133,6 +161,7 @@ await step('a background read is answered but does not count as use', async () =
 });
 
 await step('the header means nothing on a save', async () => {
+  await settled(page);
   lastUsed('2 hours');
   const status = await call(page, '/pay-lock/lock', { method: 'POST', background: true });
   if (status !== 200) throw new Error(`answered ${status}`);
@@ -140,6 +169,7 @@ await step('the header means nothing on a save', async () => {
 });
 
 await step('an ordinary read counts as use', async () => {
+  await settled(page);
   lastUsed('2 hours');
   const status = await call(page, '/notifications/unread-count');
   if (status !== 200) throw new Error(`answered ${status}`);
@@ -147,6 +177,7 @@ await step('an ordinary read counts as use', async () => {
 });
 
 await step("the app's own polls say they are background and move nothing", async () => {
+  await settled(page);
   lastUsed('2 hours');
   // The bell, the downtime bar and the time-off badge ask in one request
   // (`GET /badges`, October 2026).
@@ -160,7 +191,7 @@ await step("the app's own polls say they are background and move nothing", async
       `the badges' look carried no background header: ${JSON.stringify(request.headers())}`,
     );
   }
-  await page.waitForLoadState('networkidle');
+  await settled(page);
   if (!stillTwoHoursAgo()) throw new Error('lastUsedAt moved');
   await page.getByText('Not clocked in').waitFor({ timeout: 5000 });
 });
@@ -180,7 +211,7 @@ await step('a screen change asks for the badges once, as the person using the ap
     .getByRole('navigation')
     .getByRole('link', { name: /^Schedule/ })
     .click();
-  await page.waitForLoadState('networkidle');
+  await settled(page);
   page.off('request', watch);
   const paths = seen.map((r) => new URL(r.url()).pathname);
   if (paths.length !== 1 || paths[0] !== '/api/badges')
@@ -190,6 +221,7 @@ await step('a screen change asks for the badges once, as the person using the ap
 });
 
 await step('idle 8 hours: a background read is refused', async () => {
+  await settled(page);
   lastUsed('8 hours 1 minute');
   const status = await call(page, '/notifications/unread-count', { background: true });
   if (status !== 401) throw new Error(`answered ${status}`);
