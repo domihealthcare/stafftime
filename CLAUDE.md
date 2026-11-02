@@ -2088,7 +2088,11 @@ Beyond the phases, the parts worth knowing about before picking up work:
   provider productivity, News posting, everyone's schedule, and being chosen
   to clear closing checklists. Back to yourself brings them back. Help's
   *View as* says so. Any new per-person list should check `isViewingAs` too.
-  `tests/browser/view-as.mjs`.
+  `tests/browser/view-as.mjs`. Same release: `auto-clock-out.mjs` allowed a
+  forgotten punch at most 24 hours to its midnight clock-out, but the day the
+  clocks go back is 25 hours long, so it failed on 2 November 2026 for a punch
+  just after midnight on the 1st (the app was right); the limit is now 25.
+  Test only.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

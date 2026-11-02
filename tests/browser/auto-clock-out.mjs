@@ -110,7 +110,10 @@ await step('a punch left open from yesterday is clocked out at that midnight by 
   if (njClock(entry.clockOutAt) !== '00:00')
     throw new Error(`clocked out at ${njClock(entry.clockOutAt)} New Jersey time, not midnight`);
   const hours = (new Date(entry.clockOutAt) - new Date(entry.clockInAt)) / 3_600_000;
-  if (hours <= 0 || hours > 24) throw new Error(`${hours} hours between clock-in and clock-out`);
+  // At most a day, and the day the clocks go back is 25 hours long: a punch
+  // just after midnight on it is clocked out about 24.8 hours later (failed
+  // on 2 November 2026, the morning after, with a limit of 24).
+  if (hours <= 0 || hours > 25) throw new Error(`${hours} hours between clock-in and clock-out`);
   if (!entry.autoClockedOutAt || !entry.isMissingPunch)
     throw new Error(`not flagged: ${JSON.stringify({ a: entry.autoClockedOutAt, m: entry.isMissingPunch })}`);
 });
