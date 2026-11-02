@@ -2,11 +2,13 @@ import { ScheduleTabs } from '../components/ScheduleTabs';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { OnePersonNote, useOnePerson } from '../components/OnePerson';
-import { durationHours, formatDate, formatTime } from '../lib/format';
+import { durationHours, formatCalendarDate, formatDate, formatTime } from '../lib/format';
 import { useIsManager, useSession } from '../lib/session';
 import { handEntryReasonLabel } from '../lib/hand-entry';
 import { plural, t as translate, useT } from '../lib/i18n';
-import type { DayRange, Employee, TimeEntry } from '../lib/types';
+import type { DayRange, Employee, PtoRequest, TimeEntry, TimeOffDays } from '../lib/types';
+import { ptoTypeLabel } from '../lib/time-off';
+import { EditTimeOffDialog, TimeOffDetails } from '../components/EditTimeOff';
 import { AddHoursDialog } from '../components/AddHoursDialog';
 import { useConfirm } from '../components/ConfirmDialog';
 import { CheckHandEntryDialog } from '../components/CheckHandEntryDialog';
@@ -38,6 +40,10 @@ export function TimesheetPage() {
   // months, and Custom anything else.
   const [range, setRange] = useState<DayRange>(() => presetRanges(null)[0].range!);
   const [entries, setEntries] = useState<TimeEntry[]>([]);
+  /// Days of time off in the period (November 2026, Dominguez: a PTO day
+  /// looked like a missing day), and the request a manager is editing.
+  const [timeOff, setTimeOff] = useState<TimeOffDays | null>(null);
+  const [editingOff, setEditingOff] = useState<PtoRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -67,9 +73,14 @@ export function TimesheetPage() {
     const seq = ++loadSeq.current;
     setLoading(true);
     try {
-      const data = await api.listTimeEntries(toInstants(range));
+      const [data, off] = await Promise.all([
+        api.listTimeEntries(toInstants(range)),
+        // A nicety beside the hours: if it cannot be loaded, the hours still are.
+        api.timeOffDays(range).catch(() => null),
+      ]);
       if (seq !== loadSeq.current) return;
       setEntries(data);
+      setTimeOff(off);
       setError(null);
     } catch (err) {
       if (seq !== loadSeq.current) return;
@@ -163,8 +174,11 @@ export function TimesheetPage() {
       const key = dayKey(entry.clockInAt);
       if (!seen.has(key)) seen.set(key, formatDate(entry.clockInAt));
     }
+    for (const off of timeOff?.days ?? []) {
+      if (!seen.has(off.date)) seen.set(off.date, formatCalendarDate(off.date, { year: false }));
+    }
     return [...seen].sort(([a], [b]) => a.localeCompare(b));
-  }, [entries]);
+  }, [entries, timeOff]);
 
   const query = search.trim().toLowerCase();
   const shown = entries.filter(
@@ -174,6 +188,34 @@ export function TimesheetPage() {
       (!query ||
         (entry.employee &&
           `${entry.employee.firstName} ${entry.employee.lastName}`.toLowerCase().includes(query))),
+  );
+  // Each day off, with its request, narrowed the same way.
+  const requestById = new Map((timeOff?.requests ?? []).map((request) => [request.id, request]));
+  const daysOff = (timeOff?.days ?? []).flatMap((off) => {
+    const request = requestById.get(off.requestId);
+    if (!request) return [];
+    const name = request.employee
+      ? `${request.employee.firstName} ${request.employee.lastName}`.toLowerCase()
+      : '';
+    if (personId && request.employeeId !== personId) return [];
+    if (day && off.date !== day) return [];
+    if (query && !name.includes(query)) return [];
+    return [{ date: off.date, request }];
+  });
+  // Punches and days off in one list, newest day first, as the punches come.
+  const rows: Row[] = [
+    ...shown.map((entry) => ({ kind: 'punch' as const, day: dayKey(entry.clockInAt), entry })),
+    ...daysOff.map((off) => ({ kind: 'off' as const, day: off.date, ...off })),
+  ].sort((a, b) =>
+    a.day === b.day
+      ? a.kind === b.kind
+        ? 0
+        : a.kind === 'punch'
+          ? -1
+          : 1
+      : a.day < b.day
+        ? 1
+        : -1,
   );
   const filtered = Boolean(day || query || personId);
   const onePerson = personId ? entries.find((entry) => entry.employeeId === personId) : undefined;
@@ -286,6 +328,9 @@ export function TimesheetPage() {
             <span className="font-semibold text-slate-900">{totalHours.toFixed(2)}</span>{' '}
             {t('hours')}
             {!loading && ` · ${plural(shown.length, '{n} entry', '{n} entries')}`}
+            {!loading &&
+              daysOff.length > 0 &&
+              ` · ${plural(daysOff.length, '{n} day off', '{n} days off')}`}
           </p>
           {isManager && !loading && clean.length > 0 && (
             <button
@@ -328,10 +373,10 @@ export function TimesheetPage() {
           <div className="p-6">
             <Spinner label={t('Loading timesheet')} />
           </div>
-        ) : shown.length === 0 ? (
+        ) : rows.length === 0 ? (
           <div className="p-6">
             <EmptyState>
-              {entries.length === 0
+              {entries.length === 0 && (timeOff?.days.length ?? 0) === 0
                 ? t('No time entries in this period.')
                 : t('No time entries match these filters.')}
             </EmptyState>
@@ -375,78 +420,94 @@ export function TimesheetPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {shown.map((entry) => (
-                  <Fragment key={entry.id}>
-                    <tr className="hover:bg-slate-50">
-                      <td className="whitespace-nowrap px-3 py-1.5 text-slate-700">
-                        {formatDate(entry.clockInAt)}
-                      </td>
-                      {isManager && (
-                        <td className="px-3 py-1.5 text-slate-700">
-                          {entry.employee
-                            ? `${entry.employee.firstName} ${entry.employee.lastName}`
+                {rows.map((row) => {
+                  if (row.kind === 'off') {
+                    return (
+                      <TimeOffRow
+                        key={`off-${row.request.id}-${row.date}`}
+                        date={row.date}
+                        request={row.request}
+                        isManager={isManager}
+                        selfId={employee?.id}
+                        onEdit={() => setEditingOff(row.request)}
+                      />
+                    );
+                  }
+                  const entry = row.entry;
+                  return (
+                    <Fragment key={entry.id}>
+                      <tr className="hover:bg-slate-50">
+                        <td className="whitespace-nowrap px-3 py-1.5 text-slate-700">
+                          {formatDate(entry.clockInAt)}
+                        </td>
+                        {isManager && (
+                          <td className="px-3 py-1.5 text-slate-700">
+                            {entry.employee
+                              ? `${entry.employee.firstName} ${entry.employee.lastName}`
+                              : '-'}
+                          </td>
+                        )}
+                        <td className="px-3 py-1.5 tabular-nums text-slate-700">
+                          <span className="whitespace-nowrap">{formatTime(entry.clockInAt)} –</span>{' '}
+                          <span className="whitespace-nowrap">
+                            {entry.clockOutAt ? formatTime(entry.clockOutAt) : '-'}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-1.5 tabular-nums font-medium text-slate-900">
+                          {entry.clockOutAt
+                            ? durationHours(entry.clockInAt, entry.clockOutAt).toFixed(2)
                             : '-'}
                         </td>
-                      )}
-                      <td className="px-3 py-1.5 tabular-nums text-slate-700">
-                        <span className="whitespace-nowrap">{formatTime(entry.clockInAt)} –</span>{' '}
-                        <span className="whitespace-nowrap">
-                          {entry.clockOutAt ? formatTime(entry.clockOutAt) : '-'}
-                        </span>
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-1.5 tabular-nums font-medium text-slate-900">
-                        {entry.clockOutAt
-                          ? durationHours(entry.clockInAt, entry.clockOutAt).toFixed(2)
-                          : '-'}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-1.5">
-                        <VerificationBadge entry={entry} />
-                      </td>
-                      <td className="px-3 py-1.5">
-                        <Flags entry={entry} />
-                      </td>
-                      {isManager ? (
+                        <td className="whitespace-nowrap px-3 py-1.5">
+                          <VerificationBadge entry={entry} />
+                        </td>
                         <td className="px-3 py-1.5">
-                          <EntryActions
-                            entry={entry}
-                            busy={busyId === entry.id}
-                            onApprove={() => void approve(entry.id)}
-                            onEdit={() => setEditing(entry)}
-                          />
+                          <Flags entry={entry} />
                         </td>
-                      ) : (
-                        <td className="px-3 py-1.5">
-                          <AskCorrectionButton entry={entry} onAsk={() => setAsking(entry)} />
-                        </td>
-                      )}
-                    </tr>
-                    {/* The reason for a correction is a sentence, so it gets a
-                      line rather than being squeezed into the flags column. */}
-                    {(entry.editReason ||
-                      entry.enteredByHandAt ||
-                      entry.otherPlaceReason ||
-                      entry.shift?.runningLate ||
-                      (entry.correctionRequests?.length ?? 0) > 0) && (
-                      <tr className="border-none">
-                        <td colSpan={isManager ? 7 : 6} className="px-3 pb-1.5 pt-0">
-                          <HandEntryLine
-                            entry={entry}
-                            isManager={isManager}
-                            selfId={employee?.id}
-                            onCheck={() => setChecking(entry)}
-                          />
-                          <OtherPlaceLine entry={entry} />
-                          <EntryNotes entry={entry} mine={entry.employeeId === employee?.id} />
-                          {entry.editReason && (
-                            <p className="text-xs text-slate-500">
-                              <span className="font-medium">{t('Edited:')}</span> {entry.editReason}
-                            </p>
-                          )}
-                        </td>
+                        {isManager ? (
+                          <td className="px-3 py-1.5">
+                            <EntryActions
+                              entry={entry}
+                              busy={busyId === entry.id}
+                              onApprove={() => void approve(entry.id)}
+                              onEdit={() => setEditing(entry)}
+                            />
+                          </td>
+                        ) : (
+                          <td className="px-3 py-1.5">
+                            <AskCorrectionButton entry={entry} onAsk={() => setAsking(entry)} />
+                          </td>
+                        )}
                       </tr>
-                    )}
-                  </Fragment>
-                ))}
+                      {/* The reason for a correction is a sentence, so it gets a
+                      line rather than being squeezed into the flags column. */}
+                      {(entry.editReason ||
+                        entry.enteredByHandAt ||
+                        entry.otherPlaceReason ||
+                        entry.shift?.runningLate ||
+                        (entry.correctionRequests?.length ?? 0) > 0) && (
+                        <tr className="border-none">
+                          <td colSpan={isManager ? 7 : 6} className="px-3 pb-1.5 pt-0">
+                            <HandEntryLine
+                              entry={entry}
+                              isManager={isManager}
+                              selfId={employee?.id}
+                              onCheck={() => setChecking(entry)}
+                            />
+                            <OtherPlaceLine entry={entry} />
+                            <EntryNotes entry={entry} mine={entry.employeeId === employee?.id} />
+                            {entry.editReason && (
+                              <p className="text-xs text-slate-500">
+                                <span className="font-medium">{t('Edited:')}</span>{' '}
+                                {entry.editReason}
+                              </p>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -455,80 +516,105 @@ export function TimesheetPage() {
         {/* A phone or tablet cannot show seven columns, and sideways-scrolling a table to
             reach Approve is miserable when that is the whole job. Same entries,
             stacked, with the action where the thumb already is. */}
-        {!loading && shown.length > 0 && (
+        {!loading && rows.length > 0 && (
           <ul className="divide-y divide-slate-100 lg:hidden">
-            {shown.map((entry) => (
-              <li key={entry.id} className="px-3 py-2">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    {isManager && entry.employee && (
-                      <p className="font-medium text-slate-900">
-                        {entry.employee.firstName} {entry.employee.lastName}
+            {rows.map((row) => {
+              if (row.kind === 'off') {
+                return (
+                  <TimeOffCard
+                    key={`off-${row.request.id}-${row.date}`}
+                    date={row.date}
+                    request={row.request}
+                    isManager={isManager}
+                    selfId={employee?.id}
+                    onEdit={() => setEditingOff(row.request)}
+                  />
+                );
+              }
+              const entry = row.entry;
+              return (
+                <li key={entry.id} className="px-3 py-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      {isManager && entry.employee && (
+                        <p className="font-medium text-slate-900">
+                          {entry.employee.firstName} {entry.employee.lastName}
+                        </p>
+                      )}
+                      <p className="text-sm text-slate-600">{formatDate(entry.clockInAt)}</p>
+                      <p className="mt-0.5 text-sm tabular-nums text-slate-700">
+                        {formatTime(entry.clockInAt)} –{' '}
+                        {entry.clockOutAt ? formatTime(entry.clockOutAt) : '-'}
                       </p>
-                    )}
-                    <p className="text-sm text-slate-600">{formatDate(entry.clockInAt)}</p>
-                    <p className="mt-0.5 text-sm tabular-nums text-slate-700">
-                      {formatTime(entry.clockInAt)} –{' '}
-                      {entry.clockOutAt ? formatTime(entry.clockOutAt) : '-'}
-                    </p>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <p className="font-semibold tabular-nums text-slate-900">
-                      {entry.clockOutAt
-                        ? `${durationHours(entry.clockInAt, entry.clockOutAt).toFixed(2)}h`
-                        : '-'}
-                    </p>
-                    <div className="mt-1 flex justify-end">
-                      <VerificationBadge entry={entry} />
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="font-semibold tabular-nums text-slate-900">
+                        {entry.clockOutAt
+                          ? `${durationHours(entry.clockInAt, entry.clockOutAt).toFixed(2)}h`
+                          : '-'}
+                      </p>
+                      <div className="mt-1 flex justify-end">
+                        <VerificationBadge entry={entry} />
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {hasFlags(entry) && (
-                  <div className="mt-1.5 flex flex-wrap items-center gap-1">
-                    <Flags entry={entry} />
-                  </div>
-                )}
+                  {hasFlags(entry) && (
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                      <Flags entry={entry} />
+                    </div>
+                  )}
 
-                {entry.enteredByHandAt && (
-                  <div className="mt-1">
-                    <HandEntryLine
-                      entry={entry}
-                      isManager={isManager}
-                      selfId={employee?.id}
-                      onCheck={() => setChecking(entry)}
-                    />
-                  </div>
-                )}
+                  {entry.enteredByHandAt && (
+                    <div className="mt-1">
+                      <HandEntryLine
+                        entry={entry}
+                        isManager={isManager}
+                        selfId={employee?.id}
+                        onCheck={() => setChecking(entry)}
+                      />
+                    </div>
+                  )}
 
-                <OtherPlaceLine entry={entry} />
-                <EntryNotes entry={entry} mine={entry.employeeId === employee?.id} />
-                {!isManager && (
-                  <div className="mt-1">
-                    <AskCorrectionButton entry={entry} onAsk={() => setAsking(entry)} />
-                  </div>
-                )}
-                {entry.editReason && (
-                  <p className="mt-1 text-xs text-slate-500">
-                    <span className="font-medium">{t('Edited:')}</span> {entry.editReason}
-                  </p>
-                )}
+                  <OtherPlaceLine entry={entry} />
+                  <EntryNotes entry={entry} mine={entry.employeeId === employee?.id} />
+                  {!isManager && (
+                    <div className="mt-1">
+                      <AskCorrectionButton entry={entry} onAsk={() => setAsking(entry)} />
+                    </div>
+                  )}
+                  {entry.editReason && (
+                    <p className="mt-1 text-xs text-slate-500">
+                      <span className="font-medium">{t('Edited:')}</span> {entry.editReason}
+                    </p>
+                  )}
 
-                {isManager && (
-                  <div className="mt-1.5">
-                    <EntryActions
-                      entry={entry}
-                      busy={busyId === entry.id}
-                      onApprove={() => void approve(entry.id)}
-                      onEdit={() => setEditing(entry)}
-                    />
-                  </div>
-                )}
-              </li>
-            ))}
+                  {isManager && (
+                    <div className="mt-1.5">
+                      <EntryActions
+                        entry={entry}
+                        busy={busyId === entry.id}
+                        onApprove={() => void approve(entry.id)}
+                        onEdit={() => setEditing(entry)}
+                      />
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </Card>
+
+      {editingOff && (
+        <EditTimeOffDialog
+          request={editingOff}
+          onDone={(saved) => {
+            setEditingOff(null);
+            if (saved) void load();
+          }}
+        />
+      )}
 
       {asking && (
         <AskCorrectionDialog
@@ -590,6 +676,126 @@ export function TimesheetPage() {
 
 /// The day a punch began, on the viewer's calendar - the same day `formatDate`
 /// shows - as "YYYY-MM-DD", for the Day filter.
+/// A line of the Timesheet: a punch, or a day of time off.
+type Row =
+  | { kind: 'punch'; day: string; entry: TimeEntry }
+  | { kind: 'off'; day: string; date: string; request: PtoRequest };
+
+interface TimeOffLineProps {
+  date: string;
+  request: PtoRequest;
+  isManager: boolean;
+  selfId: string | undefined;
+  onEdit: () => void;
+}
+
+/// "PTO", "Sick", "Unpaid": what kind of day off, and whether it is decided.
+function TimeOffBadges({ request }: { request: PtoRequest }) {
+  const t = useT();
+  return (
+    <>
+      <Badge tone={request.type === 'UNPAID' ? 'warning' : 'info'}>
+        {ptoTypeLabel(request.type)}
+      </Badge>
+      {request.status === 'PENDING' && <Badge tone="warning">{t('Waiting to be decided')}</Badge>}
+    </>
+  );
+}
+
+/// Managers change somebody else's time off from here, as on Time off
+/// requests: the kind (PTO to Unpaid, say), the dates and a note.
+function TimeOffEdit({ request, isManager, selfId, onEdit }: Omit<TimeOffLineProps, 'date'>) {
+  if (!isManager || request.employeeId === selfId) return null;
+  return (
+    <button
+      type="button"
+      onClick={onEdit}
+      className="tap text-xs font-medium text-brand-700 hover:text-brand-900"
+      aria-label={`Edit this time off for ${request.employee?.firstName ?? 'them'}`}
+    >
+      Edit
+    </button>
+  );
+}
+
+/**
+ * A day of time off among the punches (2 November 2026, Dominguez, from
+ * Selena's timesheet: "Please ... note PTO/SICK when searching through
+ * timesheets ... 10/27 is missing but she took a pto day"). No hours: time
+ * off is not in the payroll export, and the total stays the punches'.
+ */
+function TimeOffRow({ date, request, isManager, selfId, onEdit }: TimeOffLineProps) {
+  const t = useT();
+  const details =
+    Boolean(request.unpaidPastBalanceOf) ||
+    (request.splitParts?.length ?? 0) > 0 ||
+    (request.status === 'PENDING' && request.approvalSplit) ||
+    (request.changes?.length ?? 0) > 0;
+  return (
+    <>
+      <tr className="bg-sky-50/60" data-testid="timesheet-time-off">
+        <td className="whitespace-nowrap px-3 py-1.5 text-slate-700">
+          {formatCalendarDate(date, { year: false })}
+        </td>
+        {isManager && (
+          <td className="px-3 py-1.5 text-slate-700">
+            {request.employee ? `${request.employee.firstName} ${request.employee.lastName}` : '-'}
+          </td>
+        )}
+        <td className="px-3 py-1.5 italic text-slate-600">
+          {request.isHalfDay ? t('Half day off') : t('Day off')}
+        </td>
+        <td className="px-3 py-1.5 text-slate-500">-</td>
+        <td className="whitespace-nowrap px-3 py-1.5">
+          <div className="flex flex-wrap gap-1">
+            <TimeOffBadges request={request} />
+          </div>
+        </td>
+        <td className="px-3 py-1.5 text-slate-500">-</td>
+        <td className="px-3 py-1.5">
+          <TimeOffEdit request={request} isManager={isManager} selfId={selfId} onEdit={onEdit} />
+        </td>
+      </tr>
+      {details && (
+        <tr className="border-none bg-sky-50/60">
+          <td colSpan={isManager ? 7 : 6} className="px-3 pb-1.5 pt-0">
+            <TimeOffDetails request={request} />
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
+/// The same, as a card below a laptop's width.
+function TimeOffCard({ date, request, isManager, selfId, onEdit }: TimeOffLineProps) {
+  const t = useT();
+  return (
+    <li className="bg-sky-50/60 px-3 py-2" data-testid="timesheet-time-off">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          {isManager && request.employee && (
+            <p className="font-medium text-slate-900">
+              {request.employee.firstName} {request.employee.lastName}
+            </p>
+          )}
+          <p className="text-sm text-slate-600">{formatCalendarDate(date, { year: false })}</p>
+          <p className="mt-0.5 text-sm italic text-slate-600">
+            {request.isHalfDay ? t('Half day off') : t('Day off')}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap justify-end gap-1">
+          <TimeOffBadges request={request} />
+        </div>
+      </div>
+      <TimeOffDetails request={request} />
+      <div className="mt-1">
+        <TimeOffEdit request={request} isManager={isManager} selfId={selfId} onEdit={onEdit} />
+      </div>
+    </li>
+  );
+}
+
 function dayKey(iso: string): string {
   return new Date(iso).toLocaleDateString('en-CA');
 }

@@ -22,6 +22,7 @@ import {
   QueryPtoRequestsDto,
   RecordPtoDto,
   ReviewPtoRequestDto,
+  TimeOffDaysQueryDto,
 } from './dto/pto.dto';
 
 const REQUEST_INCLUDE = {
@@ -247,6 +248,45 @@ export class PtoService {
     });
 
     return this.decorateAll(requests);
+  }
+
+  /**
+   * The days of time off in a period, one a day, for the Timesheet (2
+   * November 2026, Dominguez, from Selena's timesheet: "Please ... note
+   * PTO/SICK when searching through timesheets ... 10/27 is missing but she
+   * took a pto day"). Approved and waiting requests, each day it takes
+   * counted as balances count it (weekdays the office is open), with the
+   * requests themselves so a manager can edit one there. Employees see only
+   * their own.
+   */
+  async daysOff(query: TimeOffDaysQueryDto, actor: AuthUser) {
+    const employeeId = actor.role === Role.EMPLOYEE ? actor.id : query.employeeId;
+    const from = toUtcDate(query.from);
+    const to = toUtcDate(query.to);
+    if (to < from) throw new BadRequestException('The period ends before it starts.');
+    if (to.getTime() - from.getTime() > 400 * 86_400_000) {
+      throw new BadRequestException('Choose a period of a year or less.');
+    }
+    const requests = await this.prisma.ptoRequest.findMany({
+      where: {
+        employeeId,
+        status: { in: [PtoStatus.APPROVED, PtoStatus.PENDING] },
+        startDate: { lte: to },
+        endDate: { gte: from },
+      },
+      include: REQUEST_INCLUDE,
+      orderBy: { startDate: 'asc' },
+    });
+    const [decorated, datesOf] = await Promise.all([
+      this.decorateAll(requests),
+      this.days.datesFor(requests),
+    ]);
+    const days = requests.flatMap((request) =>
+      datesOf(request)
+        .filter((date) => date >= query.from && date <= query.to)
+        .map((date) => ({ date, requestId: request.id })),
+    );
+    return { requests: decorated, days };
   }
 
   async findOne(id: string, actor: AuthUser) {

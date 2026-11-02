@@ -59,6 +59,15 @@ export class TimeOffDaysService {
     return (request) => countedDays(request, closedByPerson.get(request.employeeId) ?? new Set());
   }
 
+  /// The days each request takes, in order (weekdays its person's office is
+  /// open), from one read for every request: the Timesheet's days off.
+  async datesFor(requests: Dates[]): Promise<(request: Dates) => string[]> {
+    if (requests.length === 0) return () => [];
+    const closedByPerson = await this.closedByPerson(requests);
+    return (request) =>
+      countedDateList(request, closedByPerson.get(request.employeeId) ?? new Set());
+  }
+
   /**
    * What approving each request would do past the balance (November 2026):
    * how many of its days stay paid and how many become Unpaid, or null when

@@ -1003,6 +1003,27 @@ split on an edit: what a manager sets is deliberate, even past the balance
 kind clears `unpaidPastBalanceOf`. Changed dates are checked for an overlap
 with anything but the request itself.
 
+### Days off on the Timesheet (November 2026)
+
+Dominguez, 2 November 2026, from a manager's look at Selena's timesheet:
+"Please ... note PTO/SICK when searching through timesheets ... 10/27 is
+missing but she took a pto day this day. I still need to alter it bc this is
+unpaid as she has no days left". A day with no punch looked like a gap.
+
+`GET /pto/days?from&to` (`PtoService.daysOff`) gives each day of approved or
+waiting time off in the period, counted as balances count it (weekdays the
+person's office is open, `TimeOffDaysService.datesFor` on `countedDateList`),
+with the requests themselves. Employees get only their own, as for every
+time off read. The Timesheet loads it beside the punches (a failure there
+leaves the hours on screen) and lists each day among them, newest first,
+narrowed by the same Day and Employee filters: "Day off" or "Half day off",
+a badge for the kind (PTO, Sick, Unpaid) and "Waiting to be decided", and
+under it what `TimeOffDetails` shows on Time off (unpaid past the balance,
+who changed it). **No hours**: time off is not in the payroll export, so the
+total and "N entries" stay the punches'; "N days off" is said beside them.
+Managers have **Edit** on somebody else's day, which opens the same
+`EditTimeOffDialog` as Time off requests. `tests/browser/timesheet-time-off.mjs`.
+
 ### The policy year
 
 January to December by default, configurable to a fiscal year. The balance shown
