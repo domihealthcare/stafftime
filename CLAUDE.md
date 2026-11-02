@@ -2063,6 +2063,9 @@ Beyond the phases, the parts worth knowing about before picking up work:
   browser's own day, not New Jersey's as the server does, so a browser in
   another zone said nothing was published (an app fix, invisible on a New
   Jersey computer: `practiceDate()` in `AvailabilityPage.tsx`).
+  And `tomorrow` turned its switch off and reloaded before the save had
+  finished, so the old value came back once in CI; it now waits for the
+  save, as `weekly` already did.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

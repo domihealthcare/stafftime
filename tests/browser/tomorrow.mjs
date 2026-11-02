@@ -89,7 +89,14 @@ await step('Email settings has "You’re on tomorrow", on to start with, and Fra
   const card = frankie.getByTestId('shift-reminders');
   const toggle = card.getByRole('switch', { name: "You're on tomorrow" });
   if ((await toggle.getAttribute('aria-checked')) !== 'true') throw new Error('not on to start with');
+  // The switch flips on screen before the save is done; reloading before it
+  // is done brought the old value back (CI, 2 November 2026, as weekly.mjs
+  // found in October). Wait for the save.
+  const saved = frankie.waitForResponse(
+    (r) => r.url().includes('/api/auth/preferences') && r.request().method() !== 'GET',
+  );
   await toggle.click();
+  if (!(await saved).ok()) throw new Error('the save failed');
   await card.getByText('Off. Your shifts are still on your Schedule').waitFor({ timeout: 10000 });
   await frankie.reload({ waitUntil: 'networkidle' });
   if ((await toggle.getAttribute('aria-checked')) !== 'false') throw new Error('did not stay off');
