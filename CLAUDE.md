@@ -2177,6 +2177,22 @@ Beyond the phases, the parts worth knowing about before picking up work:
   stale line about the monthly pop-up is gone;
   `tests/browser/time-off-edit.mjs` (replaced `time-off-type.mjs`). Worth
   carrying to the EMR module.
+- **Old approved requests past the balance, put right** (2 November 2026,
+  Dominguez: "fix the old approved requests that went past the balance",
+  version 1.40.0): requests approved whole before the split existed show as
+  fully paid. A card at the top of **Time off requests** (managers and admins,
+  never their own) lists each one this policy year or later that went past
+  the balance, with what splitting it does, and **Split them into paid and
+  unpaid days** does it in one press, by the same rule as approving: each
+  person's requests walked in date order, the earliest paid first. Time off
+  an admin recorded, or a manager has changed since, uses its days but is
+  left alone. Each is recorded ("Split past the sick balance: ...") and the
+  person told. The card is gone once none are left. Earlier policy years are
+  left as they were. `pto/past-balance-repair.service.ts`, `walkApproved` in
+  `pto/past-balance-split.ts`, `GET /pto/past-balance`, `POST
+  /pto/past-balance/split`, `components/PastBalanceFixes.tsx`; no migration;
+  `tests/browser/time-off-edit.mjs`. **A manager has to press it on the live
+  site** once this is out.
 - **Face ID sign-in** (2 November 2026, Dominguez: "is there a way we can
   add that staff can use face id through their phone to login to portal?";
   his choices: optional with the password kept, and Face ID opens the PIN in

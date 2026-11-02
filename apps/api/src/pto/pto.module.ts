@@ -6,11 +6,18 @@ import { PtoPolicyService } from './pto-policy.service';
 import { PtoService } from './pto.service';
 import { CleanTimeOffService } from './clean-time-off.service';
 import { TimeOffDaysService } from './time-off-days.service';
+import { PastBalanceRepairService } from './past-balance-repair.service';
 
 @Module({
   imports: [AiModule],
   controllers: [PtoController, DeclineWordingController],
-  providers: [PtoService, PtoPolicyService, CleanTimeOffService, TimeOffDaysService],
+  providers: [
+    PtoService,
+    PtoPolicyService,
+    CleanTimeOffService,
+    TimeOffDaysService,
+    PastBalanceRepairService,
+  ],
   exports: [PtoService, PtoPolicyService, TimeOffDaysService],
 })
 export class PtoModule {}

@@ -58,3 +58,47 @@ export function splitPastBalance(
     unpaid: { startDate: unpaidStart, endDate: request.endDate, isHalfDay: false },
   };
 }
+
+/**
+ * Requests approved before the split existed (2 November 2026, Dominguez:
+ * "fix the old approved requests that went past the balance"): one person's
+ * approved requests drawing on one balance in one policy year, walked in
+ * date order the way the balance counts them, each paid from what is left
+ * until it runs out. Returns the split for each request that went past it.
+ *
+ * A request that may not be split (recorded by an admin, changed by a
+ * manager since, or running into another policy year) still uses up its
+ * days, so the ones after it are judged on what really was left.
+ */
+export interface ApprovedToWalk {
+  id: string;
+  request: { startDate: Date; endDate: Date; isHalfDay: boolean };
+  /// Its days inside the policy year, in order.
+  countedDates: string[];
+  splittable: boolean;
+}
+
+export function walkApproved(
+  requests: ApprovedToWalk[],
+  /// What the year had to give before anything booked in Domi Staff.
+  startingLeft: number,
+): Map<string, PastBalanceSplit> {
+  const splits = new Map<string, PastBalanceSplit>();
+  let left = startingLeft;
+  for (const item of requests) {
+    const halfDay = item.request.isHalfDay && item.countedDates.length === 1;
+    const days = halfDay ? 0.5 : item.countedDates.length;
+    if (!item.splittable) {
+      left -= days;
+      continue;
+    }
+    const split = splitPastBalance(item.request, item.countedDates, left);
+    if (split) {
+      splits.set(item.id, split);
+      left -= split.paidDays;
+    } else {
+      left -= days;
+    }
+  }
+  return splits;
+}

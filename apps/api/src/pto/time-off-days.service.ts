@@ -92,7 +92,7 @@ export class TimeOffDaysService {
   }
 
   /// The days each person need not take off, from one read for everybody.
-  private async closedByPerson(requests: Dates[]): Promise<Map<string, Set<string>>> {
+  async closedByPerson(requests: Dates[]): Promise<Map<string, Set<string>>> {
     const from = requests.reduce(
       (min, r) => (r.startDate < min ? r.startDate : min),
       requests[0].startDate,
