@@ -7,6 +7,11 @@ export const TEAM: Record<string, string> = {
   'Your recorded hours.': 'Tus horas registradas.',
   Day: 'Día',
   'All days': 'Todos los días',
+  // Days of time off among the punches (November 2026)
+  'Day off': 'Día libre',
+  'Waiting to be decided': 'Pendiente de decisión',
+  '{n} day off': '{n} día libre',
+  '{n} days off': '{n} días libres',
   'Clear filters': 'Quitar filtros',
   hours: 'horas',
   'Loading timesheet': 'Cargando la hoja de horas',

@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Prisma, PtoStatus, PtoType, Role } from '@prisma/client';
 import { countDays, isoDate } from '../common/util/calendar-date.util';
-import { countedDays } from './counted-days';
+import { countedDateList, countedDays } from './counted-days';
 import { PtoService } from './pto.service';
 
 describe('date helpers', () => {
@@ -105,6 +105,9 @@ describe('PtoService', () => {
       ),
       approvalSplits: jest.fn(async (requests: unknown[]) =>
         requests.map(() => options.split ?? null),
+      ),
+      datesFor: jest.fn(
+        async () => (r: { startDate: Date; endDate: Date }) => countedDateList(r, new Set()),
       ),
       preview: jest.fn(async (r: Parameters<typeof countedDays>[0]) => {
         const taken = countedDays(r, new Set());
@@ -711,6 +714,60 @@ describe('PtoService', () => {
         request: { id: 'pto-1', employeeId: 'emp-2', startDate: new Date(), endDate: new Date() },
       });
       await expect(service.findOne('pto-1', employee)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  /// The Timesheet's days off (November 2026, from Selena's timesheet, where
+  /// a PTO day simply looked missing).
+  describe('days off in a period', () => {
+    const request = {
+      id: 'pto-9',
+      employeeId: 'emp-1',
+      type: PtoType.VACATION,
+      status: PtoStatus.APPROVED,
+      // Friday 23 to Tuesday 27 October: the weekend is not a day off.
+      startDate: new Date('2026-10-23T00:00:00.000Z'),
+      endDate: new Date('2026-10-27T00:00:00.000Z'),
+      isHalfDay: false,
+    };
+
+    it('gives each weekday it takes, inside the period, with its request', async () => {
+      const { service, prisma } = build();
+      prisma.ptoRequest.findMany.mockResolvedValueOnce([request]);
+      const found = await service.daysOff({ from: '2026-10-19', to: '2026-10-26' }, manager);
+      expect(found.days).toEqual([
+        { date: '2026-10-23', requestId: 'pto-9' },
+        { date: '2026-10-26', requestId: 'pto-9' },
+      ]);
+      expect(found.requests.map((r) => r.id)).toEqual(['pto-9']);
+    });
+
+    it('takes approved and waiting time off that overlaps the period, never declined', async () => {
+      const { service, prisma } = build();
+      await service.daysOff({ from: '2026-10-19', to: '2026-11-01' }, manager);
+      const where = prisma.ptoRequest.findMany.mock.calls[0][0].where;
+      expect(where.status).toEqual({ in: [PtoStatus.APPROVED, PtoStatus.PENDING] });
+      expect(where.startDate).toEqual({ lte: new Date('2026-11-01T00:00:00.000Z') });
+      expect(where.endDate).toEqual({ gte: new Date('2026-10-19T00:00:00.000Z') });
+    });
+
+    it('keeps an employee to their own, whoever they ask about', async () => {
+      const { service, prisma } = build();
+      await service.daysOff(
+        { from: '2026-10-19', to: '2026-11-01', employeeId: 'emp-2' },
+        employee,
+      );
+      expect(prisma.ptoRequest.findMany.mock.calls[0][0].where.employeeId).toBe('emp-1');
+    });
+
+    it('refuses a period backwards or over a year', async () => {
+      const { service } = build();
+      await expect(
+        service.daysOff({ from: '2026-11-01', to: '2026-10-01' }, manager),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.daysOff({ from: '2024-01-01', to: '2026-01-01' }, manager),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 

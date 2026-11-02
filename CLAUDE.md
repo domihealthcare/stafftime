@@ -2177,6 +2177,20 @@ Beyond the phases, the parts worth knowing about before picking up work:
   stale line about the monthly pop-up is gone;
   `tests/browser/time-off-edit.mjs` (replaced `time-off-type.mjs`). Worth
   carrying to the EMR module.
+- **Days off on the Timesheet** (2 November 2026, Dominguez, from Selena's
+  timesheet: "Please ... note PTO/SICK when searching through timesheets ...
+  10/27 is missing but she took a pto day this day. I still need to alter it
+  bc this is unpaid as she has no days left"; version 1.41.0): each day of
+  approved or waiting time off is a line among the punches - "Day off" (or
+  half), a PTO / Sick / Unpaid badge, "Waiting to be decided" - narrowed by
+  the same Day and Employee filters, for managers and for staff on their own.
+  **No hours**: the total and "N entries" stay the punches', with "N days
+  off" beside them. Managers press **Edit** on somebody else's to change it
+  there (the same dialog as Time off requests, so PTO to Unpaid with a note).
+  Days counted as balances count them (weekdays the office is open).
+  `GET /pto/days` (`PtoService.daysOff`, staff only their own),
+  `TimeOffRow` / `TimeOffCard` in `TimesheetPage.tsx`; see *Days off on the
+  Timesheet* in `docs/architecture.md`; `tests/browser/timesheet-time-off.mjs`.
 - **Old approved requests past the balance, put right** (2 November 2026,
   Dominguez: "fix the old approved requests that went past the balance",
   version 1.40.0): requests approved whole before the split existed show as

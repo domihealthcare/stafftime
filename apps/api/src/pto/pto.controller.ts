@@ -26,6 +26,7 @@ import {
   RecordPtoDto,
   ReviewPtoRequestDto,
   UpdatePtoPolicyDto,
+  TimeOffDaysQueryDto,
 } from './dto/pto.dto';
 import { PtoPolicyService } from './pto-policy.service';
 import { PtoService } from './pto.service';
@@ -160,6 +161,12 @@ export class PtoController {
   @HttpCode(HttpStatus.OK)
   approveClean(@Body() dto: ApproveCleanTimeOffDto, @CurrentUser() user: AuthUser) {
     return this.cleanTimeOff.approve(dto.ids, user);
+  }
+
+  /// The days of time off in a period, for the Timesheet (November 2026).
+  @Get('days')
+  daysOff(@Query() query: TimeOffDaysQueryDto, @CurrentUser() user: AuthUser) {
+    return this.pto.daysOff(query, user);
   }
 
   /// Time off approved before 2 November 2026 that went past the balance,

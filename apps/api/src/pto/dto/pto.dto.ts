@@ -267,3 +267,16 @@ export class AdjustPtoBalanceDto {
   @Days('Sick days carried over')
   sickCarriedOver?: number | null;
 }
+
+/// The days of time off in a period, for the Timesheet (November 2026).
+export class TimeOffDaysQueryDto {
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'from is a day, YYYY-MM-DD.' })
+  from!: string;
+
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'to is a day, YYYY-MM-DD.' })
+  to!: string;
+
+  @IsOptional()
+  @IsUUID('4')
+  employeeId?: string;
+}

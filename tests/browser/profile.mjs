@@ -72,7 +72,7 @@ async function onScreen(page) {
         .join(' | '),
     }))
     .catch((e) => ({ error: e.message }));
-  return `On screen: ${JSON.stringify(seen)} (screenshot profile-stuck.png)`;
+  return `On screen: ${JSON.stringify(seen)} (screenshot profile-stuck.png). Last requests: ${typeof apiLog === 'undefined' ? '-' : apiLog.slice(-20).join(' | ')}`;
 }
 
 async function openDirectory(page) {
@@ -84,6 +84,21 @@ async function openDirectory(page) {
 const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true });
 const frankie = await ctx.newPage();
 frankie.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
+// What the page asked the server, newest last, for a stuck step to report
+// (2 November 2026: on #137 the form went back to the stored phone number
+// after it was typed, with Save greyed out; a second GET /api/profile, or
+// /api/auth/me, just before would say why).
+const apiLog = [];
+const started = Date.now();
+frankie.on('request', (request) => {
+  const url = new URL(request.url());
+  if (!url.pathname.startsWith('/api/')) return;
+  apiLog.push(`${((Date.now() - started) / 1000).toFixed(1)}s ${request.method()} ${url.pathname}`);
+  if (apiLog.length > 40) apiLog.shift();
+});
+frankie.on('framenavigated', (frame) => {
+  if (frame === frankie.mainFrame()) apiLog.push(`${((Date.now() - started) / 1000).toFixed(1)}s navigated ${new URL(frame.url()).pathname}`);
+});
 await signIn(frankie, 'frontdesk@domihealthcare.com');
 
 await step('Your profile is in the account menu', async () => {

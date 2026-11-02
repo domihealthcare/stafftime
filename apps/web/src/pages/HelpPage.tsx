@@ -425,7 +425,8 @@ const STAFF: Section[] = [
             <Screen>Timesheet</Screen> shows every punch and the total. Use the shortcuts along the
             top - this week, last week, this or last pay period, this or last month - or{' '}
             <strong>Custom</strong> to pick any two dates. The arrows step back and forward a period
-            at a time. Pay is every two weeks.
+            at a time. Pay is every two weeks. A day of time off is listed too, as PTO, Sick or
+            Unpaid, so a day with no punch is not a gap; it adds no hours.
           </p>
         ),
       },
@@ -1577,7 +1578,9 @@ const MANAGERS: Section[] = [
             clocked out at midnight or somewhere other than scheduled. Those flagged ones stay, each
             with its own <strong>Approve</strong>, for you to look at first. The Day and Employee
             filters narrow what the button takes. The banner at the top lists what is still
-            unapproved.
+            unapproved. Days of time off are listed among the punches (PTO, Sick or Unpaid, and
+            "Waiting to be decided" if not yet approved); <strong>Edit</strong> on one changes it
+            there, PTO to Unpaid for somebody with none left, say, with a note they read.
           </p>
         ),
       },

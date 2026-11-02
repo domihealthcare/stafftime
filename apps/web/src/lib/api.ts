@@ -23,6 +23,7 @@ import type {
   CleanTimeOffCheck,
   LeavingDetails,
   PasskeySummary,
+  TimeOffDays,
   PayLockStatus,
   PayOverview,
   PayPerson,
@@ -752,6 +753,9 @@ export const api = {
     request<EveryonesSchedule>(`/schedule-view${toQuery({ from, to })}`),
   listPto: (params: Record<string, string | undefined> = {}) =>
     request<PtoRequest[]>(`/pto${toQuery(params)}`),
+  /// Each day of time off in a period, for the Timesheet (November 2026).
+  timeOffDays: (range: { from: string; to: string }) =>
+    request<TimeOffDays>(`/pto/days${toQuery(range)}`),
   createPto: (body: {
     type: string;
     startDate: string;

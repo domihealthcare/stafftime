@@ -307,6 +307,13 @@ export interface PtoRequest {
   changes?: PtoChange[];
 }
 
+/// The days of time off in a period, one a day, for the Timesheet
+/// (`GET /pto/days`, November 2026), with the requests they belong to.
+export interface TimeOffDays {
+  requests: PtoRequest[];
+  days: { date: string; requestId: string }[];
+}
+
 /// The other part of a request split into paid and unpaid days.
 export interface PtoRequestPart {
   id: string;
