@@ -27,6 +27,7 @@ import { TopicAssignees } from '../components/TopicAssignees';
 import { ApproveCleanTimeOff } from '../components/ApproveCleanTimeOff';
 import { ScheduleTabs } from '../components/ScheduleTabs';
 import { useDeclineTimeOff } from '../components/DeclineTimeOff';
+import { EditTimeOffDialog, TimeOffDetails } from '../components/EditTimeOff';
 import {
   Alert,
   Badge,
@@ -35,7 +36,6 @@ import {
   PageHeading,
   Spinner,
   buttonClass,
-  inputClass,
 } from '../components/ui';
 
 const TYPE_LABELS: Record<PtoType, string> = PTO_TYPE_LABELS;
@@ -325,12 +325,19 @@ function RequestCard({
 
   // A manager may decide anyone's request but their own.
   const canDecide = isManager && !isMine && request.status === 'PENDING';
-  // A manager can put right the kind of anyone else's request, even a past one.
-  const canChangeType = isManager && !isMine && ['PENDING', 'APPROVED'].includes(request.status);
+  // A manager or admin can change anyone else's request, even a past one:
+  // the kind, the dates and a note (November 2026).
+  const canEdit = isManager && !isMine && ['PENDING', 'APPROVED'].includes(request.status);
+  const [editing, setEditing] = useState(false);
+  // Cancelling one part of a request split into paid and unpaid days
+  // cancels the other too.
+  const hasOtherPart =
+    Boolean(request.splitFrom && request.splitFrom.status !== 'CANCELLED') ||
+    (request.splitParts ?? []).some((part) => part.status !== 'CANCELLED');
   const canCancel = (isMine || isManager) && ['PENDING', 'APPROVED'].includes(request.status);
 
   return (
-    <Card className="p-4">
+    <Card className="p-4" testId={`time-off-request-${request.id}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-2">
@@ -352,7 +359,7 @@ function RequestCard({
             )}
             {request.recordedBy && <> · {t('recorded after the fact')}</>}
           </p>
-          {request.pastBalance && request.status === 'PENDING' && (
+          {request.pastBalance && request.status === 'PENDING' && !request.approvalSplit && (
             <p
               data-testid="past-balance-flag"
               className="mt-2 rounded bg-amber-50 px-2 py-1 text-xs font-medium text-amber-900 ring-1 ring-inset ring-amber-200"
@@ -360,6 +367,7 @@ function RequestCard({
               {t('Past the balance - asked knowing the extra days may be unpaid.')}
             </p>
           )}
+          <TimeOffDetails request={request} />
           {request.notes && (
             <p className="mt-2 text-sm text-slate-700">&ldquo;{request.notes}&rdquo;</p>
           )}
@@ -401,36 +409,15 @@ function RequestCard({
               </button>
             </>
           )}
-          {canChangeType && (
-            <label className="flex items-center gap-1 text-sm text-slate-600">
-              <span>Change to</span>
-              <select
-                aria-label="Change the kind of time off"
-                disabled={busy}
-                value=""
-                onChange={async (event) => {
-                  const next = event.target.value as PtoType;
-                  if (!next) return;
-                  const name =
-                    request.employee?.preferredName ?? request.employee?.firstName ?? 'their';
-                  const sure = await confirm({
-                    title: `Change this to ${TYPE_LABELS[next]}?`,
-                    body: `${name}’s ${TYPE_LABELS[request.type].toLowerCase()}, ${formatRange(request.startDate, request.endDate, request.isHalfDay)}, will count as ${TYPE_LABELS[next].toLowerCase()} instead, and their balances will move.`,
-                    confirmLabel: `Yes, change it`,
-                    cancelLabel: 'Leave it',
-                  });
-                  if (sure) await act(() => api.changePtoType(request.id, next));
-                }}
-                className={inputClass}
-              >
-                <option value="">Choose…</option>
-                {REQUESTABLE_PTO_TYPES.filter((value) => value !== request.type).map((value) => (
-                  <option key={value} value={value}>
-                    {TYPE_LABELS[value]}
-                  </option>
-                ))}
-              </select>
-            </label>
+          {canEdit && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setEditing(true)}
+              className={buttonClass('secondary', 'sm')}
+            >
+              Edit
+            </button>
           )}
           {canCancel && (
             <button
@@ -441,11 +428,11 @@ function RequestCard({
                 const sure = await confirm({
                   title: isMine ? t('Withdraw this request?') : 'Cancel this time off?',
                   body: isMine
-                    ? t('{type}, {range}. You would need to ask again.', {
+                    ? `${t('{type}, {range}. You would need to ask again.', {
                         type: ptoTypeLabel(request.type),
                         range,
-                      })
-                    : `${request.employee ? `${request.employee.preferredName ?? request.employee.firstName}’s ` : ''}${TYPE_LABELS[request.type].toLowerCase()}, ${range}.${request.status === 'APPROVED' ? ' It is already approved, so they may be counting on it.' : ''}`,
+                      })}${hasOtherPart ? ` ${t('Its paid and unpaid days are both cancelled.')}` : ''}`
+                    : `${request.employee ? `${request.employee.preferredName ?? request.employee.firstName}’s ` : ''}${TYPE_LABELS[request.type].toLowerCase()}, ${range}.${request.status === 'APPROVED' ? ' It is already approved, so they may be counting on it.' : ''}${hasOtherPart ? ` ${t('Its paid and unpaid days are both cancelled.')}` : ''}`,
                   confirmLabel: isMine ? t('Yes, withdraw it') : 'Yes, cancel it',
                   cancelLabel: t('Keep it'),
                 });
@@ -490,6 +477,15 @@ function RequestCard({
 
       {approveTimeOff.dialog}
       {declineTimeOff.dialog}
+      {editing && (
+        <EditTimeOffDialog
+          request={request}
+          onDone={(saved) => {
+            setEditing(false);
+            if (saved) onChanged();
+          }}
+        />
+      )}
     </Card>
   );
 }

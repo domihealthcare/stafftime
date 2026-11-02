@@ -277,6 +277,38 @@ export interface PtoRequest {
   recordedBy?: { id: string; firstName: string; lastName: string } | null;
   /// Asked for more than was left, knowing the rest may be unpaid.
   pastBalance?: boolean;
+  /// Unpaid because it was past this kind's balance when it was approved
+  /// (November 2026): the split-off part, or all of a request when nothing
+  /// was left. Null for unpaid time off chosen as such.
+  unpaidPastBalanceOf?: PtoType | null;
+  /// The paid part this unpaid part was split from, and the unpaid parts
+  /// split from this one.
+  splitFrom?: PtoRequestPart | null;
+  splitParts?: PtoRequestPart[];
+  /// Still waiting: what approving it would split off past the balance.
+  approvalSplit?: { paidDays: number; unpaidDays: number; unpaidFrom: string } | null;
+  /// Every change a manager or admin made to it, newest first.
+  changes?: PtoChange[];
+}
+
+/// The other part of a request split into paid and unpaid days.
+export interface PtoRequestPart {
+  id: string;
+  type: PtoType;
+  status: PtoStatus;
+  startDate: string;
+  endDate: string;
+  isHalfDay: boolean;
+  days: number;
+}
+
+/// A change made to somebody's time off, and who made it.
+export interface PtoChange {
+  id: string;
+  changedAt: string;
+  summary: string;
+  note: string | null;
+  changedBy: { id: string; firstName: string; lastName: string } | null;
 }
 
 /// What a request would take and leave, before it is sent.

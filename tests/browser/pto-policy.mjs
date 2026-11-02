@@ -168,7 +168,8 @@ await step('a request in a different policy year says so instead of misreporting
 // --- the switch-over: time taken before Domi Staff (Dominguez, September 2026) ---
 const leftIn = async (row, label) => {
   const text = (await row.innerText()).replace(/\n/g, ' ');
-  const match = text.match(new RegExp(`${label} (-?[\\d.]+) left`));
+  // "PTO 10 of 15 left": never below 0 since November 2026.
+  const match = text.match(new RegExp(`${label} ([\\d.]+) of [\\d.]+ left`));
   if (!match) throw new Error(`no ${label} balance in "${text}"`);
   return Number(match[1]);
 };

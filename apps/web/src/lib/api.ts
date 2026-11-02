@@ -787,11 +787,21 @@ export const api = {
     }).then(timeOffChanged),
   cancelPto: (id: string) =>
     request<PtoRequest>(`/pto/${id}/cancel`, { method: 'PATCH' }).then(timeOffChanged),
-  /// A manager correcting the kind (PTO to Sick, say) of someone else's request.
-  changePtoType: (id: string, type: PtoType) =>
-    request<PtoRequest>(`/pto/${id}/type`, {
+  /// A manager or admin changing someone else's time off: the kind, the
+  /// dates, a half day and a note they read. Kept with who changed it.
+  editPto: (
+    id: string,
+    changes: {
+      type?: PtoType;
+      startDate?: string;
+      endDate?: string;
+      isHalfDay?: boolean;
+      note?: string;
+    },
+  ) =>
+    request<PtoRequest>(`/pto/${id}`, {
       method: 'PATCH',
-      body: JSON.stringify({ type }),
+      body: JSON.stringify(changes),
     }).then(timeOffChanged),
   ptoConflicts: (id: string) => request<ConflictingShift[]>(`/pto/${id}/conflicts`),
   /// Too many from the same job role and office off on those days, this one counted.

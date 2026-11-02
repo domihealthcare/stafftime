@@ -6,7 +6,7 @@ import { practiceDate } from '../lib/practice-time';
 import { formatCalendarDate } from '../lib/format';
 import { useIsManager, useSession } from '../lib/session';
 import { useT } from '../lib/i18n';
-import { PTO_TYPE_LABELS, hasNone, ptoTypeLabel } from '../lib/time-off';
+import { PTO_TYPE_LABELS, daysLeft, hasNone, ptoTypeLabel } from '../lib/time-off';
 import type { PtoBalance, PtoRequest } from '../lib/types';
 import { useApproveTimeOff } from './ApproveTimeOff';
 import { ApproveCleanTimeOff } from './ApproveCleanTimeOff';
@@ -144,15 +144,28 @@ export function RequestsToDecide({ onDecided }: { onDecided: () => void }) {
                 · {PTO_TYPE_LABELS[request.type]}, {range(request)}
                 {request.isHalfDay ? ' (half day)' : ''}
               </span>
-              {request.pastBalance && ' '}
-              {request.pastBalance && (
+              {(request.pastBalance || request.approvalSplit) && ' '}
+              {request.approvalSplit ? (
                 <span
                   data-testid="past-balance-flag"
-                  title="More than was left - they said they understand it may be unpaid"
+                  title="Approving it keeps the days still covered as asked and makes the rest a separate Unpaid part"
                   className="rounded bg-amber-100 px-1.5 text-xs font-medium text-amber-900"
                 >
-                  past their balance · may be unpaid
+                  past their balance ·{' '}
+                  {request.approvalSplit.paidDays > 0
+                    ? `${request.approvalSplit.unpaidDays} of ${request.approvalSplit.paidDays + request.approvalSplit.unpaidDays} days will be unpaid`
+                    : 'all of it will be unpaid'}
                 </span>
+              ) : (
+                request.pastBalance && (
+                  <span
+                    data-testid="past-balance-flag"
+                    title="More than was left - they said they understand it may be unpaid"
+                    className="rounded bg-amber-100 px-1.5 text-xs font-medium text-amber-900"
+                  >
+                    past their balance · may be unpaid
+                  </span>
+                )
               )}
               {request.notes && (
                 <span className="text-xs text-slate-600" title={request.notes}>
@@ -248,14 +261,14 @@ export function YourTimeOff({ refreshKey }: { refreshKey: number }) {
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
         <span className="font-semibold text-slate-900">{t('Your time off')}</span>
         {!hasNone(balance.vacation) && (
-          <span className="text-slate-700">
-            {t('PTO')} <span className="font-semibold">{balance.vacation.remaining}</span>{' '}
-            {t('days left')}
+          <span className="text-slate-700" data-testid="your-pto-left">
+            {t('PTO')} <span className="font-semibold">{daysLeft(balance.vacation)}</span>{' '}
+            {t('of {n} days left', { n: balance.vacation.available })}
           </span>
         )}
-        <span className="text-slate-700">
-          {t('Sick')} <span className="font-semibold">{balance.sick.remaining}</span>{' '}
-          {t('days left')}
+        <span className="text-slate-700" data-testid="your-sick-left">
+          {t('Sick')} <span className="font-semibold">{daysLeft(balance.sick)}</span>{' '}
+          {t('of {n} days left', { n: balance.sick.available })}
         </span>
         <Link
           to="/time-off"

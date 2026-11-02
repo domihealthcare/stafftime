@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { practiceDate } from '../lib/practice-time';
 import { formatCalendarDate } from '../lib/format';
 import { ApiError, api } from '../lib/api';
-import { PTO_TYPE_LABELS, REQUESTABLE_PTO_TYPES, hasNone } from '../lib/time-off';
+import { useSession } from '../lib/session';
+import { PTO_TYPE_LABELS, REQUESTABLE_PTO_TYPES, daysLeft, hasNone } from '../lib/time-off';
 import type {
   AllowanceBalance,
   PtoBalance,
@@ -14,6 +15,7 @@ import type {
 import { useConfirm } from './ConfirmDialog';
 import { Modal } from './Modal';
 import { AdjustForm } from './StaffPtoBalances';
+import { EditTimeOffDialog, TimeOffDetails } from './EditTimeOff';
 import { Alert, Badge, Card, Field, buttonClass, inputClass } from './ui';
 
 const STATUS_TONE: Record<PtoStatus, 'success' | 'warning' | 'danger' | 'neutral'> = {
@@ -181,11 +183,8 @@ function AllowanceLine({ label, allowance }: { label: string; allowance: Allowan
   if (hasNone(allowance)) return <span>No {label}</span>;
   return (
     <span>
-      {label}{' '}
-      <strong className={allowance.remaining < 0 ? 'text-rose-700' : 'text-slate-900'}>
-        {allowance.remaining}
-      </strong>{' '}
-      of {allowance.available} left
+      {label} <strong className="text-slate-900">{daysLeft(allowance)}</strong> of{' '}
+      {allowance.available} left
       {allowance.pending > 0 && (
         <span className="text-xs text-slate-500"> ({allowance.pending} asked for)</span>
       )}
@@ -236,7 +235,10 @@ function TimeOffList({
   onChanged: () => void;
 }) {
   const confirm = useConfirm();
+  const { employee: me } = useSession();
   const [problem, setProblem] = useState<string | null>(null);
+  // Changing a request: the kind, the dates, a note (November 2026).
+  const [editing, setEditing] = useState<PtoRequest | null>(null);
   const newestFirst = [...requests].sort((a, b) => b.startDate.localeCompare(a.startDate));
 
   async function remove(request: PtoRequest) {
@@ -300,7 +302,19 @@ function TimeOffList({
                   {request.reviewNote}
                 </p>
               )}
+              <TimeOffDetails request={request} />
             </div>
+            {(request.status === 'PENDING' || request.status === 'APPROVED') &&
+              request.employeeId !== me?.id && (
+                <button
+                  type="button"
+                  onClick={() => setEditing(request)}
+                  className={buttonClass('secondary', 'sm')}
+                  aria-label={`Edit the time off for ${range(request)}`}
+                >
+                  Edit
+                </button>
+              )}
             {request.recordedBy && (
               <button
                 type="button"
@@ -314,6 +328,15 @@ function TimeOffList({
           </li>
         ))}
       </ul>
+      {editing && (
+        <EditTimeOffDialog
+          request={editing}
+          onDone={(saved) => {
+            setEditing(null);
+            if (saved) onChanged();
+          }}
+        />
+      )}
     </>
   );
 }

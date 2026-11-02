@@ -103,11 +103,32 @@ export class RecordPtoDto {
   comment?: string;
 }
 
-/// A manager correcting what kind of time off a request is (October 2026,
-/// Dominguez: an hourly person put a sick day down as PTO).
-export class ChangePtoTypeDto {
+/// A manager or admin changing somebody's time off (November 2026,
+/// Dominguez: "I need to be able to edit PTO/SICK"): any of the kind, the
+/// dates and a half day, and a note the person reads. Whatever is left out
+/// stays as it was.
+export class EditPtoRequestDto {
+  @IsOptional()
   @IsIn(REQUESTABLE_PTO_TYPES, { message: 'Time off is Sick, PTO or Unpaid.' })
-  type!: PtoType;
+  type?: PtoType;
+
+  @IsOptional()
+  @IsDateString()
+  startDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isHalfDay?: boolean;
+
+  /// Why: "called out sick, doctor's note", "paid this one after all".
+  @IsOptional()
+  @IsString()
+  @Length(0, 500)
+  note?: string;
 }
 
 export class ReviewPtoRequestDto {

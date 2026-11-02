@@ -2,7 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { PtoType } from '@prisma/client';
 import { isoDate } from '../common/util/calendar-date.util';
 import { PrismaService } from '../prisma/prisma.service';
-import { closedFor, countedDays, loadClosedDays, NO_CLOSURES, skippedDays } from './counted-days';
+import {
+  closedFor,
+  countedDateList,
+  countedDays,
+  loadClosedDays,
+  NO_CLOSURES,
+  skippedDays,
+} from './counted-days';
+import { PastBalanceSplit, splitPastBalance } from './past-balance-split';
 import { PtoPolicyService, TYPE_BUCKET } from './pto-policy.service';
 
 interface Dates {
@@ -47,6 +55,44 @@ export class TimeOffDaysService {
   /// people's offices, however many requests.
   async counterFor(requests: Dates[]): Promise<(request: Dates) => number> {
     if (requests.length === 0) return () => 0;
+    const closedByPerson = await this.closedByPerson(requests);
+    return (request) => countedDays(request, closedByPerson.get(request.employeeId) ?? new Set());
+  }
+
+  /**
+   * What approving each request would do past the balance (November 2026):
+   * how many of its days stay paid and how many become Unpaid, or null when
+   * it fits, draws on no allowance, or runs into another policy year. "Left"
+   * is what has been approved against it, not what others are waiting for:
+   * another request still waiting may yet be declined. In the order given.
+   */
+  async approvalSplits(
+    requests: (Dates & { type: PtoType })[],
+  ): Promise<(PastBalanceSplit | null)[]> {
+    const drawing = requests.filter((request) => TYPE_BUCKET[request.type] !== null);
+    if (drawing.length === 0) return requests.map(() => null);
+    const [closedByPerson, balances] = await Promise.all([
+      this.closedByPerson(drawing),
+      this.policy.balancesOn(
+        drawing.map((request) => ({ employeeId: request.employeeId, day: request.startDate })),
+      ),
+    ]);
+    const splits = new Map(
+      drawing.map((request, index) => {
+        const bucket = TYPE_BUCKET[request.type]!;
+        const balance = balances[index];
+        if (isoDate(request.endDate) > balance.yearEnd) return [request, null] as const;
+        const allowance = balance[bucket];
+        const left = allowance.available - allowance.used;
+        const dates = countedDateList(request, closedByPerson.get(request.employeeId) ?? new Set());
+        return [request, splitPastBalance(request, dates, left)] as const;
+      }),
+    );
+    return requests.map((request) => splits.get(request) ?? null);
+  }
+
+  /// The days each person need not take off, from one read for everybody.
+  private async closedByPerson(requests: Dates[]): Promise<Map<string, Set<string>>> {
     const from = requests.reduce(
       (min, r) => (r.startDate < min ? r.startDate : min),
       requests[0].startDate,
@@ -72,7 +118,7 @@ export class TimeOffDaysService {
         ),
       ]),
     );
-    return (request) => countedDays(request, closedByPerson.get(request.employeeId) ?? new Set());
+    return closedByPerson;
   }
 
   /// What a request would take, and leave.

@@ -234,9 +234,10 @@ async function run(
         sources.timeOff({ employeeId: actor.id, from: today }),
       ]);
       return {
-        ptoLeft: balance.vacation.remaining,
+        // Never below 0 (November 2026): days past it are unpaid, not owed.
+        ptoLeft: Math.max(0, balance.vacation.remaining),
         ptoWaitingOnADecision: balance.vacation.pending,
-        sickLeft: balance.sick.remaining,
+        sickLeft: Math.max(0, balance.sick.remaining),
         sickWaitingOnADecision: balance.sick.pending,
         yearEnds: balance.yearEnd,
         requests: requests.map(requestLine),

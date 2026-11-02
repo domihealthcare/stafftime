@@ -100,6 +100,7 @@ describe('NotificationsService', () => {
     };
     const prisma = {
       ptoRequest: { findUnique: jest.fn() },
+      ptoChange: { findUnique: jest.fn() },
       employee: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn() },
       topicAssignee: { findMany: jest.fn().mockResolvedValue([]) },
     };
@@ -215,6 +216,63 @@ describe('NotificationsService', () => {
     expect(sent[0].text).toContain('Tue, Nov 3, 2026 to Sat, Nov 7, 2026');
     // Approving does not cancel shifts, so the email says so.
     expect(sent[0].text).toMatch(/shifts already on the schedule/);
+  });
+
+  it('names the days that are unpaid when approving went past the balance', async () => {
+    const { service, prisma, sent, inbox } = build();
+    prisma.ptoRequest.findUnique.mockResolvedValue({
+      ...approved,
+      type: 'SICK',
+      endDate: new Date('2026-11-04T00:00:00.000Z'),
+      splitParts: [
+        {
+          startDate: new Date('2026-11-05T00:00:00.000Z'),
+          endDate: new Date('2026-11-06T00:00:00.000Z'),
+          isHalfDay: false,
+          unpaidPastBalanceOf: 'SICK',
+        },
+      ],
+    });
+
+    await service.ptoDecided('pto-1');
+
+    const unpaid = 'Thu, Nov 5, 2026 to Fri, Nov 6, 2026 is unpaid: it was past your sick balance.';
+    expect(inbox.notify.mock.calls[0][1].body).toContain(unpaid);
+    expect(sent[0].text).toContain(unpaid);
+  });
+
+  it('tells somebody their time off was changed, by whom and why', async () => {
+    const { service, prisma, sent, inbox } = build();
+    prisma.ptoChange.findUnique.mockResolvedValue({
+      summary: 'Kind: Sick (was PTO)',
+      note: 'You called out sick',
+      changedBy: { firstName: 'Angelica', lastName: 'Dominguez' },
+      request: {
+        type: 'SICK',
+        startDate: new Date('2026-11-03T00:00:00.000Z'),
+        endDate: new Date('2026-11-03T00:00:00.000Z'),
+        isHalfDay: false,
+        employee: {
+          id: 'emp-frankie',
+          email: 'frankie@domihealthcare.com',
+          firstName: 'Frankie',
+          preferredName: null,
+          employmentStatus: 'ACTIVE',
+        },
+      },
+    });
+
+    await service.ptoChanged('change-1');
+
+    expect(inbox.notify).toHaveBeenCalledWith(['emp-frankie'], {
+      kind: 'TIME_OFF_DECIDED',
+      title: 'Your time off was changed',
+      body: 'Sick leave, Tue, Nov 3, 2026. Kind: Sick (was PTO) - Angelica Dominguez: “You called out sick”',
+      link: '/time-off',
+    });
+    expect(sent[0].subject).toBe('Your time off was changed');
+    expect(sent[0].text).toContain('Angelica Dominguez changed your time off.');
+    expect(sent[0].text).toContain('They said: “You called out sick”');
   });
 
   it('passes on the reason when a request is turned down', async () => {

@@ -11,10 +11,13 @@ import { addUtcDays, isoDate, toUtcDate } from '../common/util/calendar-date.uti
 import { PRACTICE_ZONE, practiceToday, zonedTimeToUtc } from '../common/util/zoned-time.util';
 import { NotificationsService } from '../email/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { balanceName, dayCount, describeDates, TIME_OFF_KIND } from './describe-time-off';
+import { PastBalanceSplit } from './past-balance-split';
 import { loadTimeOffClashes } from './time-off-clashes';
 import { TimeOffDaysService } from './time-off-days.service';
 import {
   CreatePtoRequestDto,
+  EditPtoRequestDto,
   PreviewPtoRequestDto,
   QueryPtoRequestsDto,
   RecordPtoDto,
@@ -25,7 +28,45 @@ const REQUEST_INCLUDE = {
   employee: { select: { id: true, firstName: true, lastName: true, preferredName: true } },
   reviewedBy: { select: { id: true, firstName: true, lastName: true } },
   recordedBy: { select: { id: true, firstName: true, lastName: true } },
+  // The other part of a request split into paid and unpaid days when it was
+  // approved, and every change made to it (November 2026).
+  splitFrom: {
+    select: {
+      id: true,
+      type: true,
+      status: true,
+      startDate: true,
+      endDate: true,
+      isHalfDay: true,
+      employeeId: true,
+    },
+  },
+  splitParts: {
+    select: {
+      id: true,
+      type: true,
+      status: true,
+      startDate: true,
+      endDate: true,
+      isHalfDay: true,
+      employeeId: true,
+    },
+    orderBy: { startDate: 'asc' },
+  },
+  changes: {
+    select: {
+      id: true,
+      changedAt: true,
+      summary: true,
+      note: true,
+      changedBy: { select: { id: true, firstName: true, lastName: true } },
+    },
+    orderBy: { changedAt: 'desc' },
+  },
 } satisfies Prisma.PtoRequestInclude;
+
+/// The kinds a manager may change a request to: what a new request can be.
+const EDITABLE_TYPES: PtoType[] = [PtoType.SICK, PtoType.VACATION, PtoType.UNPAID];
 
 /// Longest single request we will accept, as a guard against a mis-typed year.
 const MAX_REQUEST_DAYS = 90;
@@ -225,37 +266,101 @@ export class PtoService {
   }
 
   /**
-   * Corrects what kind of time off a request is - an hourly person who put a
-   * sick day down as PTO (October 2026). Allowed while it is waiting or
-   * approved, for days already past too, because the balance reads the type
-   * afresh. Never your own, as with deciding a request. Nobody is told; the
-   * balance on their screen moves.
+   * A manager or admin changes somebody's time off (2 November 2026,
+   * Dominguez: "I need to be able to edit PTO/SICK ... can have notes ...
+   * can say who it is altered by"): the kind, the dates, a half day, and a
+   * note the person reads. Waiting or approved, past days too, because the
+   * balance reads the request afresh. Never your own. Each change is kept
+   * with who made it, and the person is told. Nothing is split here: what a
+   * manager sets is deliberate, even past the balance.
    */
-  async changeType(id: string, type: PtoType, actor: AuthUser) {
+  async edit(id: string, dto: EditPtoRequestDto, actor: AuthUser) {
     const request = await this.prisma.ptoRequest.findUnique({
       where: { id },
-      select: { id: true, employeeId: true, status: true, type: true },
+      select: {
+        id: true,
+        employeeId: true,
+        status: true,
+        type: true,
+        startDate: true,
+        endDate: true,
+        isHalfDay: true,
+        unpaidPastBalanceOf: true,
+      },
     });
     if (!request) {
       throw new NotFoundException(`Request ${id} not found`);
     }
     if (request.employeeId === actor.id) {
       throw new ForbiddenException(
-        'You cannot change the kind of your own time off. Ask another manager or an administrator.',
+        'You cannot change your own time off. Ask another manager or an administrator.',
       );
     }
     if (request.status !== PtoStatus.PENDING && request.status !== PtoStatus.APPROVED) {
       throw new BadRequestException('Only a waiting or approved request can be changed.');
     }
-    if (request.type === type) {
-      throw new BadRequestException('It is already that kind of time off.');
+    if (dto.type && dto.type !== request.type && !EDITABLE_TYPES.includes(dto.type)) {
+      throw new BadRequestException('Time off is Sick, PTO or Unpaid.');
     }
-    const updated = await this.prisma.ptoRequest.update({
-      where: { id },
-      data: { type, ...(type === PtoType.UNPAID ? { pastBalance: false } : {}) },
-      include: REQUEST_INCLUDE,
-    });
-    this.logger.log(`Time off ${id} changed from ${request.type} to ${type} by ${actor.id}`);
+
+    const type = dto.type ?? request.type;
+    const { startDate, endDate } = this.parseDates(
+      dto.startDate ?? isoDate(request.startDate),
+      dto.endDate ?? isoDate(request.endDate),
+    );
+    const single = startDate.getTime() === endDate.getTime();
+    const isHalfDay = dto.isHalfDay ?? (request.isHalfDay && single);
+    if (isHalfDay && !single) {
+      throw new BadRequestException('A half day has to be a single date.');
+    }
+    const note = dto.note?.trim() || null;
+
+    const changes: string[] = [];
+    if (type !== request.type) {
+      changes.push(`Kind: ${TIME_OFF_KIND[type]} (was ${TIME_OFF_KIND[request.type]})`);
+    }
+    const datesChanged =
+      startDate.getTime() !== request.startDate.getTime() ||
+      endDate.getTime() !== request.endDate.getTime();
+    if (datesChanged || isHalfDay !== request.isHalfDay) {
+      changes.push(
+        `Dates: ${describeDates({ startDate, endDate, isHalfDay })} (was ${describeDates(request)})`,
+      );
+    }
+    if (changes.length === 0 && !note) {
+      throw new BadRequestException(
+        'Nothing was changed. Change the kind or the dates, or write a note.',
+      );
+    }
+    if (datesChanged) {
+      await this.assertNoOverlap(request.employeeId, startDate, endDate, [id]);
+    }
+
+    const summary = changes.length > 0 ? changes.join('; ') : 'Note added';
+    const [updated, change] = await this.prisma.$transaction([
+      this.prisma.ptoRequest.update({
+        where: { id },
+        data: {
+          type,
+          startDate,
+          endDate,
+          isHalfDay,
+          // Unpaid chosen by a manager is not "past the balance", and a kind
+          // that is no longer Unpaid is not either.
+          ...(type !== request.type ? { unpaidPastBalanceOf: null } : {}),
+          ...(type === PtoType.UNPAID ? { pastBalance: false } : {}),
+        },
+        include: REQUEST_INCLUDE,
+      }),
+      this.prisma.ptoChange.create({
+        data: { requestId: id, changedById: actor.id, summary, note },
+        select: { id: true },
+      }),
+    ]);
+    this.logger.log(`Time off ${id} changed by ${actor.id}: ${summary}`);
+
+    await this.notifyQuietly(() => this.notifications.ptoChanged(change.id));
+
     return (await this.decorateAll([updated]))[0];
   }
 
@@ -263,7 +368,15 @@ export class PtoService {
   async review(id: string, dto: ReviewPtoRequestDto, actor: AuthUser) {
     const request = await this.prisma.ptoRequest.findUnique({
       where: { id },
-      select: { id: true, employeeId: true, status: true, startDate: true, endDate: true },
+      select: {
+        id: true,
+        employeeId: true,
+        status: true,
+        type: true,
+        startDate: true,
+        endDate: true,
+        isHalfDay: true,
+      },
     });
     if (!request) {
       throw new NotFoundException(`Request ${id} not found`);
@@ -289,20 +402,77 @@ export class PtoService {
       throw new BadRequestException('Give a reason when denying a request.');
     }
 
+    // Past the balance, the days not covered become a separate Unpaid part
+    // (November 2026, Dominguez), so "Approved" never hides unpaid days.
+    const approving = dto.decision === PtoStatus.APPROVED;
+    const [split] = approving ? await this.days.approvalSplits([request]) : [null];
+    const reviewedAt = new Date();
+    const decided = {
+      status: dto.decision,
+      reviewedById: actor.id,
+      reviewedAt,
+      reviewNote: dto.reviewNote?.trim() || null,
+    };
+
     // Still pending in the write itself, so two managers deciding at the same
     // moment cannot both succeed (and the person get two answers).
     let updated;
     try {
-      updated = await this.prisma.ptoRequest.update({
-        where: { id, status: PtoStatus.PENDING },
-        data: {
-          status: dto.decision,
-          reviewedById: actor.id,
-          reviewedAt: new Date(),
-          reviewNote: dto.reviewNote?.trim() || null,
-        },
-        include: REQUEST_INCLUDE,
-      });
+      if (!split) {
+        updated = await this.prisma.ptoRequest.update({
+          where: { id, status: PtoStatus.PENDING },
+          data: decided,
+          include: REQUEST_INCLUDE,
+        });
+      } else {
+        const unpaidPart = split.paid
+          ? [
+              this.prisma.ptoRequest.create({
+                data: {
+                  employeeId: request.employeeId,
+                  type: PtoType.UNPAID,
+                  status: PtoStatus.APPROVED,
+                  startDate: split.unpaid.startDate,
+                  endDate: split.unpaid.endDate,
+                  isHalfDay: split.unpaid.isHalfDay,
+                  reviewedById: actor.id,
+                  reviewedAt,
+                  splitFromId: id,
+                  unpaidPastBalanceOf: request.type,
+                },
+                select: { id: true },
+              }),
+            ]
+          : [];
+        const [first] = await this.prisma.$transaction([
+          this.prisma.ptoRequest.update({
+            where: { id, status: PtoStatus.PENDING },
+            data: split.paid
+              ? { ...decided, endDate: split.paid.endDate }
+              : // Nothing left at all: the whole request is unpaid.
+                {
+                  ...decided,
+                  type: PtoType.UNPAID,
+                  unpaidPastBalanceOf: request.type,
+                  pastBalance: false,
+                },
+            select: { id: true },
+          }),
+          ...unpaidPart,
+          this.prisma.ptoChange.create({
+            data: {
+              requestId: id,
+              changedById: actor.id,
+              summary: describeSplit(request, split),
+            },
+            select: { id: true },
+          }),
+        ]);
+        updated = await this.prisma.ptoRequest.findUniqueOrThrow({
+          where: { id: first.id },
+          include: REQUEST_INCLUDE,
+        });
+      }
     } catch (error: unknown) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
         throw new BadRequestException('Somebody else has just decided that request.');
@@ -314,9 +484,10 @@ export class PtoService {
 
     // Their shifts inside the dates, when the manager chose to deal with them
     // in the same step (October 2026, Dominguez - making the app smarter).
+    // Every day of it, paid or not: the person is off either way.
     const shiftsHandled =
-      dto.decision === PtoStatus.APPROVED && dto.shifts && dto.shifts !== 'KEEP'
-        ? await this.handleShifts(updated, dto.shifts)
+      approving && dto.shifts && dto.shifts !== 'KEEP'
+        ? await this.handleShifts(request, dto.shifts)
         : 0;
 
     await this.notifyQuietly(() => this.notifications.ptoDecided(updated.id, shiftsHandled));
@@ -396,7 +567,7 @@ export class PtoService {
   async cancel(id: string, actor: AuthUser) {
     const request = await this.prisma.ptoRequest.findUnique({
       where: { id },
-      select: { id: true, employeeId: true, status: true, endDate: true },
+      select: { id: true, employeeId: true, status: true, endDate: true, splitFromId: true },
     });
     if (!request) {
       throw new NotFoundException(`Request ${id} not found`);
@@ -422,11 +593,33 @@ export class PtoService {
       );
     }
 
+    const cancelledAt = new Date();
     const updated = await this.prisma.ptoRequest.update({
       where: { id },
-      data: { status: PtoStatus.CANCELLED, cancelledAt: new Date() },
+      data: { status: PtoStatus.CANCELLED, cancelledAt },
       include: REQUEST_INCLUDE,
     });
+
+    // A request split into paid and unpaid days is one absence: its other
+    // part goes with it, unless that part is already over.
+    const rootId = request.splitFromId ?? request.id;
+    const relatives = await this.prisma.ptoRequest.findMany({
+      where: {
+        OR: [{ id: rootId }, { splitFromId: rootId }],
+        id: { not: id },
+        status: { in: [PtoStatus.PENDING, PtoStatus.APPROVED] },
+      },
+      select: { id: true, status: true, endDate: true },
+    });
+    const alsoCancelled = relatives
+      .filter((part) => part.status === PtoStatus.PENDING || !isEndInPast(part.endDate))
+      .map((part) => part.id);
+    if (alsoCancelled.length > 0) {
+      await this.prisma.ptoRequest.updateMany({
+        where: { id: { in: alsoCancelled } },
+        data: { status: PtoStatus.CANCELLED, cancelledAt },
+      });
+    }
 
     return (await this.decorateAll([updated]))[0];
   }
@@ -554,10 +747,16 @@ export class PtoService {
     return { startDate, endDate };
   }
 
-  private async assertNoOverlap(employeeId: string, startDate: Date, endDate: Date) {
+  private async assertNoOverlap(
+    employeeId: string,
+    startDate: Date,
+    endDate: Date,
+    except: string[] = [],
+  ) {
     const clash = await this.prisma.ptoRequest.findFirst({
       where: {
         employeeId,
+        ...(except.length > 0 ? { id: { notIn: except } } : {}),
         status: { in: [PtoStatus.PENDING, PtoStatus.APPROVED] },
         startDate: { lte: endDate },
         endDate: { gte: startDate },
@@ -575,18 +774,82 @@ export class PtoService {
 
   /// Adds the derived facts every screen wants, so neither has to work them
   /// out: the dates as plain days, and the days it takes - weekdays only, not
-  /// the days the person's office is shut (`counted-days.ts`).
+  /// the days the person's office is shut (`counted-days.ts`). Since November
+  /// 2026 also the other part of a request split into paid and unpaid days,
+  /// and, for one still waiting, what approving it would split off.
   private async decorateAll<
-    T extends { employeeId: string; startDate: Date; endDate: Date; isHalfDay: boolean },
+    T extends {
+      employeeId: string;
+      type: PtoType;
+      status: PtoStatus;
+      startDate: Date;
+      endDate: Date;
+      isHalfDay: boolean;
+      splitFrom?: SplitPart | null;
+      splitParts?: SplitPart[];
+    },
   >(requests: T[]) {
-    const count = await this.days.counterFor(requests);
-    return requests.map((request) => ({
-      ...request,
-      startDate: isoDate(request.startDate),
-      endDate: isoDate(request.endDate),
-      days: count(request),
-    }));
+    const parts = requests.flatMap((request) => [
+      ...(request.splitFrom ? [request.splitFrom] : []),
+      ...(request.splitParts ?? []),
+    ]);
+    const waiting = requests.filter((request) => request.status === PtoStatus.PENDING);
+    const [count, splits] = await Promise.all([
+      this.days.counterFor([...requests, ...parts]),
+      this.days.approvalSplits(waiting),
+    ]);
+    const splitOf = new Map(waiting.map((request, index) => [request, splits[index]]));
+    const part = (one: SplitPart) => ({
+      id: one.id,
+      type: one.type,
+      status: one.status,
+      startDate: isoDate(one.startDate),
+      endDate: isoDate(one.endDate),
+      isHalfDay: one.isHalfDay,
+      days: count(one),
+    });
+    return requests.map((request) => {
+      const split = splitOf.get(request) ?? null;
+      return {
+        ...request,
+        startDate: isoDate(request.startDate),
+        endDate: isoDate(request.endDate),
+        days: count(request),
+        splitFrom: request.splitFrom ? part(request.splitFrom) : null,
+        splitParts: (request.splitParts ?? []).map(part),
+        approvalSplit: split
+          ? {
+              paidDays: split.paidDays,
+              unpaidDays: split.unpaidDays,
+              unpaidFrom: isoDate(split.unpaid.startDate),
+            }
+          : null,
+      };
+    });
   }
+}
+
+/// The other part of a split request, as the lists carry it.
+interface SplitPart {
+  id: string;
+  employeeId: string;
+  type: PtoType;
+  status: PtoStatus;
+  startDate: Date;
+  endDate: Date;
+  isHalfDay: boolean;
+}
+
+/// "Approved past the sick balance: 3 days Sick, Mon, Nov 2 to Wed, Nov 4;
+/// 2 days Unpaid, Thu, Nov 5 to Fri, Nov 6".
+function describeSplit(
+  request: { type: PtoType; startDate: Date; endDate: Date; isHalfDay: boolean },
+  split: PastBalanceSplit,
+): string {
+  const heading = `Approved past the ${balanceName(request.type)} balance`;
+  const unpaid = `${dayCount(split.unpaidDays)} Unpaid, ${describeDates(split.unpaid)}`;
+  if (!split.paid) return `${heading}: ${unpaid}`;
+  return `${heading}: ${dayCount(split.paidDays)} ${TIME_OFF_KIND[request.type]}, ${describeDates({ ...split.paid, isHalfDay: false })}; ${unpaid}`;
 }
 
 // ---------------------------------------------------------------------------
