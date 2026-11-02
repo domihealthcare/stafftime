@@ -948,6 +948,61 @@ silently.
 Pending requests count against the balance as well as approved ones, so the same
 day cannot be spent twice while a decision is outstanding.
 
+### Past the balance: paid and unpaid days kept apart (November 2026)
+
+Dominguez, 2 November 2026: "People are requesting days and it says Approved
+but does not say UNPAID", and "I don't really need it to say negative
+balances, I just need it to say 0 of 5 sick days left". Before this, a
+request past the balance was one row of one kind (5 days Sick with 3 left),
+so after approval nothing said which days were unpaid and the balance read
+-2. Payroll had to work it out by hand.
+
+**Approving splits it** (`PtoService.review`). `TimeOffDaysService.
+approvalSplits` reads what is left, `available - used`: what has been
+**approved** against the allowance, not what others are still waiting for
+(one of those may be declined). `pto/past-balance-split.ts` (pure) keeps the
+first whole days still covered as asked, and the rest become a **second
+request**, `UNPAID`, `APPROVED` with it, `splitFromId` pointing at the paid
+part and `unpaidPastBalanceOf` naming the balance it went past. Only whole
+days are paid: 2.5 left of 5 asked is 2 Sick and 3 Unpaid, and the half day
+stays in the balance. Nothing left, or a half day with less than half left:
+the whole request becomes Unpaid, no second row. The paid part runs to the
+day before the unpaid part starts, so a weekend between them stays with it.
+All in one transaction, still conditional on the request being `PENDING`, so
+two managers deciding at once still cannot both succeed. A `PtoChange` row
+records the split ("Approved past the sick balance: 3 days Sick, ...; 2
+days Unpaid, ..."). A request across the policy year's end is not split
+(as before, it is compared against no single year). Shifts are handled over
+the whole original range: the person is off either way.
+
+While a request waits, its card says what approving will do (`approvalSplit`
+on every listed request still `PENDING`, from one batch of balances).
+
+**Cancelling either part cancels both**, unless the other is already over:
+they are one absence.
+
+**Balances never show below 0** on any screen (`daysLeft` in
+`lib/time-off.ts`; the AI assistant's tool too). The server's `remaining`
+still goes negative, because the past-balance checks need it; only the
+display stops at 0, with "None left: any more days off are unpaid."
+
+### Editing time off (November 2026)
+
+Dominguez: "I need to be able to edit PTO/SICK - can have notes option for a
+reason or notes - can say who it is altered by". Any manager or admin, never
+on their own (`PATCH /pto/:id`, `PtoService.edit`; it replaced `PATCH
+/pto/:id/type`, the October "Change to"): the kind (Sick, PTO, Unpaid), the
+dates, a half day, and an optional note, on a waiting or approved request,
+days already past included. Each edit is a `PtoChange` row: who, when, what
+changed in words ("Kind: Sick (was Unpaid); Dates: ...") and the note. The
+cards show the latest, with the rest behind "Show N earlier changes", for
+the person and for managers. The person is told on the bell and by email
+(`NotificationsService.ptoChanged`, kind `TIME_OFF_DECIDED`). Nothing is
+split on an edit: what a manager sets is deliberate, even past the balance
+(the dialog says how much is left, and that it counts as paid). Changing the
+kind clears `unpaidPastBalanceOf`. Changed dates are checked for an overlap
+with anything but the request itself.
+
 ### The policy year
 
 January to December by default, configurable to a fiscal year. The balance shown

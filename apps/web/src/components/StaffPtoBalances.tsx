@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ApiError, api } from '../lib/api';
-import { hasNone } from '../lib/time-off';
-import type { PtoAdjustment, PtoPolicy, StaffBalance } from '../lib/types';
+import { daysLeft, hasNone } from '../lib/time-off';
+import type { AllowanceBalance, PtoAdjustment, PtoPolicy, StaffBalance } from '../lib/types';
 import { Alert, Card, Spinner, buttonClass } from './ui';
 
 /**
@@ -120,9 +120,9 @@ export function StaffPtoBalances({
                       {hasNone(row.balance.vacation) ? (
                         <span className="text-sm text-slate-500">No PTO</span>
                       ) : (
-                        <Left label="PTO" days={row.balance.vacation.remaining} />
+                        <Left label="PTO" allowance={row.balance.vacation} />
                       )}
-                      <Left label="Sick" days={row.balance.sick.remaining} />
+                      <Left label="Sick" allowance={row.balance.sick} />
                       <button
                         type="button"
                         onClick={() =>
@@ -174,10 +174,12 @@ export function StaffPtoBalances({
   );
 }
 
-function Left({ label, days }: { label: string; days: number }) {
+/// "Sick 0 of 5 left": never below 0 (November 2026).
+function Left({ label, allowance }: { label: string; allowance: AllowanceBalance }) {
   return (
-    <span className={`text-sm tabular-nums ${days < 0 ? 'text-rose-700' : 'text-slate-700'}`}>
-      <span className="text-slate-500">{label}</span> {days} left
+    <span className="text-sm tabular-nums text-slate-700">
+      <span className="text-slate-500">{label}</span> {daysLeft(allowance)} of {allowance.available}{' '}
+      left
     </span>
   );
 }

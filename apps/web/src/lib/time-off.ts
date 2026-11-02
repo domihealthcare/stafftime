@@ -52,3 +52,10 @@ export const REQUESTABLE_PTO_TYPES = [
 export function hasNone(allowance: AllowanceBalance): boolean {
   return allowance.available === 0 && allowance.used === 0 && allowance.pending === 0;
 }
+
+/// What is left of an allowance, never below 0 (2 November 2026, Dominguez:
+/// "I don't really need it to say negative balances, I just need it to say 0
+/// of 5 sick days left"). Days past it are unpaid, not owed back.
+export function daysLeft(allowance: AllowanceBalance): number {
+  return Math.max(0, allowance.remaining);
+}

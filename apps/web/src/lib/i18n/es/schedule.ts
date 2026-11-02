@@ -219,6 +219,28 @@ export const SCHEDULE: Record<string, string> = {
   'Past the balance - asked knowing the extra days may be unpaid.':
     'Pasa del saldo - pedido sabiendo que los días de más pueden no ser pagados.',
   '{n} left afterwards.': 'Te quedarán {n}.',
+
+  // Paid and unpaid days, and changes by a manager (components/EditTimeOff.tsx),
+  // November 2026.
+  'Unpaid: past the {balance} balance. The paid part is {range}.':
+    'Sin pago: pasa del saldo de {balance}. La parte pagada es {range}.',
+  'Unpaid: past the {balance} balance.': 'Sin pago: pasa del saldo de {balance}.',
+  'Then {days} unpaid, {range}: past the {balance} balance.':
+    'Luego {days} sin pago, {range}: pasa del saldo de {balance}.',
+  'Past the balance: once approved, {paid} are paid as {kind} and {unpaid} are unpaid, from {date}.':
+    'Pasa del saldo: una vez aprobado, {paid} se pagan como {kind} y {unpaid} quedan sin pago, desde el {date}.',
+  'Past the balance: nothing is left, so once approved all of it is unpaid.':
+    'Pasa del saldo: no queda nada, así que una vez aprobado todo queda sin pago.',
+  'Changed by {name} on {date}': 'Cambiado por {name} el {date}',
+  'a manager': 'un gerente',
+  'Show the latest only': 'Mostrar solo el último',
+  'Show {n} earlier change': 'Mostrar {n} cambio anterior',
+  'Show {n} earlier changes': 'Mostrar {n} cambios anteriores',
+  sick: 'enfermedad',
+  'Its paid and unpaid days are both cancelled.':
+    'Se cancelan tanto sus días pagados como los sin pago.',
+  'None left: any more days off are unpaid.':
+    'No queda nada: cualquier otro día libre es sin pago.',
   'Sending…': 'Enviando…',
   'Send request': 'Enviar solicitud',
   '{date} (half day)': '{date} (medio día)',

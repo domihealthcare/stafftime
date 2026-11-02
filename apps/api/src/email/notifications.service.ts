@@ -68,6 +68,9 @@ export class NotificationsService {
       include: {
         employee: { select: { id: true, email: true, firstName: true } },
         reviewedBy: { select: { firstName: true, lastName: true } },
+        splitParts: {
+          select: { startDate: true, endDate: true, isHalfDay: true, unpaidPastBalanceOf: true },
+        },
       },
     });
     if (!request) return;
@@ -76,11 +79,20 @@ export class NotificationsService {
     const decider = request.reviewedBy
       ? `${request.reviewedBy.firstName} ${request.reviewedBy.lastName}`
       : 'A manager';
+    // Past the balance, the days that are unpaid are named (November 2026).
+    const unpaidPart = (request.splitParts ?? []).find((part) => part.unpaidPastBalanceOf);
+    const pastBalanceOf = unpaidPart?.unpaidPastBalanceOf ?? request.unpaidPastBalanceOf ?? null;
+    const unpaidLine =
+      approved && pastBalanceOf
+        ? unpaidPart
+          ? `${describeRange(unpaidPart.startDate, unpaidPart.endDate, unpaidPart.isHalfDay)} is unpaid: it was past your ${pastBalanceOf === PtoType.SICK ? 'sick' : 'PTO'} balance.`
+          : `It is unpaid: it was past your ${pastBalanceOf === PtoType.SICK ? 'sick' : 'PTO'} balance.`
+        : null;
 
     await this.inbox.notify([request.employee.id], {
       kind: NotificationKind.TIME_OFF_DECIDED,
       title: approved ? 'Your time off is approved' : 'Your time off request was not approved',
-      body: `${capitalise(describeType(request.type))}, ${describeRange(request.startDate, request.endDate, request.isHalfDay)} - ${decider}${request.reviewNote ? `: “${request.reviewNote}”` : ''}${
+      body: `${capitalise(describeType(request.type))}, ${describeRange(request.startDate, request.endDate, request.isHalfDay)} - ${decider}${request.reviewNote ? `: “${request.reviewNote}”` : ''}${unpaidLine ? `. ${unpaidLine}` : ''}${
         shiftsTakenOff > 0
           ? `. ${shiftsTakenOff === 1 ? 'Your shift on those days is' : `Your ${shiftsTakenOff} shifts on those days are`} off your schedule.`
           : ''
@@ -95,6 +107,7 @@ export class NotificationsService {
         `Hello ${request.employee.firstName},`,
         '',
         `${decider} ${approved ? 'approved' : 'did not approve'} your ${describeType(request.type)} request for ${describeRange(request.startDate, request.endDate, request.isHalfDay)}.`,
+        ...(unpaidLine ? ['', unpaidLine] : []),
         ...(request.reviewNote ? ['', `They said: “${request.reviewNote}”`] : []),
         ...(approved
           ? [
@@ -106,6 +119,61 @@ export class NotificationsService {
           : ['', 'Talk to your manager if you need to sort something out.']),
       ],
     );
+  }
+
+  /// A manager or admin changed somebody's time off (November 2026,
+  /// Dominguez): what changed, who changed it and their note, on the bell
+  /// and by email.
+  async ptoChanged(changeId: string): Promise<void> {
+    const change = await this.prisma.ptoChange.findUnique({
+      where: { id: changeId },
+      include: {
+        changedBy: { select: { firstName: true, lastName: true } },
+        request: {
+          select: {
+            type: true,
+            startDate: true,
+            endDate: true,
+            isHalfDay: true,
+            employee: {
+              select: {
+                id: true,
+                email: true,
+                firstName: true,
+                preferredName: true,
+                employmentStatus: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!change) return;
+    const { request } = change;
+    if (request.employee.employmentStatus === EmploymentStatus.TERMINATED) return;
+
+    const who = change.changedBy
+      ? `${change.changedBy.firstName} ${change.changedBy.lastName}`
+      : 'A manager';
+    const now = `${capitalise(describeType(request.type))}, ${describeRange(request.startDate, request.endDate, request.isHalfDay)}`;
+
+    await this.inbox.notify([request.employee.id], {
+      kind: NotificationKind.TIME_OFF_DECIDED,
+      title: 'Your time off was changed',
+      body: `${now}. ${change.summary} - ${who}${change.note ? `: “${change.note}”` : ''}`,
+      link: '/time-off',
+    });
+
+    await this.dispatch(request.employee.email, 'Your time off was changed', [
+      `Hello ${request.employee.preferredName ?? request.employee.firstName},`,
+      '',
+      `${who} changed your time off. It is now: ${now}.`,
+      '',
+      `What changed: ${change.summary}.`,
+      ...(change.note ? ['', `They said: “${change.note}”`] : []),
+      '',
+      `See all your time off here: ${this.appUrl}/time-off`,
+    ]);
   }
 
   /// Somebody's new availability clashes with one of their regular shifts

@@ -670,9 +670,16 @@ const STAFF: Section[] = [
             </p>
             <p>
               If it is more than you have left, you can still ask: tick that you understand the
-              extra days may be unpaid, and the manager deciding sees that you knew. At the start of
-              each month a pop-up on <Screen>Home</Screen> shows the PTO and sick days you have
-              left.
+              extra days may be unpaid, and the manager deciding sees that you knew. Once it is
+              approved, the days your balance still covers stay as you asked, and the rest show as a
+              separate <strong>Unpaid</strong> part, so you can see exactly which days are paid.
+              Your balance never shows less than 0: &ldquo;0 of 5 sick days left&rdquo; means any
+              more days off are unpaid.
+            </p>
+            <p>
+              A manager may change your time off afterwards - the kind, the dates, or a day paid
+              after all. You are told on the bell and by email, and the request shows who changed
+              it, when and why.
             </p>
             <p>
               Sick days are given for the whole year, however late in it you started. Hourly staff
@@ -2207,8 +2214,36 @@ const MANAGERS: Section[] = [
             changes them. Requests count weekdays only, and not a day the office is closed all day.
             Sick days are never prorated for starting part-way through the year; hourly staff
             starting on or after the date in the rules earn them as they work (an hour for every 30
-            hours). A request marked <strong>Past the balance</strong> was sent by somebody who
-            ticked that they understand the extra days may be unpaid.
+            hours). A request past the balance was sent by somebody who ticked that they understand
+            the extra days may be unpaid. Balances never show below 0.
+          </p>
+        ),
+      },
+      {
+        question: 'Time off past the balance: paid and unpaid days',
+        answer: (
+          <p>
+            A request for more than somebody has left says, before you decide, what approving it
+            will do: &ldquo;5 days are paid as Sick and 2 days are unpaid&rdquo;. Approving it keeps
+            the days still covered as they were asked for and makes the rest a separate{' '}
+            <strong>Unpaid</strong> part, approved with it, so the Time off screen says exactly
+            which days payroll pays. Only whole days are paid: with half a day left, that half stays
+            in the balance. With nothing left, all of it is Unpaid. Cancelling either part cancels
+            both. To pay a day after all, edit the Unpaid part and make it Sick or PTO.
+          </p>
+        ),
+      },
+      {
+        question: 'Changing somebody’s time off',
+        answer: (
+          <p>
+            On <Screen>Time off</Screen> (under Schedule), or under Time off on a staff profile,
+            press <strong>Edit</strong> on a waiting or approved request: change the kind (Sick, PTO
+            or Unpaid), the dates or a half day, and add a note saying why, for days already past
+            too. Any manager or admin can, never on their own time off. The change is kept on the
+            request with your name, the day and your note (&ldquo;Changed by …&rdquo;), and the
+            person is told on the bell and by email. A note on its own is fine too. What you set
+            counts as you set it, even past their balance: nothing is split when you edit.
           </p>
         ),
       },

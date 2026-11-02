@@ -424,6 +424,8 @@ model Employee {
   leavingRecord             LeavingRecord?           @relation("LeavingRecordSubject")
   updatedLeavingRecords     LeavingRecord[]          @relation("LeavingRecordUpdatedBy")
   recordedPtoRequests       PtoRequest[]             @relation("PtoRecordedBy")
+  /// Changes they made to somebody's time off (November 2026).
+  ptoChangesMade            PtoChange[]              @relation("PtoChangedBy")
   /// Their line on the office extensions list, if they have one.
   officeExtensions          OfficeExtension[]
 
@@ -713,16 +715,51 @@ model PtoRequest {
   /// its comment, if any, is the reviewNote.
   recordedById String? @db.Uuid
 
+  /// The unpaid part of a request that went past the balance, split off
+  /// when it was approved (November 2026, Dominguez: "it says Approved but
+  /// does not say UNPAID"). Points at the part that stayed paid; null for
+  /// that part itself and for any ordinary request.
+  splitFromId String? @db.Uuid
+
+  /// Unpaid because it was past this kind's balance when it was approved
+  /// (SICK or VACATION): the split-off part, or a whole request when nothing
+  /// was left. Null for unpaid time off chosen as such. Cleared when a
+  /// manager changes the kind.
+  unpaidPastBalanceOf PtoType?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  employee   Employee  @relation("PtoRequester", fields: [employeeId], references: [id], onDelete: Cascade)
-  reviewedBy Employee? @relation("PtoReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
-  recordedBy Employee? @relation("PtoRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+  employee   Employee     @relation("PtoRequester", fields: [employeeId], references: [id], onDelete: Cascade)
+  reviewedBy Employee?    @relation("PtoReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  recordedBy Employee?    @relation("PtoRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+  splitFrom  PtoRequest?  @relation("PtoSplit", fields: [splitFromId], references: [id], onDelete: SetNull)
+  splitParts PtoRequest[] @relation("PtoSplit")
+  changes    PtoChange[]
 
   @@index([employeeId, startDate])
   @@index([status, startDate])
+  @@index([splitFromId])
   @@map("pto_requests")
+}
+
+/// A change a manager or admin made to somebody's time off, and the split
+/// into paid and unpaid days when it was approved (November 2026,
+/// Dominguez: "can say who it is altered by"). What changed, in words, and
+/// their note, which the person reads too.
+model PtoChange {
+  id          String     @id @default(uuid()) @db.Uuid
+  requestId   String     @db.Uuid
+  request     PtoRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  changedById String?    @db.Uuid
+  changedBy   Employee?  @relation("PtoChangedBy", fields: [changedById], references: [id], onDelete: SetNull)
+  changedAt   DateTime   @default(now())
+  /// "Dates: Thu, Nov 5 to Fri, Nov 6 (were Tue, Nov 3 to Wed, Nov 4)".
+  summary     String
+  note        String?
+
+  @@index([requestId, changedAt])
+  @@map("pto_changes")
 }
 
 // ---------------------------------------------------------------------------

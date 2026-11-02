@@ -72,6 +72,17 @@ export function countedDays(
   return request.isHalfDay && single && days === 1 ? 0.5 : days;
 }
 
+/// The days of a request that count, in order: weekdays its office is open.
+/// For splitting a request past the balance (`past-balance-split.ts`).
+export function countedDateList(
+  request: { startDate: Date; endDate: Date },
+  closed: Set<string>,
+): string[] {
+  return datesBetween(isoDate(request.startDate), isoDate(request.endDate)).filter(
+    (date) => isWeekday(date) && !closed.has(date),
+  );
+}
+
 /// The days skipped, for saying so: "Sat, Sun and Christmas Day don't count".
 export function skippedDays(
   request: { startDate: Date; endDate: Date },

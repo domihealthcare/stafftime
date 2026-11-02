@@ -19,8 +19,8 @@ import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
 import {
   AdjustPtoBalanceDto,
-  ChangePtoTypeDto,
   CreatePtoRequestDto,
+  EditPtoRequestDto,
   PreviewPtoRequestDto,
   QueryPtoRequestsDto,
   RecordPtoDto,
@@ -185,16 +185,18 @@ export class PtoController {
     return this.pto.review(id, dto, user);
   }
 
-  /// Correct the kind of a request (PTO to Sick, say), waiting or approved,
-  /// past days included. Managers, never their own.
-  @Patch(':id/type')
+  /// Change somebody's time off: the kind, the dates, a half day, and a
+  /// note they read. Waiting or approved, past days included; kept with who
+  /// changed it, and the person told. Managers and admins, never their own.
+  /// (Replaced `PATCH :id/type`, November 2026.)
+  @Patch(':id')
   @Roles(Role.MANAGER)
-  changeType(
+  edit(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: ChangePtoTypeDto,
+    @Body() dto: EditPtoRequestDto,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.pto.changeType(id, dto.type, user);
+    return this.pto.edit(id, dto, user);
   }
 
   /// Withdraw your own, or cancel someone else's as a manager.

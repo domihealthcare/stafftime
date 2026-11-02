@@ -1,5 +1,5 @@
 import { locale, plural, useT } from '../lib/i18n';
-import { hasNone } from '../lib/time-off';
+import { daysLeft, hasNone } from '../lib/time-off';
 import type { AllowanceBalance, PtoBalance } from '../lib/types';
 import { Card } from './ui';
 
@@ -43,7 +43,8 @@ export function PtoBalanceCard({ balance, title }: { balance: PtoBalance; title?
 
 function Allowance({ label, allowance }: { label: string; allowance: AllowanceBalance }) {
   const t = useT();
-  const over = allowance.remaining < 0;
+  // Never below 0 (November 2026): past it, days off are unpaid.
+  const noneLeft = allowance.remaining <= 0;
 
   if (hasNone(allowance) && !allowance.accrual) {
     return (
@@ -58,12 +59,8 @@ function Allowance({ label, allowance }: { label: string; allowance: AllowanceBa
     <div className="rounded-lg bg-slate-50 p-3">
       <div className="flex items-baseline justify-between">
         <span className="text-sm font-medium text-slate-700">{label}</span>
-        <span
-          className={`text-2xl font-semibold tabular-nums ${
-            over ? 'text-rose-700' : 'text-slate-900'
-          }`}
-        >
-          {allowance.remaining}
+        <span className="text-2xl font-semibold tabular-nums text-slate-900">
+          {daysLeft(allowance)}
         </span>
       </div>
       <p className="mt-0.5 text-right text-xs text-slate-500">
@@ -99,13 +96,9 @@ function Allowance({ label, allowance }: { label: string; allowance: AllowanceBa
         </p>
       )}
 
-      {over && (
-        <p className="mt-2 text-xs font-medium text-rose-700">
-          {plural(
-            Math.abs(allowance.remaining),
-            '{n} day over the allowance.',
-            '{n} days over the allowance.',
-          )}
+      {noneLeft && (
+        <p className="mt-2 text-xs font-medium text-slate-700" data-testid="none-left">
+          {t('None left: any more days off are unpaid.')}
         </p>
       )}
     </div>

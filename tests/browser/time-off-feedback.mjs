@@ -193,7 +193,12 @@ await step(
 
     const manager = await signIn('manager@domihealthcare.com');
     await manager.goto(`${BASE}/time-off`, { waitUntil: 'networkidle' });
-    await manager.getByTestId('past-balance-flag').first().waitFor({ timeout: 10000 });
+    // Since November 2026 it says what approving will split off: the days
+    // still covered stay as asked, the rest become Unpaid.
+    const split = manager.getByTestId('approval-split').first();
+    await split.waitFor({ timeout: 10000 });
+    if (!/are unpaid/.test(await split.innerText()))
+      throw new Error(`said "${await split.innerText()}"`);
     await manager.screenshot({ path: `${OUT}/time-off-past-balance.png`, fullPage: true });
     await manager.context().close();
   },

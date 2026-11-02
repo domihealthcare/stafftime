@@ -38,6 +38,8 @@ describe('PtoService', () => {
       shifts?: unknown[];
       /// What is left of the allowance a request draws on, before it.
       remaining?: number;
+      /// What approving would split off past the balance.
+      split?: unknown;
     } = {},
   ) {
     const prisma = {
@@ -69,6 +71,19 @@ describe('PtoService', () => {
         })),
         count: jest.fn().mockResolvedValue(3),
         delete: jest.fn().mockResolvedValue({}),
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+        findUniqueOrThrow: jest.fn().mockImplementation(({ where }) => ({
+          id: where.id,
+          employeeId: 'emp-1',
+          status: PtoStatus.APPROVED,
+          type: PtoType.SICK,
+          startDate: new Date('2026-11-03T00:00:00.000Z'),
+          endDate: new Date('2026-11-04T00:00:00.000Z'),
+          isHalfDay: false,
+        })),
+      },
+      ptoChange: {
+        create: jest.fn().mockResolvedValue({ id: 'change-1' }),
       },
       shift: {
         findMany: jest.fn().mockResolvedValue(options.shifts ?? []),
@@ -81,11 +96,15 @@ describe('PtoService', () => {
     const notifications = {
       ptoRequested: jest.fn().mockResolvedValue(undefined),
       ptoDecided: jest.fn().mockResolvedValue(undefined),
+      ptoChanged: jest.fn().mockResolvedValue(undefined),
     };
     // Counting by the real rule (weekdays), with no closures; the balance as given.
     const days = {
       counterFor: jest.fn(
         async () => (r: Parameters<typeof countedDays>[0]) => countedDays(r, new Set()),
+      ),
+      approvalSplits: jest.fn(async (requests: unknown[]) =>
+        requests.map(() => options.split ?? null),
       ),
       preview: jest.fn(async (r: Parameters<typeof countedDays>[0]) => {
         const taken = countedDays(r, new Set());
@@ -331,12 +350,10 @@ describe('PtoService', () => {
       });
 
       it('stay for a half day, and are never touched by a refusal', async () => {
-        const half = build({ request: pending, shifts });
-        half.prisma.ptoRequest.update.mockImplementation(({ data }) => ({
-          ...pending,
-          isHalfDay: true,
-          ...data,
-        }));
+        const half = build({
+          request: { ...pending, endDate: pending.startDate, isHalfDay: true },
+          shifts,
+        });
         await half.service.review(
           'pto-1',
           { decision: PtoStatus.APPROVED, shifts: 'REMOVE' },
@@ -413,40 +430,195 @@ describe('PtoService', () => {
     });
   });
 
-  describe('changing the kind', () => {
+  describe('editing', () => {
     const approved = {
       id: 'pto-1',
       employeeId: 'emp-1',
       status: PtoStatus.APPROVED,
       type: PtoType.VACATION,
+      startDate: new Date('2026-11-03T00:00:00.000Z'),
+      endDate: new Date('2026-11-04T00:00:00.000Z'),
+      isHalfDay: false,
+      unpaidPastBalanceOf: null,
     };
 
-    it('lets a manager turn somebody else’s PTO into Sick, even for days gone by', async () => {
-      const { service, prisma } = build({ request: approved });
-      await service.changeType('pto-1', PtoType.SICK, manager);
+    it('lets a manager turn somebody else’s PTO into Sick, even for days gone by, and keeps who did', async () => {
+      const { service, prisma, notifications } = build({ request: approved });
+      await service.edit('pto-1', { type: PtoType.SICK, note: 'Was sick, not PTO' }, manager);
       expect(prisma.ptoRequest.update.mock.calls[0][0].data.type).toBe(PtoType.SICK);
+      expect(prisma.ptoChange.create).toHaveBeenCalledWith({
+        data: {
+          requestId: 'pto-1',
+          changedById: 'mgr-1',
+          summary: 'Kind: Sick (was PTO)',
+          note: 'Was sick, not PTO',
+        },
+        select: { id: true },
+      });
+      // The person is told.
+      expect(notifications.ptoChanged).toHaveBeenCalledWith('change-1');
+    });
+
+    it('moves the dates, says what they were, and checks for an overlap with anything but itself', async () => {
+      const { service, prisma } = build({ request: approved });
+      await service.edit('pto-1', { startDate: '2026-11-05', endDate: '2026-11-06' }, manager);
+      const data = prisma.ptoRequest.update.mock.calls[0][0].data;
+      expect(isoDate(data.startDate)).toBe('2026-11-05');
+      expect(isoDate(data.endDate)).toBe('2026-11-06');
+      expect(prisma.ptoChange.create.mock.calls[0][0].data.summary).toBe(
+        'Dates: Thu, Nov 5 to Fri, Nov 6 (was Tue, Nov 3 to Wed, Nov 4)',
+      );
+      expect(prisma.ptoRequest.findFirst.mock.calls[0][0].where.id).toEqual({ notIn: ['pto-1'] });
+    });
+
+    it('takes a note on its own', async () => {
+      const { service, prisma } = build({ request: approved });
+      await service.edit('pto-1', { note: 'Spoke to her, all fine' }, manager);
+      expect(prisma.ptoChange.create.mock.calls[0][0].data.summary).toBe('Note added');
+    });
+
+    it('turns an unpaid day back into paid sick time, and it is no longer past the balance', async () => {
+      const { service, prisma } = build({
+        request: { ...approved, type: PtoType.UNPAID, unpaidPastBalanceOf: PtoType.SICK },
+      });
+      await service.edit('pto-1', { type: PtoType.SICK }, manager);
+      const data = prisma.ptoRequest.update.mock.calls[0][0].data;
+      expect(data.type).toBe(PtoType.SICK);
+      expect(data.unpaidPastBalanceOf).toBeNull();
+    });
+
+    it('refuses nothing changed, a half day over two dates, and an overlap', async () => {
+      const same = build({ request: approved });
+      await expect(same.service.edit('pto-1', { type: PtoType.VACATION }, manager)).rejects.toThrow(
+        /Nothing was changed/,
+      );
+      const half = build({ request: approved });
+      await expect(half.service.edit('pto-1', { isHalfDay: true }, manager)).rejects.toThrow(
+        /half day/,
+      );
+      const clash = build({
+        request: approved,
+        overlap: {
+          id: 'pto-2',
+          status: PtoStatus.APPROVED,
+          startDate: new Date('2026-11-06T00:00:00.000Z'),
+          endDate: new Date('2026-11-06T00:00:00.000Z'),
+        },
+      });
+      await expect(clash.service.edit('pto-1', { endDate: '2026-11-06' }, manager)).rejects.toThrow(
+        /overlaps/,
+      );
     });
 
     it('not their own, and not one already denied or cancelled', async () => {
       const own = build({ request: approved });
       await expect(
-        own.service.changeType('pto-1', PtoType.SICK, { ...manager, id: 'emp-1' }),
+        own.service.edit('pto-1', { type: PtoType.SICK }, { ...manager, id: 'emp-1' }),
       ).rejects.toThrow(ForbiddenException);
       const denied = build({ request: { ...approved, status: PtoStatus.DENIED } });
-      await expect(denied.service.changeType('pto-1', PtoType.SICK, manager)).rejects.toThrow(
-        BadRequestException,
-      );
-    });
-
-    it('refuses a change to what it already is, and an unknown request', async () => {
-      const same = build({ request: approved });
-      await expect(same.service.changeType('pto-1', PtoType.VACATION, manager)).rejects.toThrow(
+      await expect(denied.service.edit('pto-1', { type: PtoType.SICK }, manager)).rejects.toThrow(
         BadRequestException,
       );
       const none = build();
-      await expect(none.service.changeType('pto-1', PtoType.SICK, manager)).rejects.toThrow(
+      await expect(none.service.edit('pto-1', { type: PtoType.SICK }, manager)).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe('approving past the balance', () => {
+    const pending = {
+      id: 'pto-1',
+      employeeId: 'emp-1',
+      status: PtoStatus.PENDING,
+      type: PtoType.SICK,
+      startDate: new Date('2026-11-02T00:00:00.000Z'),
+      endDate: new Date('2026-11-06T00:00:00.000Z'),
+      isHalfDay: false,
+    };
+    const day = (d: string) => new Date(`${d}T00:00:00.000Z`);
+
+    it('keeps the days still covered as asked and makes the rest a separate Unpaid part', async () => {
+      const { service, prisma, notifications } = build({
+        request: pending,
+        split: {
+          paidDays: 3,
+          unpaidDays: 2,
+          paid: { startDate: day('2026-11-02'), endDate: day('2026-11-04') },
+          unpaid: { startDate: day('2026-11-05'), endDate: day('2026-11-06'), isHalfDay: false },
+        },
+      });
+      await service.review('pto-1', { decision: PtoStatus.APPROVED }, manager);
+
+      const update = prisma.ptoRequest.update.mock.calls[0][0];
+      expect(update.where).toEqual({ id: 'pto-1', status: PtoStatus.PENDING });
+      expect(update.data.status).toBe(PtoStatus.APPROVED);
+      expect(isoDate(update.data.endDate)).toBe('2026-11-04');
+      expect(update.data.type).toBeUndefined();
+
+      const part = prisma.ptoRequest.create.mock.calls[0][0].data;
+      expect(part).toMatchObject({
+        employeeId: 'emp-1',
+        type: PtoType.UNPAID,
+        status: PtoStatus.APPROVED,
+        splitFromId: 'pto-1',
+        unpaidPastBalanceOf: PtoType.SICK,
+        reviewedById: 'mgr-1',
+      });
+      expect(isoDate(part.startDate)).toBe('2026-11-05');
+      expect(isoDate(part.endDate)).toBe('2026-11-06');
+
+      expect(prisma.ptoChange.create.mock.calls[0][0].data.summary).toBe(
+        'Approved past the sick balance: 3 days Sick, Mon, Nov 2 to Wed, Nov 4; 2 days Unpaid, Thu, Nov 5 to Fri, Nov 6',
+      );
+      expect(notifications.ptoDecided).toHaveBeenCalledWith('pto-1', 0);
+    });
+
+    it('with nothing left, makes the whole request Unpaid', async () => {
+      const { service, prisma } = build({
+        request: pending,
+        split: {
+          paidDays: 0,
+          unpaidDays: 5,
+          paid: null,
+          unpaid: { startDate: day('2026-11-02'), endDate: day('2026-11-06'), isHalfDay: false },
+        },
+      });
+      await service.review('pto-1', { decision: PtoStatus.APPROVED }, manager);
+      const data = prisma.ptoRequest.update.mock.calls[0][0].data;
+      expect(data.type).toBe(PtoType.UNPAID);
+      expect(data.unpaidPastBalanceOf).toBe(PtoType.SICK);
+      expect(prisma.ptoRequest.create).not.toHaveBeenCalled();
+    });
+
+    it('takes their shifts off for every day of it, paid or not', async () => {
+      const { service, prisma } = build({
+        request: pending,
+        shifts: [{ id: 'shift-friday', status: 'PUBLISHED' }],
+        split: {
+          paidDays: 3,
+          unpaidDays: 2,
+          paid: { startDate: day('2026-11-02'), endDate: day('2026-11-04') },
+          unpaid: { startDate: day('2026-11-05'), endDate: day('2026-11-06'), isHalfDay: false },
+        },
+      });
+      await service.review('pto-1', { decision: PtoStatus.APPROVED, shifts: 'REMOVE' }, manager);
+      const where = prisma.shift.findMany.mock.calls[0][0].where;
+      // The window reaches Friday, the end of the unpaid part.
+      expect(where.startsAt.lt.getTime()).toBeGreaterThan(day('2026-11-06').getTime());
+    });
+
+    it('splits nothing when it is declined', async () => {
+      const { service, days, prisma } = build({ request: pending });
+      await service.review(
+        'pto-1',
+        { decision: PtoStatus.DENIED, reviewNote: 'Nobody to cover' },
+        manager,
+      );
+      expect(days.approvalSplits).not.toHaveBeenCalledWith([
+        expect.objectContaining({ id: 'pto-1' }),
+      ]);
+      expect(prisma.ptoChange.create).not.toHaveBeenCalled();
     });
   });
 
@@ -492,6 +664,18 @@ describe('PtoService', () => {
     it('refuses to cancel twice', async () => {
       const { service } = build({ request: { ...future, status: PtoStatus.CANCELLED } });
       await expect(service.cancel('pto-1', employee)).rejects.toThrow(/already cancelled/);
+    });
+
+    it('takes the unpaid part of a split request with it', async () => {
+      const { service, prisma } = build({ request: { ...future, splitFromId: null } });
+      prisma.ptoRequest.findMany.mockResolvedValue([
+        { id: 'pto-unpaid', status: PtoStatus.APPROVED, endDate: future.endDate },
+      ]);
+      await service.cancel('pto-1', employee);
+      expect(prisma.ptoRequest.updateMany).toHaveBeenCalledWith({
+        where: { id: { in: ['pto-unpaid'] } },
+        data: { status: PtoStatus.CANCELLED, cancelledAt: expect.any(Date) },
+      });
     });
 
     it('refuses to cancel a denied request', async () => {

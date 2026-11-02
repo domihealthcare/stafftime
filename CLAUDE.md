@@ -1546,8 +1546,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Time off requests, **Change to** (Sick / PTO / Unpaid) on any waiting or
   approved request that is not the manager's own, past days included, after a
   confirmation. Balances move because they read the type afresh; nobody is
-  told. `PATCH /pto/:id/type`, `PtoService.changeType`;
-  `tests/browser/time-off-type.mjs`.
+  told. **Replaced on 2 November 2026** by **Edit** (see *Editing time off,
+  and unpaid days shown as unpaid*), which also tells the person.
 - **Schedule review groups, and the pattern from the provider sheet** (19
   October 2026, Dominguez, from the practice's Schedule Review picture and
   *Domi Schedule NB & WNY 2026*): beside the per-provider pattern, **Schedule
@@ -2142,6 +2142,41 @@ Beyond the phases, the parts worth knowing about before picking up work:
   suites that watch requests only check that something was never sent. Use
   `settled` (or wait for something on screen), never
   `waitForLoadState('networkidle')`, after signing in or a click.
+- **Editing time off, and unpaid days shown as unpaid** (2 November 2026,
+  Dominguez: "I need to be able to edit PTO/SICK - can have notes option for
+  a reason - can say who it is altered by - people are requesting days and it
+  says Approved but does not say UNPAID - I just need it to say 0 of 5 sick
+  days left ... the pto/sick is giving me anxiety with payroll"; his choices:
+  **split automatically**, **all managers and admins**, **tell the staff
+  member**; version 1.39.0):
+  - **Approving past the balance splits the request**: the whole days still
+    covered stay as asked (Sick or PTO), the rest become a **separate
+    Unpaid part**, approved with it (`PtoRequest.splitFromId`,
+    `unpaidPastBalanceOf`). "5 days Sick" then "2 days Unpaid, past the sick
+    balance" on both cards; with nothing left the whole request is Unpaid.
+    Only whole days are paid (a half day left stays in the balance). Before
+    deciding, the card says what approving will do. Cancelling either part
+    cancels both. `pto/past-balance-split.ts` (pure),
+    `TimeOffDaysService.approvalSplits`.
+  - **Edit** on Time off requests and on a staff profile's time off list
+    (managers and admins, never their own, waiting or approved, past days
+    too): kind, dates, half day and a note. Kept as `PtoChange` (who, when,
+    what changed, the note), shown on the request as "Changed by Morgan
+    Manager on Nov 2: ..." to the person and managers, and the person is
+    told on the bell and by email. Nothing is split on an edit: paying a day
+    past the balance is a manager's deliberate choice. `PATCH /pto/:id`
+    (replaced `PATCH /pto/:id/type` and **Change to**),
+    `components/EditTimeOff.tsx`.
+  - **Balances never show below 0**: "Sick 0 of 5 days left" on the
+    Schedule, the balance card ("None left: any more days off are unpaid."),
+    Dashboard balances, staff profiles and Ask Domi Staff (`daysLeft` in
+    `lib/time-off.ts`). The server's figure still goes negative for its own
+    checks. Time off is still not in the payroll export.
+  Migration `20261102040000_time_off_edits`; see *Past the balance* and
+  *Editing time off* in `docs/architecture.md`; Help has both, and its
+  stale line about the monthly pop-up is gone;
+  `tests/browser/time-off-edit.mjs` (replaced `time-off-type.mjs`). Worth
+  carrying to the EMR module.
 - **Face ID sign-in** (2 November 2026, Dominguez: "is there a way we can
   add that staff can use face id through their phone to login to portal?";
   his choices: optional with the password kept, and Face ID opens the PIN in
@@ -2925,7 +2960,7 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Counts only — never a patient (the schema guard pins the fields; the note is
   the one free-text box and says so). **Not in the payroll export** (decided). See *Provider
   productivity* in `docs/architecture.md`.
-- **Tests**: ~1,980 API unit tests (Jest), ~180 web unit tests (Vitest), and ~1,300 end-to-end checks (128 suites) in `tests/browser`
+- **Tests**: ~2,010 API unit tests (Jest), ~190 web unit tests (Vitest), and ~1,300 end-to-end checks (128 suites) in `tests/browser`
   driven against a real API, a real Postgres and a real Chromium. Both run in CI
   on every push. The convention is to run the browser suites twice — once
   against the dev server, once against `vite preview`, which applies the
