@@ -12,7 +12,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
-import { AuthUser } from '../common/auth/auth-user';
+import { AuthUser, isViewingAs } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
 import { ClosingService } from './closing.service';
@@ -40,14 +40,14 @@ export class ClosingController {
   @Get('records')
   @Roles(Role.MANAGER)
   records(@Query() query: ClosingDayQueryDto, @CurrentUser() user: AuthUser) {
-    return this.closing.day(query.date, query.locationId, user.id);
+    return this.closing.day(query.date, query.locationId, user.id, isViewingAs(user));
   }
 
   @Post('records/:id/clear')
   @Roles(Role.MANAGER)
   @HttpCode(HttpStatus.OK)
   clear(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
-    return this.closing.clear(id, user.id);
+    return this.closing.clear(id, user.id, isViewingAs(user));
   }
 
   @Get('supplies')

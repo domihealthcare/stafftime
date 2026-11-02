@@ -44,11 +44,11 @@ describe('InvoiceAccessGuard', () => {
     );
   });
 
-  it('keeps its answer while an admin is viewing as somebody else', async () => {
-    // Viewing as an employee does not take invoices away from somebody on
-    // the list, nor give them to an admin who is not.
+  it('refuses an admin viewing as somebody else, even one on the list', async () => {
+    // View as shows exactly what the chosen person sees (2 November 2026), so
+    // the admin's own place on the list counts as off while viewing.
     const listedViewing = { id: 'listed', role: Role.EMPLOYEE, actualRole: Role.ADMIN };
-    await expect(guard.canActivate(contextFor(listedViewing))).resolves.toBe(true);
+    await expect(guard.canActivate(contextFor(listedViewing))).rejects.toThrow(ForbiddenException);
     const notListedViewing = { id: 'notListed', role: Role.MANAGER, actualRole: Role.ADMIN };
     await expect(guard.canActivate(contextFor(notListedViewing))).rejects.toThrow(
       ForbiddenException,

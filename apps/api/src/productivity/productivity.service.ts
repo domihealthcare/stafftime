@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { NotificationKind, Prisma } from '@prisma/client';
-import { AuthUser } from '../common/auth/auth-user';
+import { AuthUser, isViewingAs } from '../common/auth/auth-user';
 import { NotificationsService } from '../email/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -109,7 +109,7 @@ export class ProductivityService {
   /// Working out and publishing productivity is for the people an admin has
   /// chosen, whatever their access level: a manager has no say in it by default.
   async assertAccess(user: AuthUser) {
-    if (!(await this.hasAccess(user.id))) {
+    if (isViewingAs(user) || !(await this.hasAccess(user.id))) {
       throw new ForbiddenException('You have not been given access to provider productivity.');
     }
   }

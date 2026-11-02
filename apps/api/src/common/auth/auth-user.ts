@@ -15,6 +15,19 @@ export interface AuthUser {
   viewAsJobRoleIds?: string[];
 }
 
+/**
+ * Whether an admin is viewing the app as somebody else. While they are, the
+ * per-person lists they are on (pay and the rota's cost, invoices, expense
+ * approvals, provider productivity, News posting, everybody's schedule, the
+ * people chosen to clear closing checklists) count as off, so the app shows
+ * exactly what the person they chose would see (2 November 2026, Dominguez:
+ * "the view-as.. is meant for me to be able to see everything exactly as they
+ * would"). Back to yourself brings them back.
+ */
+export function isViewingAs(user: Pick<AuthUser, 'actualRole'> | null | undefined): boolean {
+  return user?.actualRole !== undefined;
+}
+
 /// The view-as request headers an admin's browser sends (`lib/view-as.ts`).
 export const VIEW_AS_HEADER = 'x-view-as';
 export const VIEW_AS_JOB_ROLES_HEADER = 'x-view-as-job-roles';

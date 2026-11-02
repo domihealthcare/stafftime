@@ -38,6 +38,7 @@ reset_state() {
     -c "delete from productivity_statements;" \
     -c "delete from productivity_plans;" \
     -c "update employees set \"canManageProductivity\" = false, \"canSeeRotaCost\" = false;" \
+    -c "update employees set \"canSeeInvoices\" = false, \"canApproveExpenses\" = false, \"canPostNews\" = false, \"canSeeEveryonesSchedule\" = false where email = 'admin@domihealthcare.com';" \
     -c "delete from credential_types where name not in ('Medical license', 'CDS registration', 'DEA registration', 'Medical malpractice insurance', 'ACLS', 'BLS', 'Student-Athlete Cardiac Assessment Certificate', 'Flu vaccine', 'TB test');" \
     -c "update employees set \"employmentStatus\" = 'ACTIVE', \"wantsDailyDigest\" = true, \"mutedDigestTopics\" = '{}';" \
     -c "delete from practice_settings;" \

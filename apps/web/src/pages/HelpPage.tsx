@@ -1465,8 +1465,10 @@ const MANAGERS: Section[] = [
               <strong>Back to yourself</strong>. It lasts for this browser tab. You stay yourself
               throughout: your own shifts, hours and time off, your own name on anything you save,
               and the server treats you as that access level, so what it refuses them it refuses you
-              too. The per-person lists stay yours, whatever view you choose: the rota&rsquo;s cost,
-              provider productivity, News posting and Invoices.
+              too. The lists you are on count as off while you view as somebody, so you see exactly
+              what they would: Pay &amp; raises and the rota&rsquo;s cost, Invoices, approving
+              expenses, provider productivity, News posting, everyone&rsquo;s schedule and clearing
+              closing checklists. <strong>Back to yourself</strong> brings them back.
             </p>
           </>
         ),

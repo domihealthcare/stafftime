@@ -306,7 +306,7 @@ export class ClosingService {
 
   /// Every clock-out checklist on one working day, fullest problems first,
   /// each saying whether the person asking may clear it.
-  async day(date: string, locationId: string | undefined, viewerId: string) {
+  async day(date: string, locationId: string | undefined, viewerId: string, viewing = false) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date))
       throw new BadRequestException('Give a date as YYYY-MM-DD.');
     const [records, canClear] = await Promise.all([
@@ -321,7 +321,7 @@ export class ClosingService {
           answers: { orderBy: { sortOrder: 'asc' } },
         },
       }),
-      this.mayClear(viewerId),
+      this.mayClear(viewerId, viewing),
     ]);
     return records.map((record) => ({
       id: record.id,
@@ -370,7 +370,9 @@ export class ClosingService {
   /// or any manager while no manager is. Somebody on the admin team chosen
   /// without Manager access (October 2026) is told, but clears nothing, so
   /// they never lock the managers out.
-  private async mayClear(employeeId: string): Promise<boolean> {
+  /// While an admin views as somebody, being chosen does not count
+  /// (`isViewingAs`): they clear only as a manager nobody chose would.
+  private async mayClear(employeeId: string, viewing = false): Promise<boolean> {
     const rows = await this.prisma.topicAssignee.findMany({
       where: {
         topic: DigestTopic.CLOSING,
@@ -382,17 +384,17 @@ export class ClosingService {
       select: { employeeId: true },
     });
     const reviewers = rows.map((row) => row.employeeId);
-    return reviewers.length === 0 || reviewers.includes(employeeId);
+    return reviewers.length === 0 || (!viewing && reviewers.includes(employeeId));
   }
 
   /// Looked into and dealt with: off the banner and the round-up from now.
-  async clear(id: string, managerId: string) {
+  async clear(id: string, managerId: string, viewing = false) {
     const record = await this.prisma.closingRecord.findUnique({
       where: { id },
       select: { id: true, clearedAt: true },
     });
     if (!record) throw new NotFoundException('That clock-out was not found.');
-    if (!(await this.mayClear(managerId)))
+    if (!(await this.mayClear(managerId, viewing)))
       throw new ForbiddenException(
         'Only the people chosen to look after closing checklists can clear one.',
       );

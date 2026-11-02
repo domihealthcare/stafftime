@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { EmploymentStatus, PtoStatus, Role, ShiftStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { isViewingAs } from '../common/auth/auth-user';
 
 /// Longest stretch one request may cover: a month and a week either side.
 export const MAX_SCHEDULE_DAYS = 45;
@@ -19,12 +20,14 @@ export const MAX_SCHEDULE_DAYS = 45;
 export class EveryonesScheduleService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async assertCanSee(user: { id: string; role: Role }) {
+  async assertCanSee(user: { id: string; role: Role; actualRole?: Role }) {
     if (user.role === Role.ADMIN || user.role === Role.MANAGER) return;
-    const person = await this.prisma.employee.findUnique({
-      where: { id: user.id },
-      select: { canSeeEveryonesSchedule: true, employmentStatus: true },
-    });
+    const person = isViewingAs(user)
+      ? null
+      : await this.prisma.employee.findUnique({
+          where: { id: user.id },
+          select: { canSeeEveryonesSchedule: true, employmentStatus: true },
+        });
     if (
       !person?.canSeeEveryonesSchedule ||
       person.employmentStatus === EmploymentStatus.TERMINATED

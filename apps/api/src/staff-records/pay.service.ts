@@ -17,7 +17,7 @@ import {
   PayRateUnit,
   Prisma,
 } from '@prisma/client';
-import type { AuthUser } from '../common/auth/auth-user';
+import { type AuthUser, isViewingAs } from '../common/auth/auth-user';
 import { isoDate, toUtcDate } from '../common/util/calendar-date.util';
 import { practiceToday } from '../common/util/zoned-time.util';
 import { EventsService } from '../events/events.service';
@@ -101,7 +101,7 @@ export class PayService {
   // ------------------------------------------------------------- reading
 
   async overview(viewer: AuthUser) {
-    await this.assertAllowed(viewer.id);
+    await this.assertAllowed(viewer);
     const today = isoDate(practiceToday());
     const people = await this.prisma.employee.findMany({
       where: {
@@ -173,7 +173,7 @@ export class PayService {
   }
 
   async person(employeeId: string, viewer: AuthUser) {
-    await this.assertAllowed(viewer.id);
+    await this.assertAllowed(viewer);
     const today = isoDate(practiceToday());
     const person = await this.prisma.employee.findFirst({
       where: { id: employeeId, ...NOT_A_PROVIDER },
@@ -222,7 +222,7 @@ export class PayService {
   // ---------------------------------------------------- the pay history
 
   async addChange(employeeId: string, dto: EmploymentChangeDto, actor: AuthUser) {
-    await this.assertAllowed(actor.id);
+    await this.assertAllowed(actor);
     await this.assertPerson(employeeId);
     await this.prisma.employmentChange.create({
       data: { employeeId, ...changeDataOf(dto), recordedById: actor.id },
@@ -232,7 +232,7 @@ export class PayService {
   }
 
   async updateChange(id: string, dto: EmploymentChangeDto, actor: AuthUser) {
-    await this.assertAllowed(actor.id);
+    await this.assertAllowed(actor);
     const change = await this.findChange(id);
     await this.prisma.employmentChange.update({
       where: { id },
@@ -243,7 +243,7 @@ export class PayService {
   }
 
   async removeChange(id: string, actor: AuthUser) {
-    await this.assertAllowed(actor.id);
+    await this.assertAllowed(actor);
     const change = await this.findChange(id);
     await this.prisma.employmentChange.delete({ where: { id } });
     this.logger.log(`Pay / position change ${id} removed by ${actor.id}`);
@@ -253,7 +253,7 @@ export class PayService {
   // -------------------------------------------------------------- raises
 
   async requestRaise(employeeId: string, dto: RequestRaiseDto, actor: AuthUser) {
-    await this.assertAllowed(actor.id);
+    await this.assertAllowed(actor);
     const person = await this.assertPerson(employeeId);
     if (person.employmentStatus === EmploymentStatus.TERMINATED) {
       throw new BadRequestException('They have left the practice.');
@@ -290,7 +290,7 @@ export class PayService {
   /// Sets the meeting, or moves it: a new practice event for the person and
   /// whoever set it, and the old one, if any, removed (which tells them).
   async setMeeting(id: string, dto: RaiseMeetingDto, actor: AuthUser) {
-    await this.assertAllowed(actor.id);
+    await this.assertAllowed(actor);
     const raise = await this.findRaise(id);
     if (!isOpen(raise.status)) throw new BadRequestException('This raise has been settled.');
     const startsAt = new Date(dto.startsAt);
@@ -342,7 +342,7 @@ export class PayService {
   }
 
   async cancelMeeting(id: string, actor: AuthUser) {
-    await this.assertAllowed(actor.id);
+    await this.assertAllowed(actor);
     const raise = await this.findRaise(id);
     if (!raise.meetingEventId) throw new BadRequestException('No meeting is set.');
     await this.removeEvent(raise.meetingEventId, actor);
@@ -360,7 +360,7 @@ export class PayService {
   /// Offered, approved or declined. Approving writes the new pay into the
   /// history on the day it takes effect, which is what the rota's cost reads.
   async decide(id: string, dto: DecideRaiseDto, actor: AuthUser) {
-    await this.assertAllowed(actor.id);
+    await this.assertAllowed(actor);
     const raise = await this.findRaise(id);
     const problem = decisionProblem(raise.status, dto);
     if (problem) throw new BadRequestException(problem);
@@ -413,7 +413,7 @@ export class PayService {
 
   /// They no longer want it. A meeting still to come is taken off.
   async withdraw(id: string, actor: AuthUser) {
-    await this.assertAllowed(actor.id);
+    await this.assertAllowed(actor);
     const raise = await this.findRaise(id);
     if (!isOpen(raise.status)) throw new BadRequestException('This raise has been settled.');
     await this.dropUpcomingMeeting(raise, actor);
@@ -427,7 +427,7 @@ export class PayService {
   /// Removed altogether (entered by mistake). The pay change an approval
   /// made stays in the history, where it can be removed on its own.
   async removeRaise(id: string, actor: AuthUser) {
-    await this.assertAllowed(actor.id);
+    await this.assertAllowed(actor);
     const raise = await this.findRaise(id);
     await this.dropUpcomingMeeting(raise, actor);
     await this.prisma.payRaise.delete({ where: { id } });
@@ -438,7 +438,7 @@ export class PayService {
   // ------------------------------------------------------ leaving details
 
   async updateLeaving(employeeId: string, dto: LeavingRecordDto, actor: AuthUser) {
-    await this.assertAllowed(actor.id);
+    await this.assertAllowed(actor);
     await this.assertPerson(employeeId);
     const data = {
       ...(dto.kind !== undefined ? { kind: dto.kind } : {}),
@@ -459,11 +459,13 @@ export class PayService {
 
   // ------------------------------------------------------------- helpers
 
-  private async assertAllowed(employeeId: string) {
-    const person = await this.prisma.employee.findUnique({
-      where: { id: employeeId },
-      select: { canSeeRotaCost: true },
-    });
+  private async assertAllowed(viewer: AuthUser) {
+    const person = isViewingAs(viewer)
+      ? null
+      : await this.prisma.employee.findUnique({
+          where: { id: viewer.id },
+          select: { canSeeRotaCost: true },
+        });
     if (!person?.canSeeRotaCost) {
       throw new ForbiddenException(
         'Pay is only for the people an admin has chosen to see the rota’s cost.',

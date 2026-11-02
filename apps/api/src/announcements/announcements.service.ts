@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { EmploymentStatus, NotificationKind, Prisma, Role } from '@prisma/client';
 import { AiService } from '../ai/ai.service';
-import { AuthUser } from '../common/auth/auth-user';
+import { AuthUser, isViewingAs } from '../common/auth/auth-user';
 import { InboxService } from '../email/inbox.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -161,12 +161,14 @@ export class AnnouncementsService {
   /// Writing, editing and removing posts: admins, and anybody an admin has
   /// switched on (`canPostNews`, October 2026), read afresh so a change takes
   /// effect at once.
-  async assertCanPost(user: { id: string; role: Role }) {
+  async assertCanPost(user: { id: string; role: Role; actualRole?: Role }) {
     if (user.role === Role.ADMIN) return;
-    const person = await this.prisma.employee.findUnique({
-      where: { id: user.id },
-      select: { canPostNews: true, employmentStatus: true },
-    });
+    const person = isViewingAs(user)
+      ? null
+      : await this.prisma.employee.findUnique({
+          where: { id: user.id },
+          select: { canPostNews: true, employmentStatus: true },
+        });
     if (!person?.canPostNews || person.employmentStatus === EmploymentStatus.TERMINATED) {
       throw new ForbiddenException('Only admins, or people an admin has chosen, can post News.');
     }
