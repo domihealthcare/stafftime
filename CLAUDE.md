@@ -107,6 +107,17 @@ that shows pay asks for the person's PIN first** (or their password), even
 for those allowed to see it (`pay-lock/`). The census spreadsheet Dominguez
 shared was not imported, and its social security numbers were never read.
 
+**Confidential staff notes** (2 November 2026, Dominguez: "somewhere for
+managers/admin to write confidential notes on employees ... should not be
+seen by the actual employee") are another deliberate step: free-text notes on
+a person, read and written by **every manager and admin**, behind the PIN,
+and **never by the person they are about** (not even a manager or admin:
+nobody sees the notes written about themselves). Facts about work only:
+never a patient's details, never anybody's health; the form says so. Their
+own table (`StaffNote`), pinned by the schema guard, read only by
+`src/staff-notes/`, never in the payroll export, the Directory or the AI
+service.
+
 **An outside AI service** (October 2026, Dominguez: staff names and schedules
 may go to one; patient details never): **Ask Domi Staff** sends a question,
 and what the app looks up to answer it *as that person sees it* (and the Help
@@ -115,7 +126,7 @@ what they are given to work on: a News post's words or an admin's notes, a
 pasted booking message, and for a time-off decline the person's first name,
 dates and the manager's words (counts of who else is off, never names).
 Never the clinical forms, the suggestion box, survey answers (360s included), staff
-profiles, licenses, punch locations, the reps list, PINs or passwords;
+profiles, staff notes, licenses, punch locations, the reps list, PINs or passwords;
 nothing is kept beyond a daily count, unless somebody saves what a helper
 wrote (and a post's Spanish, once translated, stays on the post). Off until
 `ANTHROPIC_API_KEY` is set — see `docs/ask-domi-staff-setup.md`.
@@ -2093,6 +2104,27 @@ Beyond the phases, the parts worth knowing about before picking up work:
   clocks go back is 25 hours long, so it failed on 2 November 2026 for a punch
   just after midnight on the 1st (the app was right); the limit is now 25.
   Test only.
+- **Confidential staff notes** (2 November 2026, Dominguez: "somewhere for
+  managers/admin to write confidential notes on employees ... internal and
+  should not be seen by the actual employee", and "viewable as a chart as
+  well (not just in each individual staff card)"; his choices: **all managers
+  and admins**, **everyone with access sees every note**, **behind the PIN**,
+  the **writer edits, marked as edited**; version 1.37.0): **Manage -> Staff
+  -> Notes** (`/staff-notes`) is every note in one table (date, who it is
+  about, an optional kind - Praise, Concern, Attendance, Conduct, Performance,
+  Meeting, Other - the note, who wrote it), narrowed by person (`?person=`),
+  kind or any words, cards on a phone; **Notes** on each Staff card opens it on
+  that person (not on your own card). **+ Add a note**: who, kind, up to 2,000
+  characters. Only the writer changes a note ("Edited" and when); the writer
+  or an admin removes it. **Nobody sees notes about themselves**, by id
+  either, nor can write one; Claude added this to "not seen by the employee",
+  as managers have notes too. Every read is logged, like staff profiles.
+  While viewing as an employee the screen is refused, as for them. `StaffNote`
+  (`staff_notes`, migration `20261102010000_staff_notes`, UUID ids like every
+  table here), `src/staff-notes/` (`staff-notes.ts` rules, pure),
+  `pages/StaffNotesPage.tsx`; `pay-routes.spec.ts` pins the PIN; Help has
+  *Confidential notes on staff*; `tests/browser/staff-notes.mjs`. Worth
+  carrying to the EMR module.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

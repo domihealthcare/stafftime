@@ -2895,6 +2895,41 @@ export interface ExpenseRequestInput {
   receiptEmailed: boolean;
 }
 
+/// What a confidential staff note is about (November 2026). Optional.
+export type StaffNoteKind =
+  'PRAISE' | 'CONCERN' | 'ATTENDANCE' | 'CONDUCT' | 'PERFORMANCE' | 'MEETING' | 'OTHER';
+
+/// Somebody a note can be about, or who wrote one.
+export interface StaffNotePerson extends OnCallPerson {
+  former?: boolean;
+}
+
+/// A confidential note on a member of staff: managers and admins only, never
+/// the person it is about.
+export interface StaffNote {
+  id: string;
+  kind: StaffNoteKind | null;
+  body: string;
+  createdAt: string;
+  editedAt: string | null;
+  person: StaffNotePerson & { former: boolean };
+  author: OnCallPerson | null;
+  canEdit: boolean;
+  canRemove: boolean;
+}
+
+export interface StaffNoteList {
+  notes: StaffNote[];
+  /// Everybody a note can be written about (never the reader).
+  people: (StaffNotePerson & { former: boolean })[];
+}
+
+export interface StaffNoteInput {
+  employeeId: string;
+  kind?: StaffNoteKind | null;
+  body: string;
+}
+
 /// An approved expense or CME request not paid back yet: the payroll prompt.
 export interface Payout {
   kind: 'expense' | 'cme';

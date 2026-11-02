@@ -73,6 +73,9 @@ const ExpensesPage = lazy(() =>
 const VendorsPage = lazy(() =>
   import('./pages/VendorsPage').then((m) => ({ default: m.VendorsPage })),
 );
+const StaffNotesPage = lazy(() =>
+  import('./pages/StaffNotesPage').then((m) => ({ default: m.StaffNotesPage })),
+);
 const ScheduleReviewsPage = lazy(() =>
   import('./pages/ScheduleReviewsPage').then((m) => ({ default: m.ScheduleReviewsPage })),
 );
@@ -351,6 +354,14 @@ function Routed() {
             }
           />
           <Route path="staff" element={<StaffPage />} />
+          <Route
+            path="staff-notes"
+            element={
+              <PinGate what="staff notes">
+                <StaffNotesPage />
+              </PinGate>
+            }
+          />
           <Route
             path="pay"
             element={

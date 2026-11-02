@@ -33,6 +33,7 @@ import { ScheduleReviewsModule } from './schedule-reviews/schedule-reviews.modul
 import { OfficeAdminsModule } from './office-admins/office-admins.module';
 import { CmeModule } from './cme/cme.module';
 import { ExpensesModule } from './expenses/expenses.module';
+import { StaffNotesModule } from './staff-notes/staff-notes.module';
 import { DowntimeModule } from './downtime/downtime.module';
 import { BadgesModule } from './badges/badges.module';
 import { QuizzesModule } from './quizzes/quizzes.module';
@@ -86,6 +87,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     OfficeAdminsModule,
     CmeModule,
     ExpensesModule,
+    StaffNotesModule,
     DowntimeModule,
     BadgesModule,
     QuizzesModule,

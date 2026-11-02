@@ -173,6 +173,9 @@ import type {
   ExpenseRequest,
   ExpenseRequestInput,
   PayoutList,
+  StaffNote,
+  StaffNoteInput,
+  StaffNoteList,
   PayoutPaidInput,
   ReimbursementMethod,
   CmeRequest,
@@ -1632,6 +1635,14 @@ export const api = {
       method: 'DELETE',
     }),
   /// The payroll prompt: approved expenses and CME not paid back yet.
+  /// Confidential notes on staff (November 2026): managers and admins, behind the PIN.
+  staffNotes: () => request<StaffNoteList>('/staff-notes'),
+  addStaffNote: (body: StaffNoteInput) =>
+    request<StaffNote>('/staff-notes', { method: 'POST', body: JSON.stringify(body) }),
+  changeStaffNote: (id: string, body: Omit<StaffNoteInput, 'employeeId'>) =>
+    request<StaffNote>(`/staff-notes/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  removeStaffNote: (id: string) =>
+    request<{ removed: boolean }>(`/staff-notes/${id}`, { method: 'DELETE' }),
   payouts: () => request<PayoutList>('/payouts'),
   payoutPaid: (kind: 'expense' | 'cme', id: string, body: PayoutPaidInput) =>
     request<{ paid: boolean }>(`/payouts/${kind}/${id}/paid`, {

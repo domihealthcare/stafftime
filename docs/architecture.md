@@ -6001,3 +6001,47 @@ loads them through Node's `require(esm)`, which Vercel's Node 24 runtime turns
 off (`--no-experimental-require-module`), so the live API would fail on every
 request. Set `NODE_OPTIONS=--experimental-require-module` in Vercel first and
 confirm it took effect, then upgrade.
+
+## Confidential staff notes (November 2026)
+
+Dominguez, 2 November 2026: "we need somewhere for managers/admin to write
+confidential notes on employees ... these notes would be internal and should
+not be seen by the actual employee", and the notes "should be viewable as a
+chart as well (not just in each individual staff card)". His choices: all
+managers and admins read and write them; everyone with access sees every
+note; behind the PIN like pay; the writer may edit, and the note then says
+so.
+
+**Where.** Manage -> Staff -> **Notes** (`/staff-notes`, `StaffNotesPage`):
+every note in one table, newest first, narrowed by person (kept in the
+address as `?person=`, so a Staff card's **Notes** link opens the same page
+on that person), kind or any words. Below a laptop's width the rows are
+cards, so the page never scrolls sideways.
+
+**Nobody reads what is written about them.** "Not seen by the employee"
+applies to managers and admins too, so `StaffNotesService.list` leaves out
+every note about the reader, the person picker leaves the reader out, a
+note about the reader is "not found" even by id, and nobody can write one
+about themselves. Their own Staff card has no Notes link.
+
+**Who may do what** (`staff-notes/staff-notes.ts`, pure): managers and
+admins only (`@Roles` and the service both check); only the writer edits
+(`editedAt` is set); the writer or an admin removes. A note whose writer has
+been removed keeps its words, shows "Somebody no longer here", and only an
+admin can remove it. Every read is logged with the reader and the count, as
+the staff profiles' are.
+
+**Behind the PIN.** `PayLockGuard` on the controller, the page wrapped in
+`PinGate`, and `pay-lock/pay-routes.spec.ts` lists the controller so the
+guard cannot be dropped quietly.
+
+**What a note holds.** Who it is about, who wrote it, an optional kind, up to
+2,000 characters (a database CHECK too) and the times. The form asks for
+facts about work, never a patient's details and nothing about anybody's
+health; the schema guard pins the fields. Not in the payroll export, the
+Directory, the nightly email or the AI service.
+
+**The first migration failed locally**, before it was pushed: the ids were
+written as TEXT, and every table here keys on UUID, so the foreign key to
+`employees` was refused. Checked with `prisma migrate diff` against the
+schema afterwards (empty). A reminder to keep new tables' ids `@db.Uuid`.

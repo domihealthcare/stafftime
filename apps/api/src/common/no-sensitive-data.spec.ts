@@ -231,6 +231,32 @@ describe('what this app deliberately does not store', () => {
     );
   });
 
+  /// Confidential notes on staff (November 2026, Dominguez): who it is
+  /// about, who wrote it, a kind and the words. Nothing else: no documents,
+  /// no identity numbers, no health fields.
+  it('a staff note keeps only the note itself', () => {
+    const fieldsOf = (name: string) =>
+      model(name)
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('//') && !line.startsWith('@@'))
+        .map((line) => line.split(/\s+/)[0])
+        .sort();
+    expect(fieldsOf('StaffNote')).toEqual(
+      [
+        'author',
+        'authorId',
+        'body',
+        'createdAt',
+        'editedAt',
+        'employee',
+        'employeeId',
+        'id',
+        'kind',
+      ].sort(),
+    );
+  });
+
   /// Vendor payments (October 2026, Dominguez): money and paperwork only. The
   /// spreadsheet they replace had patients' names in its notes; nothing here
   /// is for a patient, and a new column has to be decided out loud.

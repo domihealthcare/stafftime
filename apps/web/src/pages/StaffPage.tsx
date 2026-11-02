@@ -613,6 +613,17 @@ function StaffCard({
                 Profile
               </Link>
             )}
+            {/* Confidential notes (November 2026): never on your own card,
+                as nobody reads the notes about themselves. */}
+            {!isMe && (
+              <Link
+                to={`/staff-notes?person=${person.id}`}
+                aria-label={`Notes on ${person.firstName} ${person.lastName}`}
+                className={buttonClass('secondary', 'sm')}
+              >
+                Notes
+              </Link>
+            )}
             {/* A manager's Edit opens the editor as it always did: it shows
                 them the person (licenses included) and hides the photo and
                 sign-in tools; the server refuses them a save. */}

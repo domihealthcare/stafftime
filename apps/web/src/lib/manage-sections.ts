@@ -38,6 +38,8 @@ export const MANAGE_SECTIONS: ManageSection[] = [
       // we merge the Staff and Job Roles?"): managers, who keep the job roles,
       // open it too and see the cards without the admin's tools.
       { to: '/staff', label: 'Staff', need: 'manager' },
+      // Confidential notes on staff (November 2026), behind the PIN.
+      { to: '/staff-notes', label: 'Notes', need: 'manager' },
       { to: '/credentials', label: 'Licenses', need: 'manager' },
       { to: '/cme', label: 'CME', need: 'manager' },
       { to: '/checklists', label: 'Onboarding & Offboarding', need: 'manager' },
