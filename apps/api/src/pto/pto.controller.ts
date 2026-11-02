@@ -30,7 +30,6 @@ import {
 import { PtoPolicyService } from './pto-policy.service';
 import { PtoService } from './pto.service';
 import { CleanTimeOffService } from './clean-time-off.service';
-import { BalanceReminderService } from './balance-reminder.service';
 import { ArrayMaxSize, IsArray, IsUUID } from 'class-validator';
 
 class ApproveCleanTimeOffDto {
@@ -47,7 +46,6 @@ export class PtoController {
     private readonly pto: PtoService,
     private readonly policy: PtoPolicyService,
     private readonly cleanTimeOff: CleanTimeOffService,
-    private readonly reminder: BalanceReminderService,
   ) {}
 
   /// The rules. Readable by everyone - staff should be able to see what they
@@ -104,19 +102,6 @@ export class PtoController {
   @Get('preview')
   preview(@Query() query: PreviewPtoRequestDto, @CurrentUser() user: AuthUser) {
     return this.pto.preview(query, user);
-  }
-
-  /// The start-of-month pop-up with your time off left, if it is due.
-  @Get('month-reminder')
-  monthReminder(@CurrentUser() user: AuthUser) {
-    return this.reminder.due(user.id);
-  }
-
-  /// Seen: not again until next month.
-  @Post('month-reminder/seen')
-  @HttpCode(HttpStatus.OK)
-  monthReminderSeen(@CurrentUser() user: AuthUser) {
-    return this.reminder.seen(user.id);
   }
 
   /// Anyone can ask for time off.

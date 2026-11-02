@@ -1035,7 +1035,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
   that is hourly would get the accumulation" — not the general accrual change
   turned down below). A **pop-up on Home at the start of each month** with
   the PTO and sick days left, once (`Employee.balanceReminderMonth`; not in
-  somebody's first month). Migration `20261015020000_time_off_counting`;
+  somebody's first month); **taken out on 2 November 2026**, see below.
+  Migration `20261015020000_time_off_counting`;
   see *Which days a request takes* and after in `docs/architecture.md`;
   `tests/browser/time-off-feedback.mjs`.
 - **Diagnostics and reimbursements** (16 October 2026, Dominguez: "it
@@ -2066,6 +2067,16 @@ Beyond the phases, the parts worth knowing about before picking up work:
   And `tomorrow` turned its switch off and reloaded before the save had
   finished, so the old value came back once in CI; it now waits for the
   save, as `weekly` already did.
+- **The monthly time off pop-up, taken out** (2 November 2026, Dominguez:
+  "why am i getting a pop up when i sign in about my PTO? i dont want that to
+  be happening"; chosen: removed for everyone, version 1.35.0): Home no longer
+  opens a pop-up with the PTO and sick days left at the start of each month.
+  The component, `GET /pto/month-reminder` and its `/seen`, and
+  `BalanceReminderService` are gone; balances are still on the Schedule and
+  the Time off screen. `Employee.balanceReminderMonth` stays in the database,
+  unread (dropping it would need two releases, for nothing).
+  `time-off-feedback.mjs` now checks no pop-up opens. Do not bring it back
+  without asking.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

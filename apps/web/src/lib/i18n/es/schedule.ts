@@ -223,18 +223,10 @@ export const SCHEDULE: Record<string, string> = {
   'Send request': 'Enviar solicitud',
   '{date} (half day)': '{date} (medio día)',
 
-  // Balances (components/PtoBalanceCard.tsx) and the start-of-month pop-up
-  // (components/MonthBalancePopup.tsx), October 2026.
+  // Balances (components/PtoBalanceCard.tsx), October 2026.
   'Earned so far': 'Acumulado hasta ahora',
   'Earned as you work: an hour for every 30 hours worked, up to {days} days a year. {worked} hours worked so far this year.':
     'Se acumula mientras trabajas: una hora por cada 30 horas trabajadas, hasta {days} días al año. {worked} horas trabajadas en lo que va del año.',
-  'Your time off this month': 'Tu tiempo libre este mes',
-  'A reminder of what you have left this year, so nothing comes as a surprise.':
-    'Un recordatorio de lo que te queda este año, para que nada te tome por sorpresa.',
-  'Sick time is earned as you work: an hour for every 30 hours, up to {days} days.':
-    'El tiempo por enfermedad se acumula mientras trabajas: una hora por cada 30 horas, hasta {days} días.',
-  'Got it': 'Entendido',
-  '{n} waiting for approval': '{n} esperando aprobación',
 
   // Schedule reviews - who reviews which provider's patient schedule
   Reviews: 'Revisiones',

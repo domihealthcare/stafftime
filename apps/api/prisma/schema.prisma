@@ -280,8 +280,9 @@ model Employee {
   /// "Your week" on Sunday evening - hours worked, next week's shifts - on
   /// the bell and by email (October 2026, Dominguez). Theirs to turn off.
   wantsWeeklySummary   Boolean       @default(true)
-  /// The month ("2026-11") they last saw the start-of-month pop-up with their
-  /// time off left (October 2026, Dominguez), so it shows once a month.
+  /// No longer used: the month they last saw the start-of-month time off
+  /// pop-up, taken out on 2 November 2026 (Dominguez). Left in the database
+  /// rather than dropped, as nothing reads it.
   balanceReminderMonth String?
   /// The parts of the round-up this manager does not want (October 2026,
   /// Dominguez: "certain managers should be notified of certain things").

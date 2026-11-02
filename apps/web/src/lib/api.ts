@@ -765,13 +765,6 @@ export const api = {
         employeeId: params.employeeId || undefined,
       })}`,
     ),
-  /// The start-of-month pop-up with your time off left, if it is due.
-  ptoMonthReminder: () =>
-    request<{ show: false } | { show: true; month: string; balance: PtoBalance }>(
-      '/pto/month-reminder',
-    ),
-  ptoMonthReminderSeen: () =>
-    request<{ month: string }>('/pto/month-reminder/seen', { method: 'POST' }),
   /// "Help me word it" on declining time off (AI): a reason to edit.
   declineWording: (id: string, notes: string) =>
     request<{ reason: string | null }>(`/pto/${id}/decline-wording`, {
