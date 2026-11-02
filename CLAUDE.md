@@ -2057,7 +2057,12 @@ Beyond the phases, the parts worth knowing about before picking up work:
   shifts, so nothing was rightly sent; it now gives her a published shift
   tomorrow first (noted `weekly-suite`, and `run-all.sh` clears it and
   `weekly_summaries`). Each failed on the old code and passes on the new.
-  Test only; the app is unchanged.
+  A fourth, `availability`, failed in the same evening once UTC had passed
+  midnight: the **When you can't work** screen chose between "The schedule
+  is published up to ..." and "Nothing ahead is published yet" by the
+  browser's own day, not New Jersey's as the server does, so a browser in
+  another zone said nothing was published (an app fix, invisible on a New
+  Jersey computer: `practiceDate()` in `AvailabilityPage.tsx`).
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

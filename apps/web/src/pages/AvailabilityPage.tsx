@@ -12,7 +12,8 @@ import {
 } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { OnePersonNote, useOnePerson } from '../components/OnePerson';
-import { addCalendarDays, browserToday } from '../lib/dates';
+import { addCalendarDays } from '../lib/dates';
+import { practiceDate } from '../lib/practice-time';
 import { displayName, formatCalendarDate, WEEK_ORDER } from '../lib/format';
 import { useIsManager } from '../lib/session';
 import { t as tNow, useT } from '../lib/i18n';
@@ -81,7 +82,10 @@ export function AvailabilityPage() {
       {mine && (
         <div className="mb-4">
           <Alert tone="info">
-            {mine.firstOpenDate > browserToday() ? (
+            {/* New Jersey's today, as the server's firstOpenDate is: on a
+                browser in another zone (CI's, in UTC) a Sunday evening there
+                is already Monday, and the published week went unmentioned. */}
+            {mine.firstOpenDate > practiceDate() ? (
               <>
                 {t('The schedule is published up to')}{' '}
                 <strong>{formatCalendarDate(addCalendarDays(mine.firstOpenDate, -1))}</strong>
