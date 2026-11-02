@@ -143,6 +143,43 @@ export const SHELL: Record<string, string> = {
     'Todos los demás teléfonos y computadoras con tu sesión iniciada tendrán que volver a iniciar sesión con tu contraseña. Este dispositivo sigue con la sesión iniciada.',
   'Yes, sign them out': 'Sí, cerrar sus sesiones',
   'Keep them signed in': 'Dejarlas abiertas',
+
+  // Face ID (components/PasskeysCard.tsx), November 2026
+  'Face ID': 'Face ID',
+  'Touch ID': 'Touch ID',
+  'Windows Hello': 'Windows Hello',
+  'your fingerprint': 'tu huella digital',
+  'a passkey': 'una llave de acceso',
+  'Sign in with Face ID': 'Iniciar sesión con Face ID',
+  'Use Face ID, Touch ID, a fingerprint or Windows Hello instead of typing your password. Your face or fingerprint stays on your phone or computer: Domi Staff never sees it. It also works where the app asks for your PIN. Your password still works too.':
+    'Usa Face ID, Touch ID, tu huella digital o Windows Hello en lugar de escribir tu contraseña. Tu cara o tu huella se quedan en tu teléfono o computadora: Domi Staff nunca las ve. También sirve donde la aplicación te pide tu PIN. Tu contraseña sigue funcionando.',
+  'Could not load your passkeys.': 'No se pudieron cargar tus llaves de acceso.',
+  'Not set up yet.': 'Todavía no está configurado.',
+  'Set up in {device}': 'Configurado en {device}',
+  'On your other devices too': 'También en tus otros dispositivos',
+  'Added {when}': 'Agregado: {when}',
+  'Not used yet': 'Sin usar todavía',
+  'Remove the passkey set up in {device}': 'Quitar la llave de acceso configurada en {device}',
+  'Remove this passkey?': '¿Quitar esta llave de acceso?',
+  'It will no longer sign you in. You can always sign in with your password, and set it up again.':
+    'Ya no te servirá para iniciar sesión. Siempre puedes iniciar sesión con tu contraseña y volver a configurarla.',
+  'Set up {method} on this device': 'Configurar {method} en este dispositivo',
+  'Set up {method} on this device too': 'Configurar {method} también en este dispositivo',
+  'Set up {method}': 'Configurar {method}',
+  'Setting it up…': 'Configurando…',
+  Continue: 'Continuar',
+  'To check it is you before {method} is set up.':
+    'Para confirmar que eres tú antes de configurar {method}.',
+  '{method} is already set up on this device.': '{method} ya está configurado en este dispositivo.',
+  '{method} is set up. Next time, sign in with it.':
+    '{method} está configurado. La próxima vez, inicia sesión con eso.',
+  'This browser cannot use Face ID or passkeys. Try Safari or Chrome on your phone.':
+    'Este navegador no puede usar Face ID ni llaves de acceso. Prueba Safari o Chrome en tu teléfono.',
+  'Sign in with {method} next time?': '¿Iniciar sesión con {method} la próxima vez?',
+  'No password to type on this device. Your face or fingerprint stays on it: Domi Staff never sees it.':
+    'Sin contraseña que escribir en este dispositivo. Tu cara o tu huella se quedan en él: Domi Staff nunca las ve.',
+  'Not now': 'Ahora no',
+  'More about it': 'Más información',
   'Signed out {n} other device.': 'Se cerró la sesión en {n} otro dispositivo.',
   'Signed out {n} other devices.': 'Se cerró la sesión en otros {n} dispositivos.',
   'Only this device is signed in as you.': 'Solo este dispositivo tiene tu sesión iniciada.',

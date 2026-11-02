@@ -2142,6 +2142,31 @@ Beyond the phases, the parts worth knowing about before picking up work:
   suites that watch requests only check that something was never sent. Use
   `settled` (or wait for something on screen), never
   `waitForLoadState('networkidle')`, after signing in or a click.
+- **Face ID sign-in** (2 November 2026, Dominguez: "is there a way we can
+  add that staff can use face id through their phone to login to portal?";
+  his choices: optional with the password kept, and Face ID opens the PIN in
+  front of pay too; version 1.38.0): passkeys (WebAuthn,
+  `@simplewebauthn/server` 14.0.3 and `/browser` 14.0.0, pinned). **Use Face
+  ID** under the sign-in form (Touch ID, Windows Hello, "your fingerprint" or
+  "a passkey" by device; not "Sign in with...", so the browser suites'
+  "Sign in" button stays one); set up from a **card on Home** after
+  a password sign-in on a device that has it (never a pop-up; gone on that
+  device once set up or turned down) or **Your profile -> Sign in with Face
+  ID**, which lists them and removes one. The password is asked again unless
+  signed in in the last 10 minutes; the person is told on the bell and by
+  email; not for a shared account. **Use Face ID** on every PIN prompt opens
+  pay and staff notes for the same 10 minutes. **Only the public key is
+  kept**: the face or fingerprint never leaves the phone (schema guard pins
+  `Passkey`, `PasskeyChallenge`). An admin removes somebody's under Staff ->
+  Edit -> Signing in (a lost phone), and **a new password removes them all**.
+  A passkey works only on the address it was made on, so ones made on
+  staff.domihealthcare.com do not work on stafftime-ap.vercel.app. The Vite
+  proxy now sends `X-Forwarded-Host` (`xfwd`) so it works locally.
+  Migrations `20261102020000_passkey_kind`, `20261102030000_passkeys`;
+  `src/passkeys/`, `lib/passkeys.ts`, `components/PasskeysCard.tsx`; Help
+  *Can I sign in with Face ID?*; see *Face ID sign-in* in
+  `docs/architecture.md`; `tests/browser/passkeys.mjs` (Chromium's virtual
+  authenticator, on `localhost`). Worth carrying to the EMR module.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

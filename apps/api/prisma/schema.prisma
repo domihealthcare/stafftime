@@ -472,6 +472,9 @@ model Employee {
   expensesDecided    ExpenseRequest[] @relation("ExpenseDecidedBy")
   staffNotesAbout    StaffNote[]      @relation("StaffNoteAbout")
   staffNotesWritten  StaffNote[]      @relation("StaffNoteAuthor")
+  /// Face ID, Touch ID, a fingerprint or Windows Hello for signing in
+  /// (November 2026). See `Passkey`.
+  passkeys           Passkey[]
 
   /// Phones and computers that get the bell's notifications as push
   /// notifications (October 2026).
@@ -825,6 +828,9 @@ model Session {
   /// Recorded so a user can recognise their own sessions, and for incident review.
   userAgent        String?
   ipAddress        String?
+  /// Signed in with a passkey (Face ID and the like) rather than a password,
+  /// November 2026. Home then does not offer to set Face ID up.
+  viaPasskey       Boolean   @default(false)
   createdAt        DateTime  @default(now())
 
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
@@ -2555,6 +2561,8 @@ enum NotificationKind {
   /// A downtime started, was updated, ended, is planned or was cancelled; the
   /// monthly downtime check (October 2026).
   DOWNTIME
+  /// Your account: Face ID (a passkey) was set up for it, November 2026.
+  ACCOUNT
 }
 
 /// Something the app wants one person to know, shown under the bell in the
@@ -4486,4 +4494,67 @@ model StaffNote {
   @@index([employeeId, createdAt])
   @@index([createdAt])
   @@map("staff_notes")
+}
+
+// ---------------------------------------------------------------------------
+// Passkeys: Face ID and the like (November 2026)
+// ---------------------------------------------------------------------------
+
+/// A passkey: signing in with Face ID, Touch ID, a fingerprint or Windows
+/// Hello instead of a password (November 2026, Dominguez: "staff can use face
+/// id through their phone to login to portal"). Optional, set up by the
+/// person on Your profile or from Home after signing in; it also opens the
+/// PIN in front of pay.
+///
+/// The face or fingerprint never leaves the phone: the phone checks it, then
+/// signs a one-time challenge with a private key that also never leaves it
+/// (or the person's iCloud Keychain / Google Password Manager). Only the
+/// public half is kept here, which cannot sign anything, so a copy of this
+/// table lets nobody in. See `src/passkeys/`.
+model Passkey {
+  id           String    @id @default(uuid()) @db.Uuid
+  employeeId   String    @db.Uuid
+  employee     Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  /// The credential's id, base64url, as the browser gives it.
+  credentialId String    @unique
+  /// The public key (COSE). Public: it can check a signature, never make one.
+  publicKey    Bytes
+  /// The authenticator's signature counter; phones that sync passkeys keep it 0.
+  counter      BigInt    @default(0)
+  transports   String[]
+  /// Synced to the person's other devices (iCloud Keychain and the like).
+  backedUp     Boolean   @default(false)
+  /// The browser it was set up in, so the person can tell them apart.
+  userAgent    String?
+  createdAt    DateTime  @default(now())
+  lastUsedAt   DateTime?
+
+  @@index([employeeId])
+  @@map("passkeys")
+}
+
+enum PasskeyPurpose {
+  /// Setting one up, while signed in.
+  REGISTER
+  /// Signing in with one, from the sign-in screen.
+  SIGN_IN
+  /// Opening the PIN in front of pay, while signed in.
+  PAY
+}
+
+/// A one-time challenge for a passkey, kept between asking for it and
+/// answering it (a few minutes at most), then deleted as it is used. In the
+/// database because the API runs on Vercel, where nothing stays in memory
+/// between two requests.
+model PasskeyChallenge {
+  id         String         @id @default(uuid()) @db.Uuid
+  challenge  String         @unique
+  purpose    PasskeyPurpose
+  /// Whose it is, for setting up and for pay; none when signing in.
+  employeeId String?        @db.Uuid
+  expiresAt  DateTime
+  createdAt  DateTime       @default(now())
+
+  @@index([expiresAt])
+  @@map("passkey_challenges")
 }

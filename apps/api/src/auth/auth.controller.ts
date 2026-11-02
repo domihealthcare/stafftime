@@ -43,7 +43,11 @@ import { CompletePasswordResetDto, RequestPasswordResetDto } from './dto/passwor
 import { LoginDto } from './dto/login.dto';
 import { SetPasswordDto } from './dto/set-password.dto';
 import { PasswordResetService } from './password-reset.service';
-import { SessionService } from './session.service';
+import { SessionService, hashToken } from './session.service';
+import type { AuthenticationResponseJSON } from '@simplewebauthn/server';
+import { PasskeyResponseDto } from '../passkeys/dto';
+import { requireSite } from '../passkeys/passkey-site';
+import { PasskeysService } from '../passkeys/passkeys.service';
 
 @Controller('auth')
 export class AuthController {
@@ -55,6 +59,7 @@ export class AuthController {
     private readonly resets: PasswordResetService,
     private readonly prisma: PrismaService,
     private readonly toolAccess: ToolAccessService,
+    private readonly passkeys: PasskeysService,
     config: ConfigService,
   ) {
     this.secureCookies = secureCookies(config);
@@ -106,7 +111,48 @@ export class AuthController {
       sessionCookieOptions(session.expiresAt, this.secureCookies),
     );
 
-    return this.describeCurrentUser(await this.requireEmployeeId(session.token));
+    return this.describeCurrentUser(
+      await this.requireEmployeeId(session.token),
+      undefined,
+      session.token,
+    );
+  }
+
+  /// Signing in with Face ID (November 2026), step one: a challenge for the
+  /// phone to sign. No email: the phone offers the passkeys it holds.
+  @Post('passkey/options')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  passkeyOptions(@Req() request: Request, @Ip() ip: string) {
+    return this.passkeys.signInOptions(requireSite(request.headers), ip);
+  }
+
+  /// Step two: the phone's answer, checked against the public key kept for
+  /// it. Opens a session as the password does.
+  @Post('passkey')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  async passkeySignIn(
+    @Body() dto: PasskeyResponseDto,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+    @Ip() ip: string,
+  ) {
+    const session = await this.passkeys.signIn(
+      dto.response as unknown as AuthenticationResponseJSON,
+      requireSite(request.headers),
+      { userAgent: request.header('user-agent'), ipAddress: ip },
+    );
+    response.cookie(
+      SESSION_COOKIE,
+      session.token,
+      sessionCookieOptions(session.expiresAt, this.secureCookies),
+    );
+    return this.describeCurrentUser(
+      await this.requireEmployeeId(session.token),
+      undefined,
+      session.token,
+    );
   }
 
   @Post('logout')
@@ -121,8 +167,8 @@ export class AuthController {
 
   /// Who am I? The web app calls this on load to restore the session.
   @Get('me')
-  async me(@CurrentUser() user: AuthUser) {
-    return this.describeCurrentUser(user.id, user);
+  async me(@CurrentUser() user: AuthUser, @Req() request: Request) {
+    return this.describeCurrentUser(user.id, user, request.sessionToken);
   }
 
   @Post('change-password')
@@ -156,7 +202,11 @@ export class AuthController {
    * ends up too.
    */
   @Patch('preferences')
-  async updatePreferences(@Body() dto: UpdatePreferencesDto, @CurrentUser() user: AuthUser) {
+  async updatePreferences(
+    @Body() dto: UpdatePreferencesDto,
+    @CurrentUser() user: AuthUser,
+    @Req() request: Request,
+  ) {
     await this.prisma.employee.update({
       where: { id: user.id },
       data: {
@@ -166,7 +216,7 @@ export class AuthController {
         mutedDigestTopics: dto.mutedDigestTopics,
       },
     });
-    return this.describeCurrentUser(user.id, user);
+    return this.describeCurrentUser(user.id, user, request.sessionToken);
   }
 
   /// The browsers currently signed in as you, so you can spot one you do not
@@ -217,7 +267,7 @@ export class AuthController {
   /// Who the signed-in person is, as the app should treat them: while an admin
   /// is viewing as somebody (October 2026), with the access level and job
   /// roles they chose, and `viewingAs` saying so.
-  private async describeCurrentUser(employeeId: string, viewer?: AuthUser) {
+  private async describeCurrentUser(employeeId: string, viewer?: AuthUser, sessionToken?: string) {
     const viewing = viewer?.actualRole === Role.ADMIN ? viewer : null;
     const { jobRoles: ownJobRoles, ...employee } = await this.prisma.employee.findUniqueOrThrow({
       where: { id: employeeId },
@@ -306,8 +356,22 @@ export class AuthController {
           })
         ).map((jobRole) => ({ jobRole }))
       : ownJobRoles;
+    // Face ID (November 2026): how many passkeys they have, and whether this
+    // session was opened with one, so Home offers to set it up only when
+    // it would help.
+    const [passkeys, session] = await Promise.all([
+      this.passkeys.count(employeeId),
+      sessionToken
+        ? this.prisma.session.findUnique({
+            where: { tokenHash: hashToken(sessionToken) },
+            select: { viaPasskey: true },
+          })
+        : null,
+    ]);
     return {
       ...employee,
+      passkeys,
+      viaPasskey: session?.viaPasskey ?? false,
       // While viewing as somebody, the admin's own places on the per-person
       // lists count as off, so the menus show what that person sees.
       ...(viewing ? NOT_ON_ANY_LIST : {}),

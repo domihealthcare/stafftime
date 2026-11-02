@@ -178,6 +178,9 @@ export class PasswordResetService {
         where: { employeeId: record.employeeId, usedAt: null },
         data: { usedAt: new Date() },
       }),
+      // And Face ID set up before (November 2026): a passkey somebody else
+      // added must not outlive the password they used to add it.
+      this.prisma.passkey.deleteMany({ where: { employeeId: record.employeeId } }),
     ]);
 
     await this.sessions.revokeAllForEmployee(record.employeeId);

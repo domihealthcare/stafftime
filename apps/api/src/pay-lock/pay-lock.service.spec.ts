@@ -36,6 +36,7 @@ function build(options: { person?: Partial<Person>; session?: { payUnlockedUntil
         return { count: 1 };
       }),
     },
+    passkey: { count: jest.fn(async () => 0) },
     employee: {
       findUnique: jest.fn(async () => ({ ...person })),
       // The database's own increment, as at the time clock.
@@ -89,10 +90,28 @@ describe('PayLockService', () => {
         unlocked: false,
         until: null,
         hasPin: true,
+        hasPasskey: false,
         minutes: PAY_UNLOCK_MINUTES,
       });
       expect(prisma.session.findUnique).toHaveBeenCalledWith(
         expect.objectContaining({ where: { tokenHash: hashToken('token') } }),
+      );
+    });
+
+    it('says when they have Face ID, so the screen offers it (November 2026)', async () => {
+      const { service, prisma } = build({});
+      prisma.passkey.count.mockResolvedValueOnce(2);
+      await expect(service.status('token', 'emp-1')).resolves.toMatchObject({
+        hasPasskey: true,
+      });
+    });
+
+    it('opens for ten minutes once Face ID has been checked', async () => {
+      const { service, prisma } = build({});
+      const status = await service.open('token', 'emp-1', 'Face ID');
+      expect(status.unlocked).toBe(true);
+      expect(prisma.session.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { tokenHash: hashToken('token'), revokedAt: null } }),
       );
     });
 

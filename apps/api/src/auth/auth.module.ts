@@ -7,9 +7,11 @@ import { PasswordGuessService } from './password-guesses.service';
 import { PasswordResetService } from './password-reset.service';
 import { PasswordService } from './password.service';
 import { SessionService } from './session.service';
+import { PasskeysController } from '../passkeys/passkeys.controller';
+import { PasskeysService } from '../passkeys/passkeys.service';
 
 @Module({
-  controllers: [AuthController, WelcomeController],
+  controllers: [AuthController, WelcomeController, PasskeysController],
   providers: [
     AuthService,
     PasswordService,
@@ -17,6 +19,7 @@ import { SessionService } from './session.service';
     PasswordResetService,
     SessionService,
     LoginThrottleService,
+    PasskeysService,
   ],
   exports: [
     AuthService,
@@ -25,6 +28,7 @@ import { SessionService } from './session.service';
     PasswordResetService,
     SessionService,
     LoginThrottleService,
+    PasskeysService,
   ],
 })
 export class AuthModule {}

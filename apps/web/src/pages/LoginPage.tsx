@@ -6,9 +6,11 @@ import { BrandLogo } from '../components/Brand';
 import { InstallTip } from '../components/InstallTip';
 import { PasswordField } from '../components/PasswordField';
 import { Alert, Card } from '../components/ui';
+import { FaceIdIcon } from '../components/FaceIdIcon';
+import { passkeysSupported, unlockMethod, wasCancelled } from '../lib/passkeys';
 
 export function LoginPage() {
-  const { signIn } = useSession();
+  const { signIn, signInWithPasskey } = useSession();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +34,29 @@ export function LoginPage() {
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not sign in. Please try again.');
       setPassword('');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /// Face ID (November 2026). Shown wherever the browser can use passkeys;
+  /// "Use Face ID", not "Sign in with...", so "Sign in" names one button.
+  /// somebody who has not set one up just gets the phone's "no passkeys" note.
+  const canUsePasskey = passkeysSupported();
+  const method = unlockMethod();
+  async function withPasskey() {
+    setBusy(true);
+    setError(null);
+    try {
+      await signInWithPasskey();
+    } catch (err) {
+      if (!wasCancelled(err)) {
+        setError(
+          err instanceof ApiError
+            ? err.message
+            : `Signing in with ${method} did not work. Use your password.`,
+        );
+      }
     } finally {
       setBusy(false);
     }
@@ -102,6 +127,28 @@ export function LoginPage() {
               {busy ? 'Signing in…' : 'Sign in'}
             </button>
           </form>
+          {canUsePasskey && (
+            <>
+              <div
+                className="my-3 flex items-center gap-3 text-xs text-slate-500"
+                aria-hidden="true"
+              >
+                <span className="h-px flex-1 bg-slate-200" />
+                or
+                <span className="h-px flex-1 bg-slate-200" />
+              </div>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void withPasskey()}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-base font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-60"
+                data-testid="passkey-sign-in"
+              >
+                <FaceIdIcon />
+                Use {method}
+              </button>
+            </>
+          )}
           <p className="mt-3 text-center text-sm">
             <Link
               to="/forgot-password"
