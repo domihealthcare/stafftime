@@ -142,6 +142,22 @@ export interface Employee extends EmployeeSummary {
   canPostNews?: boolean;
   /// An admin has switched on the read-only whole schedule for them.
   canSeeEveryonesSchedule?: boolean;
+  /// Signed-in person only: how many passkeys (Face ID and the like) they
+  /// have, November 2026.
+  passkeys?: number;
+  /// Signed-in person only: this session was opened with Face ID.
+  viaPasskey?: boolean;
+}
+
+/// One of your passkeys (Face ID and the like), November 2026: only when it
+/// was set up and last used, and the browser it was set up in.
+export interface PasskeySummary {
+  id: string;
+  userAgent: string | null;
+  /// Synced to your other devices (iCloud Keychain and the like).
+  backedUp: boolean;
+  createdAt: string;
+  lastUsedAt: string | null;
 }
 
 /// `GET /schedule-view`: the whole published rota, read-only. Time off is a
@@ -2639,6 +2655,8 @@ export interface PayLockStatus {
   /// When it locks again, unless something is done before then.
   until: string | null;
   hasPin: boolean;
+  /// Face ID (a passkey) opens it too, November 2026.
+  hasPasskey: boolean;
   /// How long it stays open without use.
   minutes: number;
 }

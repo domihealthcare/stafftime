@@ -181,6 +181,10 @@ export class AuthService {
     password: string,
     options: { temporary: boolean },
   ): Promise<void> {
+    // A new password starts signing in afresh: Face ID set up with the old
+    // one goes too (November 2026). If somebody else had the old password,
+    // a passkey they added would otherwise outlive it.
+    await this.prisma.passkey.deleteMany({ where: { employeeId } });
     await this.prisma.employee.update({
       where: { id: employeeId },
       data: {

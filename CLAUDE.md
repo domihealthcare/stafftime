@@ -2148,7 +2148,7 @@ Beyond the phases, the parts worth knowing about before picking up work:
   says Approved but does not say UNPAID - I just need it to say 0 of 5 sick
   days left ... the pto/sick is giving me anxiety with payroll"; his choices:
   **split automatically**, **all managers and admins**, **tell the staff
-  member**; version 1.38.0):
+  member**; version 1.39.0):
   - **Approving past the balance splits the request**: the whole days still
     covered stay as asked (Sick or PTO), the rest become a **separate
     Unpaid part**, approved with it (`PtoRequest.splitFromId`,
@@ -2172,11 +2172,49 @@ Beyond the phases, the parts worth knowing about before picking up work:
     Dashboard balances, staff profiles and Ask Domi Staff (`daysLeft` in
     `lib/time-off.ts`). The server's figure still goes negative for its own
     checks. Time off is still not in the payroll export.
-  Migration `20261102020000_time_off_edits`; see *Past the balance* and
+  Migration `20261102040000_time_off_edits`; see *Past the balance* and
   *Editing time off* in `docs/architecture.md`; Help has both, and its
   stale line about the monthly pop-up is gone;
   `tests/browser/time-off-edit.mjs` (replaced `time-off-type.mjs`). Worth
   carrying to the EMR module.
+- **Face ID sign-in** (2 November 2026, Dominguez: "is there a way we can
+  add that staff can use face id through their phone to login to portal?";
+  his choices: optional with the password kept, and Face ID opens the PIN in
+  front of pay too; version 1.38.0): passkeys (WebAuthn,
+  `@simplewebauthn/server` 14.0.3 and `/browser` 14.0.0, pinned). **Use Face
+  ID** under the sign-in form (Touch ID, Windows Hello, "your fingerprint" or
+  "a passkey" by device; not "Sign in with...", so the browser suites'
+  "Sign in" button stays one); set up from a **card on Home** after
+  a password sign-in on a device that has it (never a pop-up; gone on that
+  device once set up or turned down) or **Your profile -> Sign in with Face
+  ID**, which lists them and removes one. The password is asked again unless
+  signed in in the last 10 minutes; the person is told on the bell and by
+  email; not for a shared account. **Use Face ID** on every PIN prompt opens
+  pay and staff notes for the same 10 minutes. **Only the public key is
+  kept**: the face or fingerprint never leaves the phone (schema guard pins
+  `Passkey`, `PasskeyChallenge`). An admin removes somebody's under Staff ->
+  Edit -> Signing in (a lost phone), and **a new password removes them all**.
+  A passkey works only on the address it was made on, so ones made on
+  staff.domihealthcare.com do not work on stafftime-ap.vercel.app. The Vite
+  proxy now sends `X-Forwarded-Host` (`xfwd`) so it works locally.
+  Migrations `20261102020000_passkey_kind`, `20261102030000_passkeys`;
+  `src/passkeys/`, `lib/passkeys.ts`, `components/PasskeysCard.tsx`; Help
+  *Can I sign in with Face ID?*; see *Face ID sign-in* in
+  `docs/architecture.md`; `tests/browser/passkeys.mjs` (Chromium's virtual
+  authenticator, on `localhost`). Worth carrying to the EMR module.
+- **The profile browser check, steadied** (2 November 2026, Dominguez: "fix
+  that flaky profile test too", version 1.38.1): once in CI, on #133,
+  `profile.mjs` pressed **Save profile** and no request came in 30 seconds.
+  The response it awaited had been set up before the press, so its time-out
+  crashed the whole suite instead of failing the step, with nothing to say
+  why. It passed on a re-run and could not be made to happen locally (seven
+  runs, the same suites before it, the CPU kept busy). Every press that saves
+  (Save profile, Change PIN) now goes through `pressAndWait`: it waits for the
+  button to wake, presses and waits for the request together with a limit,
+  and on a repeat fails that step alone with the address, the profile's
+  fields, any message and a screenshot (`profile-stuck.png`). Forcing a miss
+  showed that one step failing and the other 17 still running. Test only;
+  the app is unchanged. If it comes back, its message says what was there.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

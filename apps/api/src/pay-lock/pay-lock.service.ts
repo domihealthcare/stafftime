@@ -12,6 +12,8 @@ export interface PayLockStatus {
   until: string | null;
   /// Whether they have a tablet PIN; without one they use their password.
   hasPin: boolean;
+  /// Whether they have Face ID (a passkey), which opens it too (November 2026).
+  hasPasskey: boolean;
   minutes: number;
 }
 
@@ -34,12 +36,13 @@ export class PayLockService {
   }
 
   async status(token: string, employeeId: string): Promise<PayLockStatus> {
-    const [session, person] = await Promise.all([
+    const [session, person, passkeys] = await Promise.all([
       this.prisma.session.findUnique({
         where: { tokenHash: hashToken(token) },
         select: { payUnlockedUntil: true },
       }),
       this.prisma.employee.findUnique({ where: { id: employeeId }, select: { pinHash: true } }),
+      this.prisma.passkey.count({ where: { employeeId } }),
     ]);
     const until = session?.payUnlockedUntil ?? null;
     const unlocked = until !== null && until > new Date();
@@ -47,6 +50,7 @@ export class PayLockService {
       unlocked,
       until: unlocked ? until.toISOString() : null,
       hasPin: Boolean(person?.pinHash),
+      hasPasskey: passkeys > 0,
       minutes: PAY_UNLOCK_MINUTES,
     };
   }
@@ -86,11 +90,21 @@ export class PayLockService {
     else if (proof.password) await this.checkPassword(employeeId, proof.password);
     else throw new BadRequestException('Enter your PIN.');
 
+    return this.open(token, employeeId, proof.pin ? 'PIN' : 'password');
+  }
+
+  /// Opened by Face ID: the passkey has already been checked
+  /// (`PasskeysService.proveForPay`).
+  async open(
+    token: string,
+    employeeId: string,
+    by: 'PIN' | 'password' | 'Face ID',
+  ): Promise<PayLockStatus> {
     await this.prisma.session.updateMany({
       where: { tokenHash: hashToken(token), revokedAt: null },
       data: { payUnlockedUntil: unlockedUntil() },
     });
-    this.logger.log(`Pay unlocked for ${employeeId} by ${proof.pin ? 'PIN' : 'password'}`);
+    this.logger.log(`Pay unlocked for ${employeeId} by ${by}`);
     return this.status(token, employeeId);
   }
 

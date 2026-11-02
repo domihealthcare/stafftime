@@ -257,6 +257,37 @@ describe('what this app deliberately does not store', () => {
     );
   });
 
+  /// Face ID (November 2026): a passkey is the public half of a key the
+  /// phone keeps, never a face or a fingerprint, which never leave the phone.
+  /// Its one-time challenges hold nothing about anybody.
+  it('a passkey keeps only a public key, never a face or fingerprint', () => {
+    const fieldsOf = (name: string) =>
+      model(name)
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('//') && !line.startsWith('@@'))
+        .map((line) => line.split(/\s+/)[0])
+        .sort();
+    expect(fieldsOf('Passkey')).toEqual(
+      [
+        'backedUp',
+        'counter',
+        'createdAt',
+        'credentialId',
+        'employee',
+        'employeeId',
+        'id',
+        'lastUsedAt',
+        'publicKey',
+        'transports',
+        'userAgent',
+      ].sort(),
+    );
+    expect(fieldsOf('PasskeyChallenge')).toEqual(
+      ['challenge', 'createdAt', 'employeeId', 'expiresAt', 'id', 'purpose'].sort(),
+    );
+  });
+
   /// Vendor payments (October 2026, Dominguez): money and paperwork only. The
   /// spreadsheet they replace had patients' names in its notes; nothing here
   /// is for a patient, and a new column has to be decided out loud.

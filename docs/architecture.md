@@ -6100,3 +6100,72 @@ Directory, the nightly email or the AI service.
 written as TEXT, and every table here keys on UUID, so the foreign key to
 `employees` was refused. Checked with `prisma migrate diff` against the
 schema afterwards (empty). A reminder to keep new tables' ids `@db.Uuid`.
+
+## Face ID sign-in (November 2026)
+
+Dominguez, 2 November 2026: "is there a way we can add that staff can use
+face id through their phone to login to portal?" His choices: build it,
+optional for each person with the password kept, and let Face ID open the
+PIN in front of pay too.
+
+**What it is.** A standard passkey (WebAuthn), through `@simplewebauthn/server`
+14.0.3 and `@simplewebauthn/browser` 14.0.0, both pinned. The phone (or
+computer) checks the face, fingerprint or device passcode itself, then signs a
+one-time challenge with a private key that never leaves it, or the person's
+iCloud Keychain / Google Password Manager. Domi Staff keeps only the public
+half (`Passkey.publicKey`), which can check a signature and never make one,
+so a copy of the database signs nobody in. No face, fingerprint or anything
+like one ever reaches the app; the schema guard pins `Passkey` and
+`PasskeyChallenge`. Called "Face ID" on an iPhone or iPad, "Touch ID" on a
+Mac, "Windows Hello" on a PC, "your fingerprint" on Android and "a passkey"
+elsewhere (`unlockMethod` in `lib/passkeys.ts`, words only).
+
+**Three uses** (`passkeys/passkeys.service.ts`):
+- *Setting one up*, signed in: Home's offer card or Your profile. The server
+  asks for the password again unless the session began in the last 10
+  minutes (`FRESH_SIGN_IN_MINUTES`; 403 `PASSWORD_NEEDED` and the screen shows
+  a password box), so a browser left signed in cannot be used to add somebody
+  else's face. The person is told on the bell and by email
+  (`NotificationKind.ACCOUNT`). Kept on the device (`residentKey: required`)
+  and checked every time (`userVerification: required`). Not for a shared
+  account.
+- *Signing in*: **Use Face ID** under the password form (not "Sign in
+  with...", which would make "Sign in" name two buttons); no email is
+  typed, as the phone offers the passkeys it holds. Refused for somebody who
+  has left, after the passkey is proven, as with the password. The session is
+  marked `viaPasskey`.
+- *Opening pay*: **Use Face ID** on the PIN prompt (`PinGate`), with only the
+  person's own passkeys offered and checked; then `PayLockService.open`, the
+  same 10 minutes as a PIN.
+
+**Challenges** are kept in `passkey_challenges` for 5 minutes, because the API
+runs on Vercel and keeps nothing in memory between two requests. Each is for
+one purpose (and one person, except signing in) and is deleted as it is
+answered, so it can never be used twice; old ones are cleared whenever a new
+one is made. Making a sign-in challenge goes through the sign-in throttle.
+
+**Tied to the address.** A passkey belongs to the domain it was made on: one
+made on staff.domihealthcare.com works there and nowhere else (not on
+stafftime-ap.vercel.app, not on a lookalike site). The server reads the
+domain from the browser's `Origin`, which must name the host the request went
+to (`passkeys/passkey-site.ts`, the same check as forged requests). The Vite
+dev and preview proxy now passes `X-Forwarded-Host` (`xfwd: true` in
+`vite.config.ts`) so this works locally, as Vercel's does. A passkey cannot be
+tied to an IP address, so `tests/browser/passkeys.mjs` opens the app on
+`localhost`, not 127.0.0.1, and uses Chromium's virtual authenticator for the
+phone.
+
+**Taking them away.** The person removes one on Your profile; an admin removes
+all of somebody's from the Staff editor, under Signing in (a lost phone). **A
+new password takes them all away** (changing it, resetting it by email, or an
+admin's temporary password): if somebody else had the old password, a
+passkey they added must not outlive it. Signing out everywhere else does not.
+
+**Home's offer** is a card under the clock, never a pop-up (the monthly time
+off pop-up was taken out the same day for being one), shown only on a device
+with a built-in reader, after a password sign-in, and gone for good on that
+device once set up or turned down (`localStorage`, a convenience). The
+sign-in screen stays English, as before; Your profile and Home have Spanish.
+
+Worth carrying to the EMR module, which will want the same for its own
+sign-in.

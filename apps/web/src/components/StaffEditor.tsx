@@ -907,6 +907,34 @@ function SigningIn({ person, onChanged }: { person: Employee; onChanged: () => v
   const [pin, setPin] = useState('');
   const [pinSet, setPinSet] = useState(false);
   const [welcomedAt, setWelcomedAt] = useState(person.welcomeSentAt ?? null);
+  const confirm = useConfirm();
+  // Face ID (November 2026): how many passkeys they have, so a lost phone's
+  // can be taken away here.
+  const [passkeys, setPasskeys] = useState<number | null>(null);
+  useEffect(() => {
+    let live = true;
+    api
+      .passkeyCountFor(person.id)
+      .then((found) => live && setPasskeys(found.count))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [person.id]);
+
+  async function removePasskeys() {
+    const sure = await confirm({
+      title: `Remove ${person.firstName}'s Face ID?`,
+      body: 'They will sign in with their password until they set Face ID up again on Your profile. Use this for a lost or replaced phone.',
+      confirmLabel: 'Yes, remove it',
+      cancelLabel: 'Keep it',
+    });
+    if (!sure) return;
+    await run(async () => {
+      await api.removePasskeysFor(person.id);
+      setPasskeys(0);
+    }, 'Could not remove it.');
+  }
 
   async function run(action: () => Promise<void>, fallback: string) {
     setBusy(true);
@@ -930,6 +958,8 @@ function SigningIn({ person, onChanged }: { person: Employee; onChanged: () => v
   const issuePassword = () =>
     run(async () => {
       await api.setTemporaryPassword(person.id, temporary);
+      // A new password takes Face ID away too (server-side).
+      setPasskeys(0);
       setIssued(temporary);
       setTemporary('');
       setOpen(null);
@@ -964,6 +994,26 @@ function SigningIn({ person, onChanged }: { person: Employee; onChanged: () => v
       <p className="text-sm text-slate-700">
         {person.hasKioskPin || pinSet ? 'Has a tablet PIN' : 'No tablet PIN yet'}
       </p>
+      {passkeys !== null && (
+        <p
+          className="flex flex-wrap items-center gap-2 text-sm text-slate-700"
+          data-testid="staff-passkeys"
+        >
+          {passkeys === 0
+            ? 'No Face ID set up'
+            : `Face ID set up (${passkeys} passkey${passkeys === 1 ? '' : 's'})`}
+          {passkeys > 0 && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void removePasskeys()}
+              className="tap text-sm font-medium text-rose-700 underline"
+            >
+              Remove Face ID
+            </button>
+          )}
+        </p>
+      )}
 
       <div className="mt-3 flex flex-wrap gap-2">
         {person.hasPassword === false && (

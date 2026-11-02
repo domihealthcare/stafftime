@@ -111,9 +111,15 @@ describe('Where you are signed in', () => {
         revokeOneForEmployee: jest.fn().mockResolvedValue(1),
       };
       const nothing = {} as never;
-      const routes = new AuthController(nothing, sessions as never, nothing, nothing, nothing, {
-        get: () => undefined,
-      } as never);
+      const routes = new AuthController(
+        nothing,
+        sessions as never,
+        nothing,
+        nothing,
+        nothing,
+        nothing,
+        { get: () => undefined } as never,
+      );
       return { routes, sessions };
     }
     const user = { id: 'emp-1' } as never;

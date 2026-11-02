@@ -20,4 +20,10 @@ export const LOOSE_ENUMS = {};
 export const NOT_CHECKED = {
   'api.downloadExport': 'a file download, fetched directly rather than through request()',
   'api.resourceFileUrl': 'builds a link for the browser to open, no request is made',
+  // Face ID (November 2026): the WebAuthn options are typed by the same
+  // library on both sides (@simplewebauthn/server and /browser), but their
+  // optional extensions carry binary values the wire model cannot read.
+  'api.passkeySignInOptions': 'WebAuthn options, typed by @simplewebauthn on both sides',
+  'api.passkeyRegisterOptions': 'WebAuthn options, typed by @simplewebauthn on both sides',
+  'api.payPasskeyOptions': 'WebAuthn options, typed by @simplewebauthn on both sides',
 };

@@ -12,6 +12,7 @@ import type {
   Shift,
   TimeEntry,
 } from '../lib/types';
+import { PasskeyOffer } from '../components/PasskeysCard';
 import { lunchesAt, lunchWords } from '../components/LunchIcon';
 import { ClosingChecklistForm } from '../components/ClosingChecklistForm';
 import { RunningLate } from '../components/RunningLate';
@@ -545,6 +546,7 @@ export function ClockPage() {
       {/* Before the aside so a phone, where the columns stack, shows the news
           straight under the clock; on a laptop the grid keeps it in the left column. */}
       <div className="space-y-4 lg:col-span-2 lg:col-start-1 lg:row-start-2">
+        <PasskeyOffer />
         <HomeRequired />
         <HomeNews />
       </div>
