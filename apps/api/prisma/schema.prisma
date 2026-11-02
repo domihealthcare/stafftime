@@ -470,6 +470,8 @@ model Employee {
   cmeAllowance       CmeAllowance?    @relation("CmeAllowanceProvider")
   expenseRequests    ExpenseRequest[] @relation("ExpenseRequester")
   expensesDecided    ExpenseRequest[] @relation("ExpenseDecidedBy")
+  staffNotesAbout    StaffNote[]      @relation("StaffNoteAbout")
+  staffNotesWritten  StaffNote[]      @relation("StaffNoteAuthor")
 
   /// Phones and computers that get the bell's notifications as push
   /// notifications (October 2026).
@@ -4449,4 +4451,39 @@ model DowntimePadProvider {
   updatedAt DateTime @updatedAt
 
   @@map("downtime_pad_providers")
+}
+
+/// What a confidential note on somebody is about (November 2026). Optional.
+enum StaffNoteKind {
+  PRAISE
+  CONCERN
+  ATTENDANCE
+  CONDUCT
+  PERFORMANCE
+  MEETING
+  OTHER
+}
+
+/// A confidential note on a member of staff (2 November 2026, Dominguez:
+/// "somewhere for managers/admin to write confidential notes on employees
+/// ... internal and should not be seen by the actual employee"). Read and
+/// written by managers and admins, behind the PIN, never by the person it
+/// is about (not even when they are a manager), never on the person's own
+/// screens, the Directory, the payroll export or the AI service. The writer
+/// edits it (`editedAt`) or removes it; an admin may remove any. Facts about
+/// work only: never a patient's details, never anybody's health.
+model StaffNote {
+  id         String         @id @default(uuid()) @db.Uuid
+  employeeId String         @db.Uuid
+  employee   Employee       @relation("StaffNoteAbout", fields: [employeeId], references: [id], onDelete: Cascade)
+  authorId   String?        @db.Uuid
+  author     Employee?      @relation("StaffNoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  kind       StaffNoteKind?
+  body       String
+  createdAt  DateTime       @default(now())
+  editedAt   DateTime?
+
+  @@index([employeeId, createdAt])
+  @@index([createdAt])
+  @@map("staff_notes")
 }

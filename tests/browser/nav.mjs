@@ -145,6 +145,7 @@ export async function pressDownload(page, name) {
 export const SECTION_OF = {
   Dashboard: 'Dashboard',
   Staff: 'Staff',
+  Notes: 'Staff',
   'Job roles': 'Staff',
   Licenses: 'Staff',
   CME: 'Staff',
@@ -176,7 +177,8 @@ export async function goToManage(page, label) {
   if (!section) throw new Error(`${label} is not a Manage screen`);
   // Everything under Finances shows money, so it asks for the PIN first
   // (October 2026); the suites give the password instead, through the API.
-  if (section === 'Finances') await unlockPay(page);
+  // Confidential staff notes are behind it too (November 2026).
+  if (section === 'Finances' || label === 'Notes') await unlockPay(page);
   const tab = TAB_OF[label] ?? label;
   await openMenu(page, 'Manage');
   await page

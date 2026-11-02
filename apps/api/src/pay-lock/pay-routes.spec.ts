@@ -9,6 +9,7 @@ import { ReimbursementsController } from '../reimbursements/reimbursements.contr
 import { PayController } from '../staff-records/pay.controller';
 import { RotaCostController } from '../staff-records/rota-cost.controller';
 import { StaffRecordsController } from '../staff-records/staff-records.controller';
+import { StaffNotesController } from '../staff-notes/staff-notes.controller';
 import { VendorsController } from '../vendors/vendors.controller';
 import { PayLockGuard } from './pay-lock.guard';
 
@@ -29,6 +30,7 @@ describe('the routes that show pay', () => {
     ['reimbursements', ReimbursementsController],
     ['invoices', InvoicesController],
     ['vendor payments', VendorsController],
+    ['confidential staff notes', StaffNotesController],
   ])('%s: every route is behind the PIN', (_name, controller) => {
     expect(guardsOn(controller)).toContain(PayLockGuard);
   });

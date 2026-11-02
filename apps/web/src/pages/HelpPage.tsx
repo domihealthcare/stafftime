@@ -1474,6 +1474,27 @@ const MANAGERS: Section[] = [
         ),
       },
       {
+        question: 'Confidential notes on staff',
+        answer: (
+          <>
+            <p>
+              Managers and admins can keep confidential notes on anybody: praise, a concern, a
+              conversation about attendance. Go to <Screen>Manage</Screen> → Staff →{' '}
+              <strong>Notes</strong> for every note in one table, narrowed by person, kind or any
+              words, or press <strong>Notes</strong> on somebody&rsquo;s Staff card for theirs.{' '}
+              <strong>+ Add a note</strong> asks who it is about, an optional kind and the words.
+            </p>
+            <p>
+              The notes ask for your tablet PIN first, like pay. Every manager and admin reads every
+              note, with who wrote it and when. The person a note is about never sees it, and you
+              never see notes written about you. Only the writer can change a note (it then says
+              &ldquo;Edited&rdquo;); the writer or an admin can remove it. Write facts about work:
+              never a patient&rsquo;s details, and nothing about anybody&rsquo;s health.
+            </p>
+          </>
+        ),
+      },
+      {
         question: 'Where is everything under Manage?',
         answer: (
           <>
@@ -1488,8 +1509,8 @@ const MANAGERS: Section[] = [
               <li>
                 <strong>Staff</strong> - Staff (with the job roles behind{' '}
                 <strong>Job roles…</strong>
-                above the list; managers see the list, admins also change it), Licenses, CME and
-                Onboarding &amp; Offboarding.
+                above the list; managers see the list, admins also change it), Notes (confidential
+                staff notes), Licenses, CME and Onboarding &amp; Offboarding.
               </li>
               <li>
                 <strong>Offices</strong> - Locations and Kiosks (admins), Closing checklists and

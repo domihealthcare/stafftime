@@ -90,7 +90,7 @@ await step(
       .getByRole('button', { name: 'Close' })
       .click();
     const people = await tabs(admin, 'Staff');
-    if (people.join('|') !== 'Staff|Licenses|CME|Onboarding & Offboarding')
+    if (people.join('|') !== 'Staff|Notes|Licenses|CME|Onboarding & Offboarding')
       throw new Error(people.join('|'));
     await admin.screenshot({ path: `${OUT}/manage-people.png` });
   },
@@ -147,7 +147,7 @@ await step('a manager sees the same headings with only the tabs they may open', 
     .getByRole('dialog', { name: 'Job roles' })
     .getByRole('button', { name: 'Close' })
     .click();
-  if ((await tabs(manager, 'Staff')).join('|') !== 'Staff|Licenses|CME|Onboarding & Offboarding')
+  if ((await tabs(manager, 'Staff')).join('|') !== 'Staff|Notes|Licenses|CME|Onboarding & Offboarding')
     throw new Error(`staff: ${(await tabs(manager, 'Staff')).join('|')}`);
   await goToManage(manager, 'Closing checklists');
   if ((await tabs(manager, 'Offices')).join('|') !== 'Closing checklists|Reps')
