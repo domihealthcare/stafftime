@@ -2134,9 +2134,14 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `lastUsedAt` was pushed back. The suite now tracks its page's own `/api`
   requests and waits a quiet second before each step (`settled`). Slowing
   that request by 150 to 500 ms made the old suite fail every time and the
-  new one passes at every delay. Test only; the app was right. Other suites
-  use `networkidle` after signing in too: worth the same treatment if one
-  turns up flaky.
+  new one passes at every delay. Test only; the app was right. **No other
+  suite had it** (checked 2 November 2026, Dominguez: "fix the other
+  networkidle tests too"): every other `networkidle` (548) is `goto` or
+  `reload`'s `waitUntil`, which waits on a real page load and works; none
+  calls `waitForLoadState('networkidle')` after an in-app step, and the
+  suites that watch requests only check that something was never sent. Use
+  `settled` (or wait for something on screen), never
+  `waitForLoadState('networkidle')`, after signing in or a click.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.
