@@ -40,7 +40,7 @@ export class SessionService {
 
   async issue(
     employeeId: string,
-    context: { userAgent?: string; ipAddress?: string },
+    context: { userAgent?: string; ipAddress?: string; viaPasskey?: boolean },
   ): Promise<IssuedSession> {
     const token = randomBytes(TOKEN_BYTES).toString('base64url');
     const expiresAt = new Date(Date.now() + this.ttlHours * 3_600_000);
@@ -52,6 +52,7 @@ export class SessionService {
         expiresAt,
         userAgent: context.userAgent?.slice(0, 500),
         ipAddress: context.ipAddress,
+        viaPasskey: context.viaPasskey ?? false,
       },
     });
 

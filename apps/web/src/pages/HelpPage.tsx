@@ -1004,6 +1004,29 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'Can I sign in with Face ID?',
+        answer: (
+          <>
+            <p>
+              Yes, on a phone or computer that has it: Face ID or Touch ID on an iPhone, iPad or
+              Mac, a fingerprint on Android, Windows Hello on a PC. Sign in once with your password
+              and Home offers <strong>Set up Face ID</strong>, or open <Screen>Your profile</Screen>{' '}
+              → <strong>Sign in with Face ID</strong> any time (it may ask for your password first).
+              After that, press <strong>Sign in with Face ID</strong> on the sign-in screen. On an
+              iPhone with Domi Staff on the Home Screen it works the same.
+            </p>
+            <p className="mt-2">
+              Your face or fingerprint never leaves your phone: the phone checks it, and Domi Staff
+              only learns that it said yes. Your password still works, and Face ID also opens pay
+              where the app asks for your PIN. Set up on an iPhone, it usually works on your other
+              Apple devices too. To stop using it, press <strong>Remove</strong> beside it on Your
+              profile. Changing your password takes Face ID away everywhere, so you set it up again;
+              a lost phone&rsquo;s can also be removed by an admin.
+            </p>
+          </>
+        ),
+      },
+      {
         question: 'I used a shared computer.',
         answer: (
           <p>
@@ -2484,6 +2507,7 @@ const MANAGERS: Section[] = [
             profiles, provider productivity and everything under <Screen>Manage → Finances</Screen>{' '}
             - asks for your tablet PIN first, even if you are allowed to see it, in case a computer
             is left signed in. Your password works too (<strong>Use your password instead</strong>
+            ), and so does Face ID once it is set up on Your profile (<strong>Use Face ID</strong>
             ). It stays open while you use it and locks again after about 10 minutes without a
             touch, or at once with <strong>Lock pay now</strong>.
           </p>

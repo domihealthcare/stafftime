@@ -80,7 +80,9 @@ function fromOwnOrigin(headers: RequestHeaders): boolean {
   return hosts.some((host) => sameHost(origin, host));
 }
 
-function sameHost(origin: string, host: string | undefined): boolean {
+/// Whether `origin` ("https://staff.domihealthcare.com") names `host`
+/// ("staff.domihealthcare.com"). Also used by passkeys (`passkeys/passkey-site.ts`).
+export function sameHost(origin: string, host: string | undefined): boolean {
   if (!host?.trim()) return false;
   try {
     const from = new URL(origin);
@@ -105,6 +107,6 @@ function isJson(contentType: string | undefined): boolean {
   return contentType.split(';')[0].trim().toLowerCase() === 'application/json';
 }
 
-function first(value: string | string[] | undefined): string | undefined {
+export function first(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }

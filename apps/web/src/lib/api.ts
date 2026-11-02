@@ -2,6 +2,12 @@ import { t } from './i18n';
 import type { ImportedPerson } from './staff-import';
 import { viewAsHeaders, writeViewAs } from './view-as';
 import type {
+  AuthenticationResponseJSON,
+  PublicKeyCredentialCreationOptionsJSON,
+  PublicKeyCredentialRequestOptionsJSON,
+  RegistrationResponseJSON,
+} from '@simplewebauthn/browser';
+import type {
   Downtime,
   DowntimeCause,
   DowntimeCheck,
@@ -16,6 +22,7 @@ import type {
   MyDowntimeCheck,
   CleanTimeOffCheck,
   LeavingDetails,
+  PasskeySummary,
   PayLockStatus,
   PayOverview,
   PayPerson,
@@ -293,6 +300,11 @@ const NOT_A_SESSION_ANSWER = [
   '/kiosk',
   // A wrong PIN or password in front of pay is not the session ending.
   '/pay-lock/unlock',
+  // Nor is Face ID not working, or a wrong password before setting it up
+  // (November 2026).
+  '/auth/passkey',
+  '/passkeys/register',
+  '/pay-lock/passkey',
 ];
 
 /**
@@ -584,7 +596,8 @@ export interface AppNotification {
     | 'WEEKLY_SUMMARY'
     | 'CME'
     | 'EXPENSE'
-    | 'DOWNTIME';
+    | 'DOWNTIME'
+    | 'ACCOUNT';
   title: string;
   body: string | null;
   link: string | null;
@@ -1073,6 +1086,28 @@ export const api = {
     return request<{ signedOut: boolean }>('/auth/logout', { method: 'POST' });
   },
   me: () => request<Employee>('/auth/me'),
+  /// Face ID (November 2026): see lib/passkeys.ts, which calls these.
+  passkeySignInOptions: () =>
+    request<PublicKeyCredentialRequestOptionsJSON>('/auth/passkey/options', { method: 'POST' }),
+  passkeySignIn: (response: AuthenticationResponseJSON) =>
+    request<Employee>('/auth/passkey', { method: 'POST', body: JSON.stringify({ response }) }),
+  passkeys: () => request<PasskeySummary[]>('/passkeys'),
+  passkeyRegisterOptions: (password?: string) =>
+    request<PublicKeyCredentialCreationOptionsJSON>('/passkeys/register/options', {
+      method: 'POST',
+      body: JSON.stringify(password ? { password } : {}),
+    }),
+  registerPasskey: (response: RegistrationResponseJSON) =>
+    request<PasskeySummary[]>('/passkeys/register', {
+      method: 'POST',
+      body: JSON.stringify({ response }),
+    }),
+  removePasskey: (id: string) => request<PasskeySummary[]>(`/passkeys/${id}`, { method: 'DELETE' }),
+  /// Admins: how many somebody has, and taking them all away (a lost phone).
+  passkeyCountFor: (employeeId: string) =>
+    request<{ count: number }>(`/passkeys/employee/${employeeId}`),
+  removePasskeysFor: (employeeId: string) =>
+    request<{ removed: number }>(`/passkeys/employee/${employeeId}`, { method: 'DELETE' }),
   changePassword: (currentPassword: string, newPassword: string) =>
     request<{ changed: boolean; otherSessionsSignedOut: number }>('/auth/change-password', {
       method: 'POST',
@@ -1707,6 +1742,15 @@ export const api = {
   unlockPay: (proof: { pin: string } | { password: string }) =>
     request<PayLockStatus>('/pay-lock/unlock', { method: 'POST', body: JSON.stringify(proof) }),
   touchPay: () => request<PayLockStatus>('/pay-lock/touch', { method: 'POST' }),
+  payPasskeyOptions: () =>
+    request<PublicKeyCredentialRequestOptionsJSON>('/pay-lock/passkey/options', {
+      method: 'POST',
+    }),
+  unlockPayWithPasskey: (response: AuthenticationResponseJSON) =>
+    request<PayLockStatus>('/pay-lock/passkey', {
+      method: 'POST',
+      body: JSON.stringify({ response }),
+    }),
   lockPay: () => request<{ locked: true }>('/pay-lock/lock', { method: 'POST' }),
   rotaCost: (from: string, to: string) => request<RotaCost>(`/rota-cost${toQuery({ from, to })}`),
   rotaCostAccess: () => request<PersonName[]>('/rota-cost/access'),

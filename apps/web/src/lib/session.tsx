@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { ReactNode } from 'react';
 import { ApiError, SESSION_ENDED, api } from './api';
 import { setLanguage } from './i18n';
+import { signInWithPasskey as passkeySignIn } from './passkeys';
 import type { Employee } from './types';
 import { type ViewAs, writeViewAs } from './view-as';
 
@@ -12,6 +13,8 @@ interface SessionValue {
   /// but the change-password screen until it is replaced.
   mustChangePassword: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  /// Face ID instead of the password (November 2026): `lib/passkeys.ts`.
+  signInWithPasskey: () => Promise<void>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
   /// An admin starts or ends viewing the app as somebody else (October
@@ -65,6 +68,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setEmployee(me);
   }, []);
 
+  const signInWithPasskey = useCallback(async () => {
+    const me = await passkeySignIn();
+    if (me.language) await setLanguage(me.language);
+    setEmployee(me);
+  }, []);
+
   const signOut = useCallback(async () => {
     try {
       await api.logout();
@@ -88,11 +97,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       loading,
       mustChangePassword: employee?.mustChangePassword ?? false,
       signIn,
+      signInWithPasskey,
       signOut,
       refresh,
       setViewAs,
     }),
-    [employee, loading, signIn, signOut, refresh, setViewAs],
+    [employee, loading, signIn, signInWithPasskey, signOut, refresh, setViewAs],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

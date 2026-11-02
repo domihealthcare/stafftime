@@ -38,6 +38,7 @@ describe('PasswordResetService', () => {
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
         deleteMany: jest.fn().mockResolvedValue({ count: 3 }),
       },
+      passkey: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       $transaction: jest.fn().mockResolvedValue([]),
     };
     const sessions = { revokeAllForEmployee: jest.fn().mockResolvedValue(2) };
@@ -167,6 +168,9 @@ describe('PasswordResetService', () => {
       // Nobody stays signed in, including the browser doing the resetting: if
       // somebody else had the old password, leaving them signed in defeats it.
       expect(sessions.revokeAllForEmployee).toHaveBeenCalledWith('emp-1');
+      // Face ID too (November 2026): a passkey somebody else added must not
+      // outlive the password they used to add it.
+      expect(prisma.passkey.deleteMany).toHaveBeenCalledWith({ where: { employeeId: 'emp-1' } });
     });
 
     it('looks the token up by its hash, never by the value in the link', async () => {

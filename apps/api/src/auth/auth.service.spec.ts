@@ -32,6 +32,7 @@ describe('AuthService', () => {
           };
         }),
       },
+      passkey: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
     };
     const sessions = {
       issue: jest.fn().mockResolvedValue({ token: 'tok', expiresAt: new Date() }),
@@ -331,6 +332,12 @@ describe('AuthService', () => {
       const { service, sessions } = build(active());
       await service.setTemporaryPassword('emp-1', 'temporary welcome 42');
       expect(sessions.revokeAllForEmployee).toHaveBeenCalledWith('emp-1');
+    });
+
+    it('takes Face ID away too: a new password starts afresh (November 2026)', async () => {
+      const { service, prisma } = build(active());
+      await service.setTemporaryPassword('emp-1', 'temporary welcome 42');
+      expect(prisma.passkey.deleteMany).toHaveBeenCalledWith({ where: { employeeId: 'emp-1' } });
     });
 
     it('applies the password policy to admin-set passwords too', async () => {

@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { api, ApiError, PAY_LOCKED, PAY_UNLOCKED } from '../lib/api';
+import {
+  passkeysSupported,
+  unlockMethod,
+  unlockPayWithPasskey,
+  wasCancelled,
+} from '../lib/passkeys';
 import type { PayLockStatus } from '../lib/types';
+import { FaceIdIcon } from './FaceIdIcon';
 import { Alert, Card, buttonClass, inputClass } from './ui';
 
 /// How often an open pay screen checks whether it has sat unused too long.
@@ -63,6 +70,7 @@ export function PinGate({
   return (
     <PinPrompt
       hasPin={status.hasPin}
+      hasPasskey={status.hasPasskey && passkeysSupported()}
       what={what}
       compact={compact}
       onUnlocked={(next) => {
@@ -110,11 +118,14 @@ function useIdleLock(unlocked: boolean, minutes: number) {
 
 function PinPrompt({
   hasPin,
+  hasPasskey,
   what,
   compact,
   onUnlocked,
 }: {
   hasPin: boolean;
+  /// Face ID opens it too (November 2026), on a device that can use it.
+  hasPasskey: boolean;
   what: string;
   compact: boolean;
   onUnlocked: (status: PayLockStatus) => void;
@@ -136,6 +147,21 @@ function PinPrompt({
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not check it.');
       setValue('');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const method = unlockMethod();
+  const withPasskey = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      onUnlocked(await unlockPayWithPasskey());
+    } catch (err) {
+      if (!wasCancelled(err)) {
+        setError(err instanceof ApiError ? err.message : `${method} did not work. Use your PIN.`);
+      }
     } finally {
       setBusy(false);
     }
@@ -182,6 +208,18 @@ function PinPrompt({
       >
         {usePassword ? 'Use your PIN instead' : 'Use your password instead'}
       </button>
+      {hasPasskey && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void withPasskey()}
+          className={`inline-flex items-center gap-1.5 ${buttonClass('secondary', compact ? 'sm' : 'md')}`}
+          data-testid="pay-passkey"
+        >
+          <FaceIdIcon className="h-4 w-4" />
+          Use {method}
+        </button>
+      )}
     </form>
   );
 

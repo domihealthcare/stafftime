@@ -92,6 +92,10 @@ const proxy = {
   '/api': {
     target: 'http://localhost:3000',
     changeOrigin: true,
+    // Pass the address the browser used on (X-Forwarded-Host), as Vercel's
+    // does: Face ID checks the browser's Origin against it (November 2026,
+    // `passkeys/passkey-site.ts`), and changeOrigin rewrites Host.
+    xfwd: true,
   },
 };
 
