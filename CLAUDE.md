@@ -2146,9 +2146,10 @@ Beyond the phases, the parts worth knowing about before picking up work:
   add that staff can use face id through their phone to login to portal?";
   his choices: optional with the password kept, and Face ID opens the PIN in
   front of pay too; version 1.38.0): passkeys (WebAuthn,
-  `@simplewebauthn/server` 14.0.3 and `/browser` 14.0.0, pinned). **Sign in
-  with Face ID** on the sign-in screen (Touch ID, Windows Hello, "your
-  fingerprint" or "a passkey" by device); set up from a **card on Home** after
+  `@simplewebauthn/server` 14.0.3 and `/browser` 14.0.0, pinned). **Use Face
+  ID** under the sign-in form (Touch ID, Windows Hello, "your fingerprint" or
+  "a passkey" by device; not "Sign in with...", so the browser suites'
+  "Sign in" button stays one); set up from a **card on Home** after
   a password sign-in on a device that has it (never a pop-up; gone on that
   device once set up or turned down) or **Your profile -> Sign in with Face
   ID**, which lists them and removes one. The password is asked again unless

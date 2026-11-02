@@ -6074,7 +6074,8 @@ elsewhere (`unlockMethod` in `lib/passkeys.ts`, words only).
   (`NotificationKind.ACCOUNT`). Kept on the device (`residentKey: required`)
   and checked every time (`userVerification: required`). Not for a shared
   account.
-- *Signing in*: **Sign in with Face ID** under the password form; no email is
+- *Signing in*: **Use Face ID** under the password form (not "Sign in
+  with...", which would make "Sign in" name two buttons); no email is
   typed, as the phone offers the passkeys it holds. Refused for somebody who
   has left, after the passkey is proven, as with the password. The session is
   marked `viaPasskey`.

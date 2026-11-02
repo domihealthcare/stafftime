@@ -1012,8 +1012,8 @@ const STAFF: Section[] = [
               Mac, a fingerprint on Android, Windows Hello on a PC. Sign in once with your password
               and Home offers <strong>Set up Face ID</strong>, or open <Screen>Your profile</Screen>{' '}
               → <strong>Sign in with Face ID</strong> any time (it may ask for your password first).
-              After that, press <strong>Sign in with Face ID</strong> on the sign-in screen. On an
-              iPhone with Domi Staff on the Home Screen it works the same.
+              After that, press <strong>Use Face ID</strong> on the sign-in screen, under the
+              password. On an iPhone with Domi Staff on the Home Screen it works the same.
             </p>
             <p className="mt-2">
               Your face or fingerprint never leaves your phone: the phone checks it, and Domi Staff

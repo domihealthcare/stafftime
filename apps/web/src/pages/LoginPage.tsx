@@ -40,6 +40,7 @@ export function LoginPage() {
   }
 
   /// Face ID (November 2026). Shown wherever the browser can use passkeys;
+  /// "Use Face ID", not "Sign in with...", so "Sign in" names one button.
   /// somebody who has not set one up just gets the phone's "no passkeys" note.
   const canUsePasskey = passkeysSupported();
   const method = unlockMethod();
@@ -144,7 +145,7 @@ export function LoginPage() {
                 data-testid="passkey-sign-in"
               >
                 <FaceIdIcon />
-                Sign in with {method}
+                Use {method}
               </button>
             </>
           )}
