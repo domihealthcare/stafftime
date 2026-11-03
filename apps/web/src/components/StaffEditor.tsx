@@ -469,7 +469,7 @@ export function StaffEditor({
                     </span>
                     <span className="block text-xs text-slate-500">
                       In Fill and sign a PDF, they can put any provider&rsquo;s saved signature on a
-                      document, like the ink stamp at the front desk. Each stamp is logged, and the
+                      document, like an ink stamp of their signature. Each stamp is logged, and the
                       provider sees who used theirs. Providers can always stamp their own.
                     </span>
                   </span>
