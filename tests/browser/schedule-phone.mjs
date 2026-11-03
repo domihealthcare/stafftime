@@ -89,7 +89,14 @@ await step('on a laptop a manager still starts on everyone', async () => {
   await laptop.getByTestId('rota-row-Frankie Front-Desk').waitFor({ timeout: 15000 });
   if ((await laptop.getByTestId('week-person').count()) !== 0) throw new Error('narrowed to one person');
   const header = laptop.getByTestId('rota-row-Frankie Front-Desk').getByRole('rowheader');
-  if (!(await header.getByText(/Front Desk/).isVisible())) throw new Error('job roles hidden on a laptop');
+  // The job roles come in their own request, after the rows, so wait for them
+  // rather than looking once (it failed in CI when that request was slower).
+  await header
+    .getByText(/Front Desk/)
+    .waitFor({ timeout: 10000 })
+    .catch(() => {
+      throw new Error('job roles hidden on a laptop');
+    });
   await laptopCtx.close();
 });
 
