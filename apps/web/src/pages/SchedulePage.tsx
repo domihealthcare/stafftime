@@ -275,6 +275,7 @@ export function SchedulePage() {
       { label: 'Add a rep lunch', run: () => addEventOn('REP_LUNCH', day) },
       { label: 'Add a diagnostics date', run: () => addEventOn('DIAGNOSTIC', day) },
       { label: 'Add a phlebotomist date', run: () => addEventOn('PHLEBOTOMY', day) },
+      { label: 'Add a student rotation', run: () => addEventOn('ROTATION', day) },
       { label: 'Add a holiday or closure', run: () => addEventOn('CLOSURE', day) },
     ]);
   };
@@ -436,11 +437,20 @@ export function SchedulePage() {
 
   // The phlebotomist is not on the rota, so their dates have no job role.
   // With a job role picked ("Front Desk only") they are left off the week
-  // and the month; the Calendar still shows them. Nothing else uses them
-  // here: closures and the lunch icons read other kinds.
+  // and the month; the Calendar still shows them. A student rotation goes
+  // with its provider: shown when the provider is in the job role picked.
+  // Nothing else uses them here: closures and the lunch icons read other
+  // kinds.
   const shownEvents = useMemo(
-    () => (roleFilter ? events.filter((event) => event.kind !== 'PHLEBOTOMY') : events),
-    [events, roleFilter],
+    () =>
+      roleFilter
+        ? events.filter(
+            (event) =>
+              event.kind !== 'PHLEBOTOMY' &&
+              (event.kind !== 'ROTATION' || roleMembers.has(event.provider?.id ?? '')),
+          )
+        : events,
+    [events, roleFilter, roleMembers],
   );
 
   /// Who can be picked in the month: everybody still here, and anybody who

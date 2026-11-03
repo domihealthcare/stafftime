@@ -20,6 +20,7 @@ import { EmailModule } from './email/email.module';
 import { EmployeesModule } from './employees/employees.module';
 import { EventsModule } from './events/events.module';
 import { RepsModule } from './reps/reps.module';
+import { StudentsModule } from './students/students.module';
 import { DiagnosticsModule } from './diagnostics/diagnostics.module';
 import { ReimbursementsModule } from './reimbursements/reimbursements.module';
 import { PhoneBookModule } from './phone-book/phone-book.module';
@@ -74,6 +75,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     ShiftsModule,
     EventsModule,
     RepsModule,
+    StudentsModule,
     DiagnosticsModule,
     ReimbursementsModule,
     VendorsModule,

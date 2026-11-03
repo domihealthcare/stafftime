@@ -5,9 +5,11 @@ import {
   ContactLines,
   PresenceBadges,
   ScheduleReviewLine,
+  StudentsTodayLine,
   homeHours,
 } from '../components/PersonDetails';
 import { useTodaysScheduleReviews } from '../lib/schedule-reviews';
+import { useTodaysRotations } from '../lib/student-rotations';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { usePersonMenu } from '../components/PersonMenu';
@@ -16,7 +18,7 @@ import { ApiError, api, type Background } from '../lib/api';
 import { displayName } from '../lib/format';
 import { t as translate, useT } from '../lib/i18n';
 import { useIsManager, useSession } from '../lib/session';
-import type { DirectoryEntry, OfficeExtension, ScheduleReview } from '../lib/types';
+import type { DirectoryEntry, OfficeExtension, PracticeEvent, ScheduleReview } from '../lib/types';
 import { OfficeExtensionsCard, extensionOf } from '../components/OfficeExtensions';
 
 /// Long enough that the list is not a stale picture of the morning, short
@@ -42,6 +44,7 @@ export function DirectoryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const reviews = useTodaysScheduleReviews();
+  const students = useTodaysRotations();
   // "See profile" from a right-click arrives as ?person=id.
   const [searchParams, setSearchParams] = useSearchParams();
   const onlyPerson = searchParams.get('person');
@@ -247,6 +250,7 @@ export function DirectoryPage() {
               isYou={person.id === employee?.id}
               extension={extensionOf(extensions, person.id)}
               review={reviews.get(person.id)}
+              students={students.get(person.id)}
             />
           ))}
         </div>
@@ -261,12 +265,15 @@ function PersonCard({
   isYou,
   extension,
   review,
+  students,
   onContextMenu,
 }: {
   onContextMenu: (event: React.MouseEvent) => void;
   person: DirectoryEntry;
   /// Who reviews their patient schedule today, for a provider.
   review?: ScheduleReview;
+  /// The students with them today, for a provider.
+  students?: PracticeEvent[];
   isYou: boolean;
   extension: OfficeExtension | null;
 }) {
@@ -302,6 +309,7 @@ function PersonCard({
           )}
           {person.about && <p className="mt-1 text-sm text-slate-700">{person.about}</p>}
           <ScheduleReviewLine review={review} />
+          <StudentsTodayLine rotations={students} />
 
           <ContactLines
             person={person}

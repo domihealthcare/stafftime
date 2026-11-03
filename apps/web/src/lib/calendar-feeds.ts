@@ -15,6 +15,8 @@ export const SEPARATE_FEEDS: {
   { slug: 'shifts', label: 'My shifts & time off', kind: null },
   { slug: 'diagnostics', label: 'Diagnostics', kind: 'DIAGNOSTIC' },
   { slug: 'phlebotomist', label: 'Phlebotomist', kind: 'PHLEBOTOMY' },
+  /// Everybody's students; the all-in-one has a provider's own only.
+  { slug: 'students', label: 'Students', kind: 'ROTATION', alongside: true },
   { slug: 'rep-lunches', label: 'Rep lunches', kind: 'REP_LUNCH' },
   { slug: 'holidays', label: 'Holidays & closures', kind: 'HOLIDAY' },
   { slug: 'pay-days', label: 'Pay days', kind: 'PAY_DAY' },

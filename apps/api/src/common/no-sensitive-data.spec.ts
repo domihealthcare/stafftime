@@ -127,6 +127,21 @@ describe('what this app deliberately does not store', () => {
     expect(fields).toEqual(['createdAt', 'id', 'name']);
   });
 
+  /// Students and residents on rotation (November 2026, Dominguez): a name,
+  /// what they are and their school, nothing more - no account, nothing to
+  /// reach them by, no date of birth, no paperwork.
+  it('keeps students to their names', () => {
+    const fields = model('Student')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith('//') && !line.startsWith('@@'))
+      .map((line) => line.split(/\s+/)[0])
+      .sort();
+    expect(fields).toEqual(
+      ['createdAt', 'id', 'kind', 'name', 'rotations', 'school', 'updatedAt'].sort(),
+    );
+  });
+
   /// Who is the admin in each office (October 2026): who and where, nothing
   /// more. CME requests (October 2026): an activity, its dates and costs, and
   /// the decision - no receipts, certificates or licence numbers.

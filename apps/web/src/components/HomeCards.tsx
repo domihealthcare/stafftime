@@ -319,7 +319,11 @@ export function ComingUp() {
   }, []);
 
   const shown = events
-    .filter((event) => event.kind !== 'DIAGNOSTIC' && event.kind !== 'PHLEBOTOMY')
+    // Providers see their own students on a card of their own.
+    .filter(
+      (event) =>
+        event.kind !== 'DIAGNOSTIC' && event.kind !== 'PHLEBOTOMY' && event.kind !== 'ROTATION',
+    )
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
     .slice(0, 5);
   if (shown.length === 0 && !payDay) return null;

@@ -1,7 +1,7 @@
 import { formatTimeCompact, localDate } from './format';
 import { t } from './i18n';
 import { CALENDAR_KINDS } from './calendar-kinds';
-import type { EventKind, PracticeEvent } from './types';
+import type { EventKind, PracticeEvent, Student, StudentKind } from './types';
 
 /**
  * The plain helpers for practice events: which days an event covers, its
@@ -12,13 +12,18 @@ import type { EventKind, PracticeEvent } from './types';
  */
 
 export const isClosure = (event: PracticeEvent) => event.kind === 'CLOSURE';
-/// Holidays, diagnostics, rep lunches and the phlebotomist are for everyone;
-/// nobody chooses who.
+/// Holidays, diagnostics, rep lunches, the phlebotomist and student
+/// rotations are for everyone to see; nobody chooses who.
 export const forEveryone = (kind: EventKind) =>
-  kind === 'HOLIDAY' || kind === 'DIAGNOSTIC' || kind === 'REP_LUNCH' || kind === 'PHLEBOTOMY';
-/// Diagnostics, rep lunches and the phlebotomist happen at an office.
+  kind === 'HOLIDAY' ||
+  kind === 'DIAGNOSTIC' ||
+  kind === 'REP_LUNCH' ||
+  kind === 'PHLEBOTOMY' ||
+  kind === 'ROTATION';
+/// Diagnostics, rep lunches, the phlebotomist and student rotations happen
+/// at an office.
 export const atAnOffice = (kind: EventKind) =>
-  kind === 'DIAGNOSTIC' || kind === 'REP_LUNCH' || kind === 'PHLEBOTOMY';
+  kind === 'DIAGNOSTIC' || kind === 'REP_LUNCH' || kind === 'PHLEBOTOMY' || kind === 'ROTATION';
 
 /// Whether the Calendar shows an event with a place chosen: what is at that
 /// office or shuts it, and everything practice-wide. Telemedicine is no
@@ -32,11 +37,33 @@ export function shownAt(event: PracticeEvent, place: string): boolean {
   return true;
 }
 
-/// What a chip calls it: a rep lunch by its rep, the rest by their title.
+/// What a chip calls it: a rep lunch by its rep, a student rotation by the
+/// student and their provider, the rest by their title.
 export function shortTitle(event: PracticeEvent): string {
+  if (event.kind === 'ROTATION') {
+    return event.provider
+      ? t('{student} with {provider}', { student: event.title, provider: event.provider.name })
+      : event.title;
+  }
   return event.kind === 'REP_LUNCH'
     ? (event.rep?.name ?? event.title.replace(/^Rep lunch: /, ''))
     : event.title;
+}
+
+/// What each kind of student is called.
+export const STUDENT_KINDS: { value: StudentKind; label: string }[] = [
+  { value: 'MEDICAL_STUDENT', label: 'Medical student' },
+  { value: 'RESIDENT', label: 'Resident' },
+  { value: 'NP_STUDENT', label: 'NP student' },
+  { value: 'PA_STUDENT', label: 'PA student' },
+  { value: 'NURSING_STUDENT', label: 'Nursing student' },
+  { value: 'OTHER', label: 'Student' },
+];
+
+/// "Medical student, Rutgers NJMS" - or just "Resident" with no school.
+export function describeStudent(student: Pick<Student, 'kind' | 'school'>): string {
+  const kind = t(STUDENT_KINDS.find((one) => one.value === student.kind)?.label ?? 'Student');
+  return student.school ? `${kind}, ${student.school}` : kind;
 }
 
 /// A video call link fit to open: https only. The server refuses anything

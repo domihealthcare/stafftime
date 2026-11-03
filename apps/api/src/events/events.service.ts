@@ -18,6 +18,9 @@ import {
   zonedTimeToUtc,
 } from '../common/util/zoned-time.util';
 import { InboxService } from '../email/inbox.service';
+import { NotificationsService } from '../email/notifications.service';
+import { PROVIDER } from '../on-call/on-call.service';
+import { describeStudent, providerName } from '../students/students';
 import { GoogleMeetService } from './google-meet.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { movedFirstDay, weekendDay } from './moving-holidays';
@@ -69,6 +72,11 @@ export const EVENT_SELECT = {
       notes: true,
     },
   },
+  // A student rotation: who, and the provider they are with. Names only.
+  student: { select: { id: true, name: true, kind: true, school: true } },
+  provider: {
+    select: { id: true, firstName: true, lastName: true, preferredName: true, postNominals: true },
+  },
   invitees: {
     select: {
       employee: PERSON,
@@ -95,7 +103,7 @@ export type EventRow = Prisma.PracticeEventGetPayload<{ select: typeof EVENT_SEL
 /// What decides who an event is for.
 type AudienceOf = Pick<
   EventRow,
-  'kind' | 'audience' | 'jobRole' | 'location' | 'invitees' | 'atLocation' | 'startsAt'
+  'kind' | 'audience' | 'jobRole' | 'location' | 'invitees' | 'atLocation' | 'startsAt' | 'provider'
 >;
 
 /// The kinds that go on the bell. A holiday only names a day; nobody needs
@@ -106,6 +114,7 @@ const NOTIFIED: PracticeEventKind[] = [
   PracticeEventKind.DIAGNOSTIC,
   PracticeEventKind.REP_LUNCH,
   PracticeEventKind.PHLEBOTOMY,
+  PracticeEventKind.ROTATION,
 ];
 /// The kinds reminded about the day before. Not diagnostics: every weekend's
 /// "Tomorrow: US + ECHO" to everybody would bury the bell.
@@ -141,6 +150,8 @@ interface Checked {
     locationId: string | null;
     atLocationId: string | null;
     repId: string | null;
+    studentId: string | null;
+    providerId: string | null;
   };
   invitees: InviteeIds;
   /// The rule and the date it counts from, when it repeats.
@@ -177,6 +188,7 @@ export class EventsService {
     private readonly inbox: InboxService,
     private readonly meet: GoogleMeetService,
     private readonly phlebotomists: PhlebotomistsService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /// Events overlapping [from, to).
@@ -255,7 +267,7 @@ export class EventsService {
 
     // One notification for a whole series, not one per date.
     if (last.endsAt > new Date() && NOTIFIED.includes(first.kind)) {
-      await this.inbox.notify(
+      await this.tell(
         (await this.invited(first)).filter((id) => id !== actor.id),
         notice(first, 'added', input.repeat ? seriesBody(first, input.repeat) : undefined),
       );
@@ -337,7 +349,7 @@ export class EventsService {
       `Event ${id}${removed > 1 ? ` and ${removed - 1} after it` : ''} removed by ${actor.id}`,
     );
 
-    await this.inbox.notify(
+    await this.tell(
       invited.filter((person) => person !== actor.id),
       notice(
         row,
@@ -635,6 +647,7 @@ export class EventsService {
       before.meetingUrl !== after.meetingUrl ||
       before.atLocation?.id !== after.atLocation?.id ||
       before.rep?.id !== after.rep?.id ||
+      before.student?.id !== after.student?.id ||
       before.allDay !== after.allDay ||
       before.startsAt.getTime() !== after.startsAt.getTime() ||
       before.endsAt.getTime() !== after.endsAt.getTime();
@@ -652,20 +665,31 @@ export class EventsService {
     const nowIn = new Set(now);
     const notMe = (person: string) => person !== actor.id;
 
-    await this.inbox.notify(
-      now.filter((p) => !wasIn.has(p)).filter(notMe),
-      notice(after, 'added', body),
-    );
+    await this.tell(now.filter((p) => !wasIn.has(p)).filter(notMe), notice(after, 'added', body));
     if (moved) {
-      await this.inbox.notify(
+      await this.tell(
         now.filter((p) => wasIn.has(p)).filter(notMe),
         notice(after, 'changed', body),
       );
     }
-    await this.inbox.notify(
-      was.filter((p) => !nowIn.has(p)).filter(notMe),
-      notice(before, 'dropped'),
-    );
+    await this.tell(was.filter((p) => !nowIn.has(p)).filter(notMe), notice(before, 'dropped'));
+  }
+
+  /// Under the bell - and for a student rotation, by email too, as the
+  /// provider asked to be told (Dominguez, November 2026). A rotation is told
+  /// to its provider alone, so this never emails a crowd.
+  private async tell(people: string[], words: ReturnType<typeof notice>) {
+    if (people.length === 0) return;
+    if (words.email) {
+      await this.notifications.personal(people, words.kind, words);
+      return;
+    }
+    await this.inbox.notify(people, {
+      kind: words.kind,
+      title: words.title,
+      body: words.body,
+      link: words.link,
+    });
   }
 
   private async require(id: string): Promise<EventRow> {
@@ -730,10 +754,11 @@ export class EventsService {
     const diagnostic = kind === PracticeEventKind.DIAGNOSTIC;
     const repLunch = kind === PracticeEventKind.REP_LUNCH;
     const phlebotomy = kind === PracticeEventKind.PHLEBOTOMY;
-    /// Holidays, diagnostics, rep lunches and the phlebotomist are for
-    /// everyone (Dominguez, October 2026), so the audience is not theirs to
-    /// choose.
-    if (holiday || diagnostic || repLunch || phlebotomy) {
+    const rotation = kind === PracticeEventKind.ROTATION;
+    /// Holidays, diagnostics, rep lunches, the phlebotomist and student
+    /// rotations are for everyone to see (Dominguez, October and November
+    /// 2026), so the audience is not theirs to choose.
+    if (holiday || diagnostic || repLunch || phlebotomy || rotation) {
       dto = {
         ...dto,
         audience: EventAudience.EVERYONE,
@@ -752,6 +777,30 @@ export class EventsService {
       if (!rep) throw new BadRequestException('That rep is no longer on the list.');
       repId = dto.repId;
       dto = { ...dto, title: repLunchTitle(rep.name) };
+    }
+    /// A student rotation is named after its student, and is with a provider
+    /// who is still here.
+    let studentId: string | null = null;
+    let providerId: string | null = null;
+    if (rotation) {
+      if (!dto.studentId) throw new BadRequestException('Choose the student.');
+      const student = await this.prisma.student.findUnique({
+        where: { id: dto.studentId },
+        select: { name: true },
+      });
+      if (!student) throw new BadRequestException('That student is no longer on the list.');
+      if (!dto.providerId) throw new BadRequestException('Choose the provider they are with.');
+      const provider = await this.prisma.employee.count({
+        where: { AND: [{ id: dto.providerId }, PROVIDER] },
+      });
+      if (!provider) {
+        throw new BadRequestException(
+          'Choose a provider who is still here (somebody in a provider job role).',
+        );
+      }
+      studentId = dto.studentId;
+      providerId = dto.providerId;
+      dto = { ...dto, title: student.name };
     }
     /// The phlebotomist's name is optional: without one it is "Phlebotomist".
     if (phlebotomy && (dto.title ?? '').trim().length < 2) {
@@ -778,7 +827,7 @@ export class EventsService {
       );
     }
     let atLocationId: string | null = null;
-    if (diagnostic || repLunch || phlebotomy) {
+    if (diagnostic || repLunch || phlebotomy || rotation) {
       if (!dto.atLocationId) throw new BadRequestException('Choose which office it is at.');
       const exists = await this.prisma.location.count({ where: { id: dto.atLocationId } });
       if (!exists) throw new BadRequestException('That office no longer exists.');
@@ -885,7 +934,7 @@ export class EventsService {
 
     // Asked for last, once everything else is known to be fine, so a refused
     // form never leaves an unused meeting behind at Google.
-    const noCall = closure || holiday || diagnostic || repLunch || phlebotomy;
+    const noCall = closure || holiday || diagnostic || repLunch || phlebotomy || rotation;
     const meetingUrl = noCall
       ? null
       : dto.createMeetLink
@@ -909,6 +958,8 @@ export class EventsService {
         locationId: dto.audience === EventAudience.LOCATION ? dto.locationId! : null,
         atLocationId,
         repId,
+        studentId,
+        providerId,
       },
       invitees:
         dto.audience === EventAudience.CHOSEN
@@ -962,6 +1013,12 @@ export function audienceWhere(row: AudienceOf): Prisma.EmployeeWhereInput {
         ),
       },
     };
+  }
+  // Everybody sees a student rotation on the calendar; it is told to the
+  // provider the student is with, and nobody else. A provider who has gone
+  // leaves nobody, not everybody.
+  if (row.kind === PracticeEventKind.ROTATION) {
+    return { employmentStatus: WORKING, id: row.provider?.id ?? '' };
   }
   if (row.audience === EventAudience.JOB_ROLE) {
     // A deleted role leaves nobody invited, rather than everybody.
@@ -1036,6 +1093,7 @@ function audienceKey(row: AudienceOf): string {
   return [
     row.audience,
     row.kind === PracticeEventKind.REP_LUNCH ? (row.atLocation?.id ?? '') : '',
+    row.kind === PracticeEventKind.ROTATION ? (row.provider?.id ?? '') : '',
     row.jobRole?.id ?? '',
     row.location?.id ?? '',
     ...row.invitees.map((i) => i.employee?.id ?? i.jobRole?.id ?? i.location?.id ?? '').sort(),
@@ -1085,6 +1143,8 @@ function present(
           ...(manager ? { status: row.rep.status, notes: row.rep.notes } : {}),
         }
       : null,
+    student: row.student,
+    provider: row.provider ? { id: row.provider.id, name: providerName(row.provider) } : null,
     invitees: row.invitees.map((invitee) =>
       invitee.employee
         ? {
@@ -1127,6 +1187,9 @@ function phlebotomyTitle(row: Pick<EventRow, 'title'>, lead: string): string {
 }
 
 function whenAndWhere(row: EventRow): string {
+  if (row.kind === PracticeEventKind.ROTATION) {
+    return [describeWhen(row), row.atLocation?.name, rotationWho(row)].filter(Boolean).join(' · ');
+  }
   if (
     row.kind === PracticeEventKind.DIAGNOSTIC ||
     row.kind === PracticeEventKind.REP_LUNCH ||
@@ -1144,63 +1207,80 @@ function whenAndWhere(row: EventRow): string {
   return [describeWhen(row), row.place].filter(Boolean).join(' · ');
 }
 
+/// "Medical student, Rutgers NJMS, with Dr. Jose Badia" - what a rotation is.
+function rotationWho(row: Pick<EventRow, 'student' | 'provider'>): string {
+  const what = row.student ? describeStudent(row.student) : 'Student';
+  return row.provider ? `${what}, with ${providerName(row.provider)}` : what;
+}
+
 /// What goes under the bell, in the words that fit an event or a closure.
+/// `email` marks the ones that go by email too (a student rotation, to its
+/// provider).
 function notice(
   row: EventRow,
   what: 'added' | 'changed' | 'dropped' | 'cancelled' | 'reminder',
   body?: string,
-): { kind: NotificationKind; title: string; body: string; link: string } {
+): { kind: NotificationKind; title: string; body: string; link: string; email: boolean } {
   const closed =
     row.audience === EventAudience.LOCATION ? `${row.location?.name ?? 'Office'} closed` : 'Closed';
   const repName = `${row.rep?.name ?? row.title.replace(/^Rep lunch: /, '')}${
     row.rep?.company ? ` (${row.rep.company})` : ''
   }`;
   const titles =
-    row.kind === PracticeEventKind.REP_LUNCH
+    row.kind === PracticeEventKind.ROTATION
       ? {
-          added: `Rep lunch: ${repName}`,
-          changed: `Rep lunch changed: ${repName}`,
-          dropped: `No longer on your schedule: ${row.title}`,
-          cancelled: `Rep lunch cancelled: ${repName}`,
+          added: `Student with you: ${row.title}`,
+          changed: `Student rotation changed: ${row.title}`,
+          dropped: `No longer with you: ${row.title}`,
+          cancelled: `Student rotation cancelled: ${row.title}`,
           reminder: `Tomorrow: ${row.title}`,
         }
-      : row.kind === PracticeEventKind.PHLEBOTOMY
+      : row.kind === PracticeEventKind.REP_LUNCH
         ? {
-            added: phlebotomyTitle(row, 'Phlebotomist'),
-            changed: phlebotomyTitle(row, 'Phlebotomist changed'),
+            added: `Rep lunch: ${repName}`,
+            changed: `Rep lunch changed: ${repName}`,
             dropped: `No longer on your schedule: ${row.title}`,
-            cancelled: phlebotomyTitle(row, 'Phlebotomist cancelled'),
+            cancelled: `Rep lunch cancelled: ${repName}`,
             reminder: `Tomorrow: ${row.title}`,
           }
-        : row.kind === PracticeEventKind.DIAGNOSTIC
+        : row.kind === PracticeEventKind.PHLEBOTOMY
           ? {
-              added: `Diagnostics: ${row.title}`,
-              changed: `Diagnostics changed: ${row.title}`,
+              added: phlebotomyTitle(row, 'Phlebotomist'),
+              changed: phlebotomyTitle(row, 'Phlebotomist changed'),
               dropped: `No longer on your schedule: ${row.title}`,
-              cancelled: `Diagnostics cancelled: ${row.title}`,
+              cancelled: phlebotomyTitle(row, 'Phlebotomist cancelled'),
               reminder: `Tomorrow: ${row.title}`,
             }
-          : row.kind === PracticeEventKind.CLOSURE
+          : row.kind === PracticeEventKind.DIAGNOSTIC
             ? {
-                added: `${closed}: ${row.title}`,
-                changed: `Closure changed: ${row.title}`,
-                // Your office is no longer the one shut, or it is not shut at all.
-                dropped: `Open as usual: ${row.title}`,
-                cancelled: `Open as usual: ${row.title}`,
-                reminder: `Tomorrow - ${closed.toLowerCase()}: ${row.title}`,
-              }
-            : {
-                added: `New event: ${row.title}`,
-                changed: `Event changed: ${row.title}`,
+                added: `Diagnostics: ${row.title}`,
+                changed: `Diagnostics changed: ${row.title}`,
                 dropped: `No longer on your schedule: ${row.title}`,
-                cancelled: `Cancelled: ${row.title}`,
+                cancelled: `Diagnostics cancelled: ${row.title}`,
                 reminder: `Tomorrow: ${row.title}`,
-              };
+              }
+            : row.kind === PracticeEventKind.CLOSURE
+              ? {
+                  added: `${closed}: ${row.title}`,
+                  changed: `Closure changed: ${row.title}`,
+                  // Your office is no longer the one shut, or it is not shut at all.
+                  dropped: `Open as usual: ${row.title}`,
+                  cancelled: `Open as usual: ${row.title}`,
+                  reminder: `Tomorrow - ${closed.toLowerCase()}: ${row.title}`,
+                }
+              : {
+                  added: `New event: ${row.title}`,
+                  changed: `Event changed: ${row.title}`,
+                  dropped: `No longer on your schedule: ${row.title}`,
+                  cancelled: `Cancelled: ${row.title}`,
+                  reminder: `Tomorrow: ${row.title}`,
+                };
   return {
     kind: NotificationKind.EVENT,
     title: titles[what],
     body: body ?? whenAndWhere(row),
-    link: scheduleLink(row),
+    link: row.kind === PracticeEventKind.ROTATION ? calendarLink(row) : scheduleLink(row),
+    email: row.kind === PracticeEventKind.ROTATION,
   };
 }
 
@@ -1214,6 +1294,11 @@ function daysBetween(from: string, to: string): number {
 /// The schedule, open on the week the event is in.
 export function scheduleLink(row: Pick<EventRow, 'startsAt'>): string {
   return `/schedule?week=${localDateIn(row.startsAt, PRACTICE_ZONE)}`;
+}
+
+/// The practice calendar, open on the month the date is in.
+function calendarLink(row: Pick<EventRow, 'startsAt'>): string {
+  return `/schedule/calendar?month=${localDateIn(row.startsAt, PRACTICE_ZONE).slice(0, 8)}01`;
 }
 
 /// A closure's start and end moved to the same date in `year` (same wall-clock

@@ -566,10 +566,11 @@ const STAFF: Section[] = [
             off 🌴 (under Show, <strong>My shifts</strong> - pick it alone to see just your schedule
             for the month; tap a shift to open its week), the <strong>diagnostics</strong> 🩺 (which
             tests, the hours, and the office - WNY or NB), when the <strong>phlebotomist</strong> 💉
-            is at each office, <strong>rep lunches</strong> 🍽️ (the rep, their company, the
-            medication, and whether they bring catering or the office orders - the bell tells you
-            the evening before whether there is one at your office; Home&rsquo;s Shortcuts card has
-            a <strong>Rep lunches</strong> button that opens the calendar on just them),{' '}
+            is at each office, <strong>students</strong> 🎓 on rotation (who, with which provider
+            and where), <strong>rep lunches</strong> 🍽️ (the rep, their company, the medication, and
+            whether they bring catering or the office orders - the bell tells you the evening before
+            whether there is one at your office; Home&rsquo;s Shortcuts card has a{' '}
+            <strong>Rep lunches</strong> button that opens the calendar on just them),{' '}
             <strong>holidays</strong> ⭐ (the offices are open unless there is also a closure),{' '}
             <strong>closures</strong> 🔒, meetings and events 📅, and <strong>pay days</strong> 💵 -
             the Friday after each pay period ends. Under <strong>Show</strong>, keep{' '}
@@ -2048,6 +2049,28 @@ const MANAGERS: Section[] = [
             the calendar, can pick <strong>Phlebotomist</strong> under Show to see only those days,
             and is told when one is added, moved or cancelled. Write when the phlebotomist is in and
             anything the front desk should know - never a patient&rsquo;s name or who is booked.
+          </p>
+        ),
+      },
+      {
+        question: 'Students and residents on rotation',
+        answer: (
+          <p>
+            On <Screen>Schedule → Calendar</Screen>, choose{' '}
+            <strong>+ Add → Student rotation</strong> (or right-click a day on the rota): the
+            student, the provider they are with, the office and the hours. Each date can have its
+            own provider, office and hours, so add another date for a day that is different, or use{' '}
+            <strong>Repeat</strong> for a regular day (every Tuesday for a month). Pick the student
+            from the list by typing their name, or press <strong>+ Add a new student</strong>: their
+            name, whether they are a medical student, resident, NP, PA or nursing student, and their
+            school if you like. That is all that is kept: no phone, email, date of birth or
+            paperwork, and they never sign in or clock in. Everyone sees rotations on the calendar
+            (pick <strong>Students</strong> under Show to see only them). The provider sees theirs
+            on Home under <strong>Students with you</strong>, their Directory card says who is with
+            them today, and only the provider is told, on the bell and by email, when a date is
+            added, moved or cancelled. A provider&rsquo;s own students also go to their phone with
+            the all-in-one calendar link; the <strong>Students</strong> calendar link carries
+            everybody&rsquo;s.
           </p>
         ),
       },

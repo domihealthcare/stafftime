@@ -57,6 +57,8 @@ app does not hold*, its own database) are unchanged by this.
   step was done and by whom — see *Data this app does not hold*, below
 - **EmployeeCredential** — licences and certifications, tracked by expiry date so
   nothing lapses unnoticed. Dates only
+- **Student** (November 2026) - a student or resident who rotates with a
+  provider, by name only; their dates are practice calendar entries
 - **CmeRequest** / **CmeAllowance** (October 2026) - a provider's CME activity
   sent for approval with its costs, and their yearly allowance. No receipts
 - **ExpenseRequest** (November 2026) - somebody's own money spent for the
@@ -2245,6 +2247,31 @@ Beyond the phases, the parts worth knowing about before picking up work:
   fields, any message and a screenshot (`profile-stuck.png`). Forcing a miss
   showed that one step failing and the other 17 still running. Test only;
   the app is unchanged. If it comes back, its message says what was there.
+- **Students and residents on rotation** (3 November 2026, Dominguez: "we
+  have students/residents who do rotations at our office(s) with specific
+  providers"; his choices: **names only**, each date with **its own
+  provider, office and hours, repeating** where regular, **everyone sees
+  it**, on the **Calendar**, the provider's **Home and Directory card**, and
+  the **provider is told**; version 1.42.0): a seventh kind of practice
+  calendar entry, `ROTATION` (🎓, teal), added by managers and admins from
+  Schedule -> Calendar -> **+ Add -> Student rotation** or the rota's
+  right-click day menu: the student, the provider (anybody in a job role
+  with *uses clinical forms*), the office and the hours, 9 to 5 to start;
+  it repeats like any calendar entry. The student is picked from a list
+  typed into, or **+ Add a new student** right in the form: name, medical
+  student / resident / NP / PA / nursing / other, and an optional school
+  (`Student`, managers and admins, `src/students/`). **Names only**: no
+  account, never clocks in, nothing to reach them by, no date of birth or
+  paperwork (the schema guard pins `Student`). **Everybody sees it**
+  (Students under Show, the printed month); **only the provider is told**,
+  on the bell and by email, when a date is added, moved or cancelled, or
+  the provider changes. The provider has **Students with you** on Home (two
+  weeks), and their Directory and Staff cards say "With a student today:
+  ...". The all-in-one calendar link carries a provider's own students; a
+  **Students** calendar link carries everybody's. Migrations
+  `20261103010000_student_rotation_kind`, `20261103020000_student_rotations`;
+  see *Students and residents on rotation* in `docs/architecture.md`;
+  `tests/browser/student-rotations.mjs`. Worth carrying to the EMR module.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.
@@ -2990,7 +3017,7 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Counts only — never a patient (the schema guard pins the fields; the note is
   the one free-text box and says so). **Not in the payroll export** (decided). See *Provider
   productivity* in `docs/architecture.md`.
-- **Tests**: ~2,010 API unit tests (Jest), ~190 web unit tests (Vitest), and ~1,300 end-to-end checks (128 suites) in `tests/browser`
+- **Tests**: ~2,060 API unit tests (Jest), ~190 web unit tests (Vitest), and ~1,310 end-to-end checks (129 suites) in `tests/browser`
   driven against a real API, a real Postgres and a real Chromium. Both run in CI
   on every push. The convention is to run the browser suites twice — once
   against the dev server, once against `vite preview`, which applies the

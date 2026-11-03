@@ -621,6 +621,60 @@ describe('CalendarService', () => {
     });
   });
 
+  describe('student rotations', () => {
+    const rotation = (id: string, providerId: string, lastName: string) => ({
+      id,
+      kind: 'ROTATION',
+      title: `Jane ${lastName}`,
+      description: null,
+      place: null,
+      meetingUrl: null,
+      allDay: false,
+      audience: 'EVERYONE',
+      location: null,
+      atLocation: {
+        id: 'loc-nb',
+        name: 'North Bergen',
+        addressLine1: '7650 Bergenline Ave',
+        city: 'North Bergen',
+        state: 'NJ',
+      },
+      rep: null,
+      student: { id: `stu-${id}`, name: `Jane ${lastName}`, kind: 'RESIDENT', school: null },
+      provider: {
+        id: providerId,
+        firstName: 'Jose',
+        lastName: 'Badia',
+        preferredName: null,
+        postNominals: 'MD',
+      },
+      startsAt: new Date('2026-11-10T14:00:00.000Z'),
+      endsAt: new Date('2026-11-10T18:00:00.000Z'),
+      updatedAt: NOW,
+    });
+    const both = () =>
+      build({
+        events: [rotation('ev-mine', 'emp-1', 'Mine'), rotation('ev-other', 'emp-2', 'Other')],
+      });
+    const count = (feed: string) => [...feed.matchAll(/^SUMMARY:/gm)].length;
+
+    it('puts only your own students in the all-in-one', async () => {
+      const { service } = both();
+      const feed = (await service.feedForToken('token', NOW)).replace(/\r\n /g, '');
+      expect(feed).toContain('SUMMARY:Resident: Jane Mine with Dr. Jose Badia - North Bergen');
+      expect(feed).not.toContain('Jane Other');
+    });
+
+    it("puts everybody's on the Students calendar", async () => {
+      const { service } = both();
+      const feed = (await service.feedForToken('token', NOW, 'students')).replace(/\r\n /g, '');
+      expect(feed).toContain('Jane Mine');
+      expect(feed).toContain('Jane Other');
+      expect(feed).toContain('X-WR-CALNAME:Students - Domi Staff');
+      expect(count(feed)).toBe(2);
+    });
+  });
+
   describe('pay days', () => {
     it('puts the Friday after each pay period on the phone, all day', async () => {
       // Periods start on Sundays from 18 October 2026: paid 6 November, 20 November…
