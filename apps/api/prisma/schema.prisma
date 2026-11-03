@@ -408,6 +408,11 @@ model Employee {
   /// access level; an admin has both anyway.
   canPostNews               Boolean                  @default(false)
   canSeeEveryonesSchedule   Boolean                  @default(false)
+  /// Puts a provider's saved signature on a PDF in Fill and sign a PDF
+  /// (November 2026, Dominguez: like the ink stamp of a doctor's signature at
+  /// the front desk). Set by an admin on the Staff editor, whatever the access
+  /// level; every stamp is logged (`SignatureUse`).
+  canStampSignatures        Boolean                  @default(false)
   productivityPlan          ProductivityPlan?        @relation("ProductivityPlanSubject")
   productivityStatements    ProductivityStatement[]  @relation("ProductivityStatementSubject")
   createdProductivity       ProductivityStatement[]  @relation("ProductivityStatementCreatedBy")
@@ -479,6 +484,11 @@ model Employee {
   /// Face ID, Touch ID, a fingerprint or Windows Hello for signing in
   /// (November 2026). See `Passkey`.
   passkeys           Passkey[]
+  /// A provider's saved signature, and every time one was stamped on a PDF
+  /// (November 2026). See `SavedSignature`.
+  savedSignature     SavedSignature?  @relation("SavedSignatureOwner")
+  signatureUsesOf    SignatureUse[]   @relation("SignatureUseOwner")
+  signatureUsesBy    SignatureUse[]   @relation("SignatureUseBy")
 
   /// Phones and computers that get the bell's notifications as push
   /// notifications (October 2026).
@@ -4638,4 +4648,45 @@ model PasskeyChallenge {
 
   @@index([expiresAt])
   @@map("passkey_challenges")
+}
+
+// ---------------------------------------------------------------------------
+// Saved signatures for Fill and sign a PDF (November 2026)
+// ---------------------------------------------------------------------------
+
+/// A provider's signature, drawn on the screen once and saved, so it can be
+/// stamped on a PDF like an ink stamp (November 2026, Dominguez: "the
+/// documents will likely require a inked stamp - it should be a saved
+/// signature, which primarily is for providers to have and for staff (who we
+/// select) should be able to use").
+///
+/// The second deliberate thing kept as a picture after the profile photo:
+/// the ink alone, a small PNG drawn in the browser (`signatures/signature.ts`
+/// checks it), and nothing else about it. The PDFs it goes on never reach the
+/// server: they are opened, filled in and downloaded in the browser. Only a
+/// provider (a job role with *uses clinical forms*) saves one, their own; it
+/// is read only for stamping, behind the PIN, and each stamp is logged.
+model SavedSignature {
+  employeeId String   @id @db.Uuid
+  employee   Employee @relation("SavedSignatureOwner", fields: [employeeId], references: [id], onDelete: Cascade)
+  bytes      Bytes
+  updatedAt  DateTime @updatedAt
+
+  @@map("saved_signatures")
+}
+
+/// Somebody put a provider's saved signature on a PDF: whose, who and when.
+/// Never the document, its name or anything on it, which stay in the
+/// browser. Read by the provider (their own) and by admins.
+model SignatureUse {
+  id       String    @id @default(uuid()) @db.Uuid
+  ownerId  String    @db.Uuid
+  owner    Employee  @relation("SignatureUseOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  usedById String?   @db.Uuid
+  usedBy   Employee? @relation("SignatureUseBy", fields: [usedById], references: [id], onDelete: SetNull)
+  usedAt   DateTime  @default(now())
+
+  @@index([ownerId, usedAt])
+  @@index([usedAt])
+  @@map("signature_uses")
 }

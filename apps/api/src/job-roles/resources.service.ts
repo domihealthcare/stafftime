@@ -19,7 +19,7 @@ import {
 } from '../google/google-drive.client';
 import { PrismaService } from '../prisma/prisma.service';
 import { forPersonWhere } from '../requirements/audience';
-import { CreateResourceDto, UpdateResourceDto } from './dto/resource.dto';
+import { CreateResourceDto, ImportLinksDto, UpdateResourceDto } from './dto/resource.dto';
 import { JobRolesService } from './job-roles.service';
 
 const RESOURCE_SELECT = {
@@ -239,6 +239,80 @@ export class ResourcesService {
     });
     this.logger.log(`Resource ${row.id} (${row.kind}) added by ${actor.id}`);
     return row;
+  }
+
+  /**
+   * Many links at once, from a pasted list or a browser's bookmarks file
+   * (November 2026, Dominguez: "i have a bunch of links from bookmarked sites
+   * that staff use"). The browser reads the file; only the titles and web
+   * addresses come here. All or nothing: a link that is not a web address
+   * refuses the lot, saying which. One already in its section, or twice in
+   * the list, is skipped and named.
+   */
+  async importLinks(dto: ImportLinksDto, actor: AuthUser) {
+    const roleIds = [
+      ...new Set(dto.links.map((link) => link.jobRoleId ?? null).filter((id) => id !== null)),
+    ];
+    const found = await this.prisma.jobRole.count({ where: { id: { in: roleIds } } });
+    if (found !== roleIds.length) {
+      throw new BadRequestException('A job role chosen is no longer there.');
+    }
+
+    const links = dto.links.map((link, index) => {
+      const title = link.title.trim();
+      if (title.length < 2) {
+        throw new BadRequestException(`Link ${index + 1} needs a name of at least 2 letters.`);
+      }
+      let url: string;
+      try {
+        url = safeLink(link.url);
+      } catch (error) {
+        if (!(error instanceof BadRequestException)) throw error;
+        throw new BadRequestException(`Link ${index + 1} (${title}): ${error.message}`);
+      }
+      return { title, url, jobRoleId: link.jobRoleId ?? null };
+    });
+
+    const existing = await this.prisma.resource.findMany({
+      where: { kind: ResourceKind.LINK, url: { in: links.map((link) => link.url) } },
+      select: { url: true, jobRoleId: true },
+    });
+    const seen = new Set(existing.map((row) => `${row.jobRoleId ?? ''} ${row.url}`));
+    const added: typeof links = [];
+    const skipped: { title: string; url: string; reason: string }[] = [];
+    for (const link of links) {
+      const key = `${link.jobRoleId ?? ''} ${link.url}`;
+      if (seen.has(key)) {
+        skipped.push({ title: link.title, url: link.url, reason: 'Already in that section.' });
+        continue;
+      }
+      seen.add(key);
+      added.push(link);
+    }
+
+    const sections = [...new Set(added.map((link) => link.jobRoleId))];
+    const lasts = await Promise.all(
+      sections.map((jobRoleId) =>
+        this.prisma.resource.aggregate({ where: { jobRoleId }, _max: { sortOrder: true } }),
+      ),
+    );
+    const next = new Map(sections.map((id, at) => [id, (lasts[at]._max.sortOrder ?? 0) + 10]));
+    await this.prisma.resource.createMany({
+      data: added.map((link) => {
+        const sortOrder = next.get(link.jobRoleId)!;
+        next.set(link.jobRoleId, sortOrder + 10);
+        return {
+          jobRoleId: link.jobRoleId,
+          kind: ResourceKind.LINK,
+          title: link.title,
+          url: link.url,
+          sortOrder,
+          createdById: actor.id,
+        };
+      }),
+    });
+    this.logger.log(`${added.length} links imported by ${actor.id} (${skipped.length} skipped)`);
+    return { added: added.length, skipped };
   }
 
   async update(id: string, dto: UpdateResourceDto, actor: AuthUser) {

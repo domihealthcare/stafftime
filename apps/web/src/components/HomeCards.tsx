@@ -228,6 +228,13 @@ export function QuickActions() {
             {t('Forms')}
           </Link>
         )}
+        {/* Fill and sign a PDF (November 2026): for providers and the staff
+            chosen to stamp a provider's signature. */}
+        {(employee?.usesClinicalForms || employee?.canStampSignatures) && (
+          <Link to="/pdf-sign" className={button}>
+            {t('Fill and sign a PDF')}
+          </Link>
+        )}
         {/* What to do when eCW, the phones or the internet go down (October
             2026), for everybody: with the guides, before time off and Help. */}
         <Link to="/downtime" className={button}>

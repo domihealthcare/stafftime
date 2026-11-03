@@ -190,6 +190,9 @@ const WellnessVisitPage = lazy(() =>
     default: m.WellnessVisitPage,
   })),
 );
+const PdfSignPage = lazy(() =>
+  import('./pages/PdfSignPage').then((m) => ({ default: m.PdfSignPage })),
+);
 const TimesheetPage = lazy(() =>
   import('./pages/TimesheetPage').then((m) => ({ default: m.TimesheetPage })),
 );
@@ -383,6 +386,7 @@ function Routed() {
           <Route path="clinical/99483" element={<CognitiveAssessmentPage />} />
           <Route path="clinical/care-plan" element={<CarePlanPage />} />
           <Route path="clinical/wellness" element={<WellnessVisitPage />} />
+          <Route path="pdf-sign" element={<PdfSignPage />} />
           <Route path="*" element={<ClockPage />} />
         </Route>
       </Routes>

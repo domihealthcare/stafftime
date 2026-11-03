@@ -86,6 +86,8 @@ reset_state() {
     -c "delete from time_entries where \"handEntryNote\" in ('running-late-suite', 'corrections-suite');" \
     -c "delete from employees where email like '%.clean@example.com';" \
     -c "delete from staff_notes;" \
+    -c "delete from signature_uses; delete from saved_signatures;" \
+    -c "update employees set \"canStampSignatures\" = false;" \
     -c "delete from passkeys; delete from passkey_challenges;" \
     -c "update employees set \"wantsWeeklySummary\" = true;" \
     -c "update employees set \"clocksIn\" = true, \"isSharedAccount\" = false;" \

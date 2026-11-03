@@ -71,6 +71,7 @@ export function StaffEditor({
     isSharedAccount: person.isSharedAccount ?? false,
     canPostNews: person.canPostNews ?? false,
     canSeeEveryonesSchedule: person.canSeeEveryonesSchedule ?? false,
+    canStampSignatures: person.canStampSignatures ?? false,
     jobRoleIds: heldRoles.map((jobRole) => jobRole.id),
     mainJobRoleId: heldRoles[0]?.id ?? '',
     locationIds: person.locations.map((l) => l.locationId),
@@ -164,6 +165,7 @@ export function StaffEditor({
         isSharedAccount: form.isSharedAccount,
         canPostNews: form.canPostNews,
         canSeeEveryonesSchedule: form.canSeeEveryonesSchedule,
+        canStampSignatures: form.canStampSignatures,
         locationIds: form.locationIds,
         primaryLocationId: form.locationIds[0],
         adpFileNumber: form.adpFileNumber.trim() || null,
@@ -448,6 +450,27 @@ export function StaffEditor({
                       A read-only rota under Schedule: everybody&rsquo;s published shifts by week
                       and month, with time off shown as &ldquo;Off&rdquo; and no drafts or open
                       shifts. They cannot change anything. Managers and admins see the rota anyway.
+                    </span>
+                  </span>
+                </label>
+              )}
+
+              {!form.isSharedAccount && (
+                <label className="mt-4 flex items-start gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={form.canStampSignatures}
+                    onChange={(event) => set('canStampSignatures', event.target.checked)}
+                    className="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+                  />
+                  <span>
+                    <span className="font-medium text-slate-700">
+                      Can stamp a provider&rsquo;s signature
+                    </span>
+                    <span className="block text-xs text-slate-500">
+                      In Fill and sign a PDF, they can put any provider&rsquo;s saved signature on a
+                      document, like the ink stamp at the front desk. Each stamp is logged, and the
+                      provider sees who used theirs. Providers can always stamp their own.
                     </span>
                   </span>
                 </label>

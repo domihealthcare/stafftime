@@ -35,3 +35,17 @@ export function canUseWellnessForm(employee: Employee): boolean {
 export function wellnessStartPage(employee: Employee): 1 | 2 {
   return employee.usesClinicalForms === true ? 1 : 2;
 }
+
+/// Fill and sign a PDF (November 2026): providers (a job role with *uses
+/// clinical forms*), the staff an admin chose to stamp a provider's
+/// signature, and managers and admins. Opening and typing on a PDF is the
+/// same for all of them; only stamping a signature differs, and the server
+/// decides that.
+export function canUsePdfSigner(employee: Employee): boolean {
+  return (
+    employee.usesClinicalForms === true ||
+    employee.canStampSignatures === true ||
+    employee.role === 'MANAGER' ||
+    employee.role === 'ADMIN'
+  );
+}

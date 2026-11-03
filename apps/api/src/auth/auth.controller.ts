@@ -29,6 +29,7 @@ const NOT_ON_ANY_LIST = {
   canApproveExpenses: false,
   canPostNews: false,
   canSeeEveryonesSchedule: false,
+  canStampSignatures: false,
 } as const;
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Public } from '../common/auth/public.decorator';
@@ -298,6 +299,7 @@ export class AuthController {
         canApproveExpenses: true,
         canPostNews: true,
         canSeeEveryonesSchedule: true,
+        canStampSignatures: true,
         lastLoginAt: true,
         locations: {
           select: {

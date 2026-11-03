@@ -21,7 +21,7 @@ import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
 import { attachmentHeader, inlineHeader } from '../storage/download-headers';
-import { CreateResourceDto, UpdateResourceDto } from './dto/resource.dto';
+import { CreateResourceDto, ImportLinksDto, UpdateResourceDto } from './dto/resource.dto';
 import { ResourcesService } from './resources.service';
 
 /// Staff read what is for them; managers keep all of it.
@@ -99,6 +99,14 @@ export class ResourcesController {
   @Roles(Role.MANAGER)
   create(@Body() dto: CreateResourceDto, @CurrentUser() user: AuthUser) {
     return this.resources.create(dto, user);
+  }
+
+  /// Many links at once, from a pasted list or a bookmarks file read in the
+  /// browser: only titles and web addresses arrive.
+  @Post('import')
+  @Roles(Role.MANAGER)
+  importLinks(@Body() dto: ImportLinksDto, @CurrentUser() user: AuthUser) {
+    return this.resources.importLinks(dto, user);
   }
 
   @Patch(':id')

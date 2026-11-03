@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 import { useConfirm } from '../components/ConfirmDialog';
 import { Modal } from '../components/Modal';
 import { DriveFolderFiles, isDriveFolder } from '../components/DriveFolderFiles';
+import { ImportLinks } from '../components/ImportLinks';
 import {
   Alert,
   Badge,
@@ -40,6 +41,8 @@ export function ResourcesPage() {
   const [driveShareWith, setDriveShareWith] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -78,6 +81,40 @@ export function ResourcesPage() {
               : t('Links and how-to pages for you, and for the roles you work in.')
           }
         />
+
+        {isManager && (
+          <div className="mb-4">
+            <button
+              type="button"
+              className={buttonClass('secondary', 'sm')}
+              onClick={() => {
+                setNotice(null);
+                setImporting(true);
+              }}
+            >
+              Add several links
+            </button>
+            <span className="ml-2 text-xs text-slate-500">
+              From your browser&rsquo;s bookmarks, or a pasted list.
+            </span>
+          </div>
+        )}
+        {importing && (
+          <ImportLinks
+            sections={sections}
+            onClose={() => setImporting(false)}
+            onAdded={(message) => {
+              setImporting(false);
+              setNotice(message);
+              void load();
+            }}
+          />
+        )}
+        {notice && (
+          <div className="mb-4">
+            <Alert tone="success">{notice}</Alert>
+          </div>
+        )}
 
         {error && (
           <div className="mb-4">
@@ -592,7 +629,7 @@ function ToolsCard({
   const [editing, setEditing] = useState<PlacedTool | null>(null);
   const whoFor = (tool: PlacedTool) =>
     !tool.setting
-      ? 'Managers and admins'
+      ? (tool.forWho ?? 'Managers and admins')
       : tool.setting.everyone
         ? 'Everyone'
         : jobRoles

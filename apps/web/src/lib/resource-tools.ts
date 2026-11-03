@@ -1,4 +1,4 @@
-import { canUseTool } from './clinical-access';
+import { canUsePdfSigner, canUseTool } from './clinical-access';
 import type { Employee, ResourceSection, ToolSetting } from './types';
 
 /**
@@ -23,6 +23,9 @@ export interface ResourceTool {
   /// A different link and title in a section: the wellness form opens on the
   /// page that section's people do.
   variantFor?: (role: ResourceSection['jobRole']) => { to: string; title: string } | undefined;
+  /// Who it is for, for one not chosen by job role ("Managers and admins"
+  /// otherwise).
+  forWho?: string;
 }
 
 export const RESOURCE_TOOLS: ResourceTool[] = [
@@ -121,6 +124,19 @@ const REIMBURSEMENTS: ResourceTool = {
   description: 'What each insurance pays for each code, searchable. Managers and admins only.',
 };
 
+/// Fill and sign a PDF (November 2026) is not for choosing by job role
+/// either: it is the providers', and the staff an admin picks to stamp a
+/// provider's signature (`canUsePdfSigner`). Listed with the providers' forms,
+/// or under Everyone for somebody who does not see that section.
+const PDF_SIGN: ResourceTool = {
+  key: 'pdf-sign',
+  to: '/pdf-sign',
+  title: 'Fill and sign a PDF',
+  description:
+    'Open a PDF from your computer, type on it, tick boxes and stamp a provider’s signature, then download it. The PDF never leaves your computer.',
+  forWho: 'Providers, staff chosen to stamp, managers and admins',
+};
+
 const isManager = (employee: Employee) => employee.role === 'MANAGER' || employee.role === 'ADMIN';
 
 /// Each section's tools, keyed by the section's job role id ('everyone' for
@@ -164,6 +180,11 @@ export function toolsBySection(
     );
     if (homes.length) homes.forEach((section) => put(tool, setting, section));
     else put(tool, setting, null);
+  }
+  if (canUsePdfSigner(employee)) {
+    const providers = sections.filter((section) => section.jobRole?.usesClinicalForms);
+    if (providers.length) providers.forEach((section) => put(PDF_SIGN, undefined, section));
+    else put(PDF_SIGN, undefined, null);
   }
   if (isManager(employee)) {
     const managers = sections.find((section) => /^manager/i.test(section.jobRole?.name ?? ''));

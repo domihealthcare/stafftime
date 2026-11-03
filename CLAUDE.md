@@ -63,6 +63,9 @@ app does not hold*, its own database) are unchanged by this.
   sent for approval with its costs, and their yearly allowance. No receipts
 - **ExpenseRequest** (November 2026) - somebody's own money spent for the
   practice, asked back; the receipt goes by email, never into the app
+- **SavedSignature** (November 2026) - a provider's drawn signature, a small
+  PNG, stamped on PDFs by them or by staff an admin chose; each stamp logged
+  (`SignatureUse`). The PDFs never reach the server
 - **PayrollExport** — export batch record: date range, target system, status,
   generated file reference (for audit trail / re-export)
 
@@ -156,6 +159,15 @@ saved as an invoice **pay-to** (October 2026, Dominguez), which is why
 invoices are for **three named people only** (Jonathan Dominguez, Angelica
 Dominguez, Kayla Bermeo, 26 October 2026), not every admin or manager.
 
+**Fill and sign a PDF** (November 2026, Dominguez: "upload pdf's and write
+text and put signature stamps and then download it (it would have PHI)")
+opens a PDF from the computer **in the browser only**, like the clinical
+forms: typed on, ticked, dated, stamped and downloaded there, never sent or
+kept. What is kept is a **provider's saved signature** (a small PNG of the
+ink, drawn on the screen, behind the PIN), stamped by the provider or by staff
+an admin picks (`Employee.canStampSignatures`), with **each stamp logged**
+(whose, who, when; never the document). Pinned by the schema guard.
+
 **Expense reimbursements** (November 2026, Dominguez) keep **no receipt**:
 it is emailed to the approvers, and the request records only that it was
 sent and that it arrived.
@@ -182,7 +194,8 @@ how long, and is the new hire set up yet".
 Two guards keep it that way, because the easy way to undo it is one harmless-
 looking column: `apps/api/src/common/no-sensitive-data.spec.ts` reads the schema
 and fails if such a field reappears, and the browser suites assert there is no
-file input anywhere.
+file input on the screens that must not take one (the profile photo, the PDF
+tool and the bookmarks import read their file in the browser).
 
 ## Clock-in methods (all three, from day one)
 1. **Web / mobile browser** — browser geolocation API checks the employee is within
@@ -2282,6 +2295,39 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Timesheet with Edit, and the newer Practice settings cards (time off rules,
   who sees the rota's cost, phone notifications, calendar invites). Help
   text only. When a feature ships, add its Help topic in the same release.
+- **Fill and sign a PDF, and saved signatures** (3 November 2026, Dominguez,
+  version 1.43.0; chosen: **staff stamp a provider's**, like the ink stamp at
+  the front desk): `/pdf-sign`, on Resources with the providers' forms and in
+  Home's Shortcuts, for providers, the staff an admin ticks (**Can stamp a
+  provider's signature** on the Staff editor, `Employee.canStampSignatures`),
+  managers and admins. **Choose a PDF** opens it in the browser (pdf.js,
+  `pdfjs-dist` 6.4.299 pinned); **Add text**, **✓ Tick**, **Today's date**
+  and **Stamp a signature…**, each clicked onto the page, dragged or moved
+  with the arrow keys; **Download PDF** writes them in with pdf-lib as
+  "<name> (signed).pdf". **The PDF never leaves the browser**: it sits in
+  `src/clinical/pdf-sign/` under the clinical lint rules, and the suite
+  watches every request for the fake patient and the PDF. Sideways pages
+  work; locked PDFs are turned away. **Providers save a signature** there
+  (drawn with a finger, pen or mouse, behind the PIN; Sign again, Remove it).
+  **Stamping** hands out the picture behind the PIN and logs it
+  (`SignatureUse`); the provider sees who stamped theirs, an admin sees every
+  stamp. Not a shared account; off while viewing as somebody; nobody stamps
+  a person no longer a provider. `src/signatures/`, migration
+  `20261103030000_saved_signatures`; see *Fill and sign a PDF* in
+  `docs/architecture.md`; Help under *Filling in and signing a PDF* and the
+  managers' *Who can stamp a provider's signature?*;
+  `tests/browser/pdf-sign.mjs`. **Nobody is chosen to stamp on the live site
+  yet**: an admin ticks them under Staff → Edit, and each provider saves a
+  signature. Worth carrying to the EMR module.
+- **Adding many links to Resources** (3 November 2026, Dominguez: "i have a
+  bunch of links from bookmarked sites that staff use, where can i put
+  these?", version 1.43.0): **Add several links** on Resources (managers and
+  admins) reads a browser's exported bookmarks file or a pasted list in the
+  browser (`lib/bookmarks.ts`), lists each link with its folder to untick,
+  rename and put in a section, and adds them in one go (`POST
+  /resources/import`, up to 300; one already in its section is left out and
+  named). Only names and addresses are sent. `components/ImportLinks.tsx`;
+  `tests/browser/import-links.mjs`.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.
@@ -3027,7 +3073,7 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Counts only — never a patient (the schema guard pins the fields; the note is
   the one free-text box and says so). **Not in the payroll export** (decided). See *Provider
   productivity* in `docs/architecture.md`.
-- **Tests**: ~2,060 API unit tests (Jest), ~190 web unit tests (Vitest), and ~1,310 end-to-end checks (129 suites) in `tests/browser`
+- **Tests**: ~2,060 API unit tests (Jest), ~190 web unit tests (Vitest), and ~1,310 end-to-end checks (131 suites) in `tests/browser`
   driven against a real API, a real Postgres and a real Chromium. Both run in CI
   on every push. The convention is to run the browser suites twice — once
   against the dev server, once against `vite preview`, which applies the

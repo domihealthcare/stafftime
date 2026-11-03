@@ -85,6 +85,11 @@ export class CreateEmployeeDto {
   @IsBoolean()
   canSeeEveryonesSchedule?: boolean;
 
+  /// Stamps a provider's saved signature on a PDF (November 2026, Dominguez).
+  @IsOptional()
+  @IsBoolean()
+  canStampSignatures?: boolean;
+
   /// Optional: without it, time off is not prorated for a first part-year.
   @IsOptional()
   @ValidateIf((_, value) => value !== null)

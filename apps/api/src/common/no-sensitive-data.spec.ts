@@ -617,6 +617,24 @@ describe('what this app deliberately does not store', () => {
     expect(fields.sort()).toEqual(['bytes', 'contentType', 'employee', 'employeeId', 'updatedAt']);
   });
 
+  /// Fill and sign a PDF (November 2026, Dominguez): a provider's saved
+  /// signature is kept as the ink alone, and each stamp as whose, who and
+  /// when. The PDFs, which carry patients' details, never reach the server,
+  /// so neither table may grow a file name, a page or a patient.
+  it('keeps a saved signature to the ink, and a stamp to whose, who and when', () => {
+    const fieldsOf = (name: string) =>
+      model(name)
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('//') && !line.startsWith('@@'))
+        .map((line) => line.split(/\s+/)[0])
+        .sort();
+    expect(fieldsOf('SavedSignature')).toEqual(['bytes', 'employee', 'employeeId', 'updatedAt']);
+    expect(fieldsOf('SignatureUse')).toEqual(
+      ['id', 'owner', 'ownerId', 'usedAt', 'usedBy', 'usedById'].sort(),
+    );
+  });
+
   /// Closing checklists are filled in at the front desk at the end of a day
   /// with patients. What somebody records is ticks and numbers - the wording
   /// is copied from the template, never typed - so a "notes" column here is
