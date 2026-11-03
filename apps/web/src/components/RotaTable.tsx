@@ -208,6 +208,7 @@ export function RotaTable({
         { label: 'Add a rep lunch', run: () => onAddEvent('REP_LUNCH', day) },
         { label: 'Add a diagnostics date', run: () => onAddEvent('DIAGNOSTIC', day) },
         { label: 'Add a phlebotomist date', run: () => onAddEvent('PHLEBOTOMY', day) },
+        { label: 'Add a student rotation', run: () => onAddEvent('ROTATION', day) },
         { label: 'Add a holiday or closure', run: () => onAddEvent('CLOSURE', day) },
       );
     }

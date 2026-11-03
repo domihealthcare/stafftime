@@ -267,6 +267,8 @@ export const SCHEDULE: Record<string, string> = {
   'All reviews →': 'Todas las revisiones →',
   'Their patient schedules, in eCW.': 'Sus agendas de pacientes, en eCW.',
   'Today’s schedule reviewed by {name}': 'La agenda de hoy la revisa {name}',
+  'With a student today:': 'Con un estudiante hoy:',
+  'With students today:': 'Con estudiantes hoy:',
   'Nobody is reviewing today’s schedule': 'Nadie está revisando la agenda de hoy',
 
   // When a look-up fails (maintenance pass, October 2026)

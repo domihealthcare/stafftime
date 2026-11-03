@@ -27,6 +27,7 @@ import {
 import { HomeRequired } from '../components/RequiredItems';
 import { OnCallNow } from '../components/OnCallNow';
 import { MyScheduleReviews } from '../components/MyScheduleReviews';
+import { MyStudents } from '../components/MyStudents';
 import { HomeDowntimeCheck } from '../components/DowntimeCheck';
 import { MyOfficeAdminDays } from '../components/MyOfficeAdminDays';
 import { SuggestionBoxCard } from '../components/SuggestionBox';
@@ -560,6 +561,7 @@ export function ClockPage() {
         <QuickActions />
         <MyOfficeAdminDays />
         <MyScheduleReviews />
+        <MyStudents />
         <OnCallNow />
         <BirthdaysThisWeek />
         <ComingUp />

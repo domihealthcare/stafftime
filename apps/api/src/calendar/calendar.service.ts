@@ -19,6 +19,7 @@ import { PracticeSettingsService } from '../settings/practice-settings.service';
 import { FEEDS, type FeedPart } from './feeds';
 import { buildCalendar, type CalendarEvent } from './ical';
 import { providerLabels } from './provider-labels';
+import { providerName, STUDENT_KIND_LABEL } from '../students/students';
 
 /// How much history and future to publish. Enough to be useful, bounded so the
 /// feed stays small and fast for a calendar app polling it hourly.
@@ -271,7 +272,16 @@ export class CalendarService {
     ]);
     // Invites carry meetings only; closures, holidays and diagnostics stay here.
     const practiceEvents = allEvents.filter(
-      (event) => wants(event.kind) && !(invited && event.kind === PracticeEventKind.EVENT),
+      (event) =>
+        wants(event.kind) &&
+        !(invited && event.kind === PracticeEventKind.EVENT) &&
+        // The all-in-one carries a provider's own students only; the
+        // Students calendar carries everybody's.
+        !(
+          feed === 'domi' &&
+          event.kind === PracticeEventKind.ROTATION &&
+          event.provider?.id !== employee.id
+        ),
     );
 
     const displayName = employee.preferredName ?? employee.firstName;
@@ -406,6 +416,12 @@ function summaryOf(event: EventRow): string {
   if (event.kind === PracticeEventKind.PHLEBOTOMY) {
     const who = event.title === 'Phlebotomist' ? 'Phlebotomist' : `Phlebotomist: ${event.title}`;
     return event.atLocation ? `${who} - ${event.atLocation.name}` : who;
+  }
+  if (event.kind === PracticeEventKind.ROTATION) {
+    // "Student: Jane Smith with Dr. Jose Badia - North Bergen"
+    const with_ = event.provider ? ` with ${providerName(event.provider)}` : '';
+    const at = event.atLocation ? ` - ${event.atLocation.name}` : '';
+    return `${event.student ? STUDENT_KIND_LABEL[event.student.kind] : 'Student'}: ${event.title}${with_}${at}`;
   }
   if (event.kind === PracticeEventKind.DIAGNOSTIC) {
     return event.atLocation ? `${event.title} - ${event.atLocation.name}` : event.title;

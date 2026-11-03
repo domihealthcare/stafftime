@@ -73,6 +73,16 @@ export const KIND_STYLE: Record<CalendarKind, KindStyle> = {
     subtle: 'text-orange-800',
     dot: 'bg-orange-600',
   },
+  ROTATION: {
+    label: 'Students',
+    one: 'Student rotation',
+    emoji: '🎓',
+    // Teal: apart from diagnostics' sky and pay days' emerald, and the 🎓
+    // tells it apart anyway.
+    chip: 'bg-teal-50 text-teal-950 ring-teal-300 hover:bg-teal-100',
+    subtle: 'text-teal-800',
+    dot: 'bg-teal-600',
+  },
   REP_LUNCH: {
     label: 'Rep lunches',
     one: 'Rep lunch',
@@ -116,6 +126,7 @@ export const CALENDAR_KINDS: CalendarKind[] = [
   'PAY_DAY',
   'DIAGNOSTIC',
   'PHLEBOTOMY',
+  'ROTATION',
   'REP_LUNCH',
   'EVENT',
 ];

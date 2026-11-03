@@ -32,12 +32,18 @@ export const FEEDS: Record<string, Feed> = {
       PracticeEventKind.DIAGNOSTIC,
       PracticeEventKind.REP_LUNCH,
       PracticeEventKind.PHLEBOTOMY,
+      // Only the rotations with the person themselves, as their provider
+      // (`calendar.service.ts`): everybody's would fill every phone.
+      PracticeEventKind.ROTATION,
     ],
   },
   shifts: { name: 'My shifts & time off', parts: ['SHIFTS', 'TIME_OFF'] },
   diagnostics: { name: 'Diagnostics', parts: [PracticeEventKind.DIAGNOSTIC] },
   'rep-lunches': { name: 'Rep lunches', parts: [PracticeEventKind.REP_LUNCH] },
   phlebotomist: { name: 'Phlebotomist', parts: [PracticeEventKind.PHLEBOTOMY] },
+  /// Every student and resident on rotation (November 2026), whoever they
+  /// are with.
+  students: { name: 'Students', parts: [PracticeEventKind.ROTATION] },
   holidays: {
     name: 'Holidays & closures',
     parts: [PracticeEventKind.HOLIDAY, PracticeEventKind.CLOSURE],

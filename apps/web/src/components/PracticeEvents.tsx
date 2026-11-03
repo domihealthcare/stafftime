@@ -13,6 +13,7 @@ import { jobRoleHex } from '../lib/job-role-colours';
 import {
   atAnOffice,
   audienceLabel,
+  describeStudent,
   bareTime,
   daysOf,
   eventTimeLabel,
@@ -44,6 +45,7 @@ import { BookingPaste } from './BookingPaste';
 import { EventReplies, REPLY_MARK } from './EventReplies';
 import { FindATime } from './FindATime';
 import { RepeatPicker } from './RepeatPicker';
+import { RotationFields } from './RotationFields';
 import { Alert, Badge, Card, buttonClass } from './ui';
 
 /// A rep as the event form uses one: a rep just added has no lunches yet,
@@ -117,13 +119,19 @@ export function EventChip({
       type="button"
       onClick={() => onOpen(event)}
       data-testid={`${event.kind === 'EVENT' ? 'event' : event.kind.toLowerCase()}-chip`}
-      aria-label={`${event.title}, ${eventTimeLabel(event, day)}, ${audience}${
+      aria-label={`${event.title}${
+        event.kind === 'ROTATION' && event.provider
+          ? `, ${t('with {provider}', { provider: event.provider.name })}`
+          : ''
+      }, ${eventTimeLabel(event, day)}, ${audience}${
         event.myReply ? `, ${t(REPLY_MARK[event.myReply].words)}` : ''
       }`}
       className={`block w-full rounded-md px-1.5 py-1 text-left text-xs leading-tight ring-1 ring-inset ${style.chip}`}
     >
       <span className="block truncate font-semibold">
-        <span aria-hidden="true">{style.emoji}</span> {shortTitle(event)}
+        <span aria-hidden="true">{style.emoji}</span>{' '}
+        {/* A student's provider goes on the second line, so neither is cut. */}
+        {event.kind === 'ROTATION' ? event.title : shortTitle(event)}
         {event.series && (
           <span aria-hidden="true" title={t('Repeats')} className="ml-1 font-normal">
             🔁
@@ -151,6 +159,7 @@ export function EventChip({
           ? event.atLocation && ` · ${officeShort(event.atLocation.name)}`
           : event.audience !== 'EVERYONE' && ` · ${audienceLabel(event)}`}
         {event.kind === 'REP_LUNCH' && event.rep?.company && ` · ${event.rep.company}`}
+        {event.kind === 'ROTATION' && event.provider && ` · ${event.provider.name}`}
       </span>
     </button>
   );
@@ -287,6 +296,26 @@ export function EventDialog({
             </div>
           )}
           {event.kind === 'REP_LUNCH' && event.rep && <RepDetails rep={event.rep} />}
+          {event.kind === 'ROTATION' && (
+            <>
+              {event.student && (
+                <div>
+                  <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    {t('Student')}
+                  </dt>
+                  <dd className="text-slate-800">{describeStudent(event.student)}</dd>
+                </div>
+              )}
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  {t('With')}
+                </dt>
+                <dd className="text-slate-800">
+                  {event.provider?.name ?? t('A provider who has since left')}
+                </dd>
+              </div>
+            </>
+          )}
           {!forEveryone(event.kind) && (
             <div>
               <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
@@ -458,6 +487,7 @@ export function EventForm({
   const diagnostic = kind === 'DIAGNOSTIC';
   const repLunch = kind === 'REP_LUNCH';
   const phlebotomy = kind === 'PHLEBOTOMY';
+  const rotation = kind === 'ROTATION';
   const atOffice = atAnOffice(kind);
   const confirm = useConfirm();
   const [title, setTitle] = useState(source?.title ?? '');
@@ -472,6 +502,9 @@ export function EventForm({
       .catch(() => setReps([]));
   }, [repLunch, reps]);
   const chosenRep = reps?.find((rep) => rep.id === repId) ?? null;
+  /// A student rotation: the student and the provider they are with.
+  const [studentId, setStudentId] = useState(source?.student?.id ?? '');
+  const [providerId, setProviderId] = useState(source?.provider?.id ?? '');
   /// A phlebotomist date: the names saved from earlier ones, to pick again.
   const [phlebotomists, setPhlebotomists] = useState<Phlebotomist[] | null>(null);
   useEffect(() => {
@@ -512,7 +545,8 @@ export function EventForm({
   const [startsAt, setStartsAt] = useState(() => {
     if (source && !source.allDay) return inputValue(onDay(source.startsAt));
     const start = new Date(defaultDate);
-    start.setHours(12, 0, 0, 0);
+    // A student is usually in for the day, not for a lunch hour.
+    start.setHours(initialKind === 'ROTATION' ? 9 : 12, 0, 0, 0);
     return inputValue(start);
   });
   const [endsAt, setEndsAt] = useState(() => {
@@ -521,7 +555,7 @@ export function EventForm({
       return inputValue(new Date(onDay(source.startsAt).getTime() + length));
     }
     const end = new Date(defaultDate);
-    end.setHours(13, 0, 0, 0);
+    end.setHours(initialKind === 'ROTATION' ? 17 : 13, 0, 0, 0);
     return inputValue(end);
   });
   const [startDate, setStartDate] = useState(
@@ -608,6 +642,12 @@ export function EventForm({
     if (next === 'CLOSURE' && audience !== 'LOCATION') setAudience('EVERYONE');
     if (next === 'HOLIDAY') setAllDay(true);
     else if (!event) setAllDay(next === 'CLOSURE');
+    // A student is usually in for the day, not for a lunch hour.
+    if (next === 'ROTATION' && !source) {
+      const day = startsAt.slice(0, 10);
+      setStartsAt(`${day}T09:00`);
+      setEndsAt(`${day}T17:00`);
+    }
   }
 
   /// The form filled from a pasted message - everything still to be checked.
@@ -687,6 +727,14 @@ export function EventForm({
       setError('Choose the rep.');
       return;
     }
+    if (rotation && !studentId) {
+      setError('Choose the student, or add a new one.');
+      return;
+    }
+    if (rotation && !providerId) {
+      setError('Choose the provider they are with.');
+      return;
+    }
     if (atOffice && !atLocationId) {
       setError('Choose which office it is at.');
       return;
@@ -729,8 +777,12 @@ export function EventForm({
       kind,
       // The phlebotomist's name is optional; with none the server writes
       // "Phlebotomist".
-      title: repLunch ? undefined : phlebotomy && !title.trim() ? undefined : title.trim(),
+      // A student rotation is named after its student.
+      title:
+        repLunch || rotation ? undefined : phlebotomy && !title.trim() ? undefined : title.trim(),
       repId: repLunch ? repId : undefined,
+      studentId: rotation ? studentId : undefined,
+      providerId: rotation ? providerId : undefined,
       description: description.trim() || undefined,
       place: meeting ? place.trim() || undefined : undefined,
       meetingUrl: !meeting || createMeet ? undefined : meetingUrl.trim() || undefined,
@@ -811,6 +863,7 @@ export function EventForm({
               ['DIAGNOSTIC', '🩺 Diagnostics'],
               ['REP_LUNCH', '🍽️ Rep lunch'],
               ['PHLEBOTOMY', '💉 Phlebotomist'],
+              ['ROTATION', '🎓 Student rotation'],
               ['HOLIDAY', '⭐ A holiday (open as usual)'],
               ['CLOSURE', '🔒 The office is closed'],
             ] as const
@@ -883,7 +936,14 @@ export function EventForm({
           </fieldset>
         )}
 
-        {repLunch ? (
+        {rotation ? (
+          <RotationFields
+            studentId={studentId}
+            onStudent={setStudentId}
+            providerId={providerId}
+            onProvider={setProviderId}
+          />
+        ) : repLunch ? (
           <div className="sm:col-span-2">
             {/* Typed into to find a rep, and a new rep is added right here
                 (October 2026, Dominguez: "should be able to search in the
@@ -1347,9 +1407,11 @@ export function EventForm({
                   ? 'How many to feed, where to set up…'
                   : phlebotomy
                     ? 'Which lab, book bloodwork every 20 minutes…'
-                    : closed || holiday
-                      ? 'Anything staff should know…'
-                      : 'What to bring, what it is about…'
+                    : rotation
+                      ? 'Which room, what they will see, who to ask for…'
+                      : closed || holiday
+                        ? 'Anything staff should know…'
+                        : 'What to bring, what it is about…'
             }
             className={field}
           />
@@ -1364,9 +1426,11 @@ export function EventForm({
                 ? 'Everyone sees it on the calendar and gets a notification when a date is added, moved or cancelled. Write when the tests are on - never a patient’s name or who is booked.'
                 : phlebotomy
                   ? 'Everyone sees it on the calendar, and gets a notification when a date is added, moved or cancelled. Set it to repeat for a regular day. Never a patient’s name or who is booked.'
-                  : repLunch
-                    ? 'Everyone sees it on the calendar - the rep, company, medication and whether they bring catering. Staff at that office are told when it is added, moved or cancelled, and every evening hear whether there is a rep lunch the next day. The front desk sees the rep’s cell; the status and notes stay with managers.'
-                    : 'Everybody it is for sees it on their schedule and gets a notification; it reaches their phone if they sync their calendar. It does not count as work hours - anybody paid to be there clocks in as usual.'}
+                  : rotation
+                    ? 'Everyone sees it on the calendar, and the provider sees it on Home and their Directory card. Only the provider is told, by notification and email, when a date is added, moved or cancelled. Set it to repeat for a regular day. Never a patient’s name.'
+                    : repLunch
+                      ? 'Everyone sees it on the calendar - the rep, company, medication and whether they bring catering. Staff at that office are told when it is added, moved or cancelled, and every evening hear whether there is a rep lunch the next day. The front desk sees the rep’s cell; the status and notes stay with managers.'
+                      : 'Everybody it is for sees it on their schedule and gets a notification; it reaches their phone if they sync their calendar. It does not count as work hours - anybody paid to be there clocks in as usual.'}
         </p>
 
         {error && (

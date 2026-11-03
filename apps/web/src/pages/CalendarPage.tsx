@@ -265,7 +265,7 @@ export function CalendarPage() {
       <PageHeading
         title={t('Calendar')}
         subtitle={t(
-          'Your shifts, where the providers are, diagnostics, rep lunches, holidays, closures, meetings and pay days.',
+          'Your shifts, where the providers are, diagnostics, students, rep lunches, holidays, closures, meetings and pay days.',
         )}
       />
       <ScheduleTabs />
@@ -375,6 +375,7 @@ export function CalendarPage() {
                     [
                       ['DIAGNOSTIC', 'When a test is offered at an office'],
                       ['PHLEBOTOMY', 'When the phlebotomist is at an office'],
+                      ['ROTATION', 'A student or resident with a provider'],
                       ['REP_LUNCH', 'A rep bringing lunch to an office'],
                       ['EVENT', 'A meeting or something on the calendar'],
                       ['HOLIDAY', 'A named day - the offices stay open'],

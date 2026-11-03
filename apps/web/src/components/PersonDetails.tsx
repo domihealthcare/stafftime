@@ -1,7 +1,8 @@
 import { formatBirthday } from '../lib/birthday';
 import { formatTime } from '../lib/format';
 import { getLanguage, locale, t as translate, useT } from '../lib/i18n';
-import type { DirectoryEntry, OfficeExtension, ScheduleReview } from '../lib/types';
+import { bareTime, describeStudent } from '../lib/practice-events';
+import type { DirectoryEntry, OfficeExtension, PracticeEvent, ScheduleReview } from '../lib/types';
 import { HoverNote } from './HoverNote';
 import { Badge } from './ui';
 
@@ -142,6 +143,28 @@ export function ScheduleReviewLine({ review }: { review: ScheduleReview | undefi
       {review.reviewer
         ? t('Today’s schedule reviewed by {name}', { name: review.reviewer.name })
         : t('Nobody is reviewing today’s schedule')}
+    </p>
+  );
+}
+
+/// The students or residents with this provider today (November 2026), on
+/// their Directory and Staff cards: "With a student today: Jane Smith
+/// (Medical student) 9am-5pm". Nothing on a day with none.
+export function StudentsTodayLine({ rotations }: { rotations: PracticeEvent[] | undefined }) {
+  const t = useT();
+  if (!rotations || rotations.length === 0) return null;
+  return (
+    <p className="mt-1 text-sm text-slate-700" data-testid="students-today">
+      <span aria-hidden="true">🎓</span>{' '}
+      {t(rotations.length === 1 ? 'With a student today:' : 'With students today:')}{' '}
+      {rotations
+        .map(
+          (rotation) =>
+            `${rotation.title}${
+              rotation.student ? ` (${describeStudent(rotation.student)})` : ''
+            } ${bareTime(rotation)}`,
+        )
+        .join('; ')}
     </p>
   );
 }

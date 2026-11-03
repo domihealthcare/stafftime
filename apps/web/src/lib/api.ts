@@ -123,6 +123,9 @@ import type {
   Phlebotomist,
   Rep,
   RepInput,
+  Student,
+  StudentInput,
+  StudentListed,
   PracticeSettings,
   Employee,
   EventInput,
@@ -1901,6 +1904,16 @@ export const api = {
   phlebotomists: () => request<Phlebotomist[]>('/phlebotomists'),
   deletePhlebotomist: (id: string) =>
     request<{ removed: boolean }>(`/phlebotomists/${id}`, { method: 'DELETE' }),
+  /// Students and residents on rotation, and the providers they can be with:
+  /// managers and admins (November 2026).
+  students: () => request<StudentListed[]>('/students'),
+  studentProviders: () => request<{ id: string; name: string }[]>('/students/providers'),
+  createStudent: (body: StudentInput) =>
+    request<Student>('/students', { method: 'POST', body: JSON.stringify(body) }),
+  updateStudent: (id: string, body: StudentInput) =>
+    request<Student>(`/students/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deleteStudent: (id: string) =>
+    request<{ removed: boolean }>(`/students/${id}`, { method: 'DELETE' }),
   /// The reps who book lunches: managers and admins only.
   reps: () => request<Rep[]>('/reps'),
   createRep: (body: RepInput) =>

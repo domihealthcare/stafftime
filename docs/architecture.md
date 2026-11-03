@@ -6207,3 +6207,55 @@ sign-in screen stays English, as before; Your profile and Home have Spanish.
 
 Worth carrying to the EMR module, which will want the same for its own
 sign-in.
+
+## Students and residents on rotation (November 2026)
+
+Dominguez, 3 November 2026: "we have students/residents who do rotations at
+our office(s) with specific providers". His choices: **names only** (no
+sign-in), each date with **its own provider, office and hours, repeating**
+where it is regular, **everyone sees it**, and it shows **on the Calendar,
+on the provider's Home and Directory card, and the provider is told**.
+
+**A seventh kind of practice calendar entry**, `PracticeEventKind.ROTATION`,
+rather than a schedule of its own: a date is at an office, has hours and can
+repeat, exactly like the phlebotomist, so it reuses the event form, series
+(one row per date, "this date" or "this and all after"), the calendar's
+month, list, filter, office picker and printout, the rota's right-click day
+menu and the phone feeds. On top of that it carries `studentId` and
+`providerId` (both set to null if the student or provider goes; the title,
+the student's name, stays, as a rep lunch keeps its rep's).
+
+**The students list** (`Student`: name, kind - medical, resident, NP, PA,
+nursing, other - and an optional school) is the managers' and admins'
+(`src/students/`, `GET/POST/PUT/DELETE /students`), picked in the form by
+typing (`components/RotationFields.tsx`) or added right there. **Names
+only**: no account, never on the rota, hours, payroll or Directory, nothing
+to reach them by, no date of birth and no paperwork; the schema guard pins
+the table. Renaming a student renames their dates. `GET /students/providers`
+lists who they can be with: anybody still here in a job role with *uses
+clinical forms* (`PROVIDER`, as for on call), checked again on the server
+when a date is saved.
+
+**Seen by everyone, told to the provider alone.** The audience is forced to
+EVERYONE, so everybody reads it, but `audienceWhere` (who the bell goes to)
+is the provider only, the same trick as a rep lunch. Added, moved, cancelled,
+or a change of provider (the old one hears "No longer with you") go on the
+bell **and by email** (`EventsService.tell`, through
+`NotificationsService.personal`); every other kind stays bell only. No
+day-before reminder.
+
+**Where it shows.** The Calendar (🎓, teal; **Students** under Show; Add →
+Student rotation; the printed month as "🎓 Jane with Dr. Badia 9am-5pm ·
+NB"). The Schedule's events row and month (with a job role picked, only when
+the provider is in it). **Students with you** on the provider's Home
+(`components/MyStudents.tsx`, the next two weeks), and "With a student
+today: ..." on their Directory and Staff cards (`StudentsTodayLine` in
+`PersonDetails.tsx`, `lib/student-rotations.ts`). Both read the ordinary
+`GET /events`, which everybody may. Phones: the all-in-one calendar carries a
+provider's **own** students only (everybody's would fill every phone), and a
+separate **Students** calendar (`students.ics`) carries them all.
+
+`tests/browser/student-rotations.mjs`; migrations
+`20261103010000_student_rotation_kind` and `20261103020000_student_rotations`.
+Worth carrying to the EMR module, where a student could sit beside the
+provider's real appointment schedule.

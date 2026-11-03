@@ -13,13 +13,20 @@ import type {
   JobRole,
   Location,
   OfficeExtension,
+  PracticeEvent,
   Role,
   ScheduleReview,
 } from '../lib/types';
 import { extensionOf } from '../components/OfficeExtensions';
 import { Avatar } from '../components/Avatar';
-import { ContactLines, PresenceBadges, ScheduleReviewLine } from '../components/PersonDetails';
+import {
+  ContactLines,
+  PresenceBadges,
+  ScheduleReviewLine,
+  StudentsTodayLine,
+} from '../components/PersonDetails';
 import { useTodaysScheduleReviews } from '../lib/schedule-reviews';
+import { useTodaysRotations } from '../lib/student-rotations';
 import { useConfirm } from '../components/ConfirmDialog';
 import { ImportStaff } from '../components/ImportStaff';
 import { JobRoleTag } from '../components/JobRoleTag';
@@ -58,6 +65,7 @@ export function StaffPage() {
   const [directory, setDirectory] = useState<Map<string, DirectoryEntry>>(new Map());
   const [extensions, setExtensions] = useState<OfficeExtension[]>([]);
   const reviews = useTodaysScheduleReviews();
+  const students = useTodaysRotations();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -428,6 +436,7 @@ export function StaffPage() {
               entry={directory.get(person.id)}
               extension={extensionOf(extensions, person.id)}
               review={reviews.get(person.id)}
+              students={students.get(person.id)}
               jobRoles={jobRoles}
               isMe={person.id === me?.id}
               canOpenProfile={isAdmin}
@@ -489,6 +498,7 @@ function StaffCard({
   entry,
   extension,
   review,
+  students,
   jobRoles,
   isMe,
   canOpenProfile,
@@ -502,6 +512,8 @@ function StaffCard({
   extension: OfficeExtension | null;
   /// Who reviews their patient schedule today, for a provider.
   review?: ScheduleReview;
+  /// The students with them today, for a provider.
+  students?: PracticeEvent[];
   /// Every job role, with its members - which of them this person is in.
   jobRoles: JobRole[];
   isMe: boolean;
@@ -572,6 +584,7 @@ function StaffCard({
           </p>
           {entry?.about && <p className="mt-1 text-sm text-slate-700">{entry.about}</p>}
           <ScheduleReviewLine review={review} />
+          <StudentsTodayLine rotations={students} />
           <ContactLines
             person={person}
             extension={extension}

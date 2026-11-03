@@ -29,6 +29,8 @@ function row(over: Record<string, unknown> = {}) {
     location: null,
     atLocation: null,
     rep: null,
+    student: null,
+    provider: null,
     invitees: [],
     series: null,
     ...over,
@@ -51,15 +53,40 @@ const REPS: Record<string, Record<string, unknown>> = {
   },
 };
 
+const STUDENTS: Record<string, Record<string, unknown>> = {
+  'stu-jane': { id: 'stu-jane', name: 'Jane Student', kind: 'MEDICAL_STUDENT', school: 'Rutgers' },
+};
+/// People in a provider job role, as the provider check finds them.
+const PROVIDERS: Record<string, Record<string, unknown>> = {
+  'emp-dr': {
+    id: 'emp-dr',
+    firstName: 'Jose',
+    lastName: 'Badia',
+    preferredName: null,
+    postNominals: 'MD',
+  },
+  'emp-np': {
+    id: 'emp-np',
+    firstName: 'Casey',
+    lastName: 'Rivera',
+    preferredName: null,
+    postNominals: 'APN',
+  },
+};
+
 /// What the database would give back for a row written with `data`.
 function stored(data: Record<string, unknown>) {
   const jobRoleId = data.jobRoleId as string | null | undefined;
   const locationId = data.locationId as string | null | undefined;
   const atLocationId = data.atLocationId as string | null | undefined;
   const repId = data.repId as string | null | undefined;
+  const studentId = data.studentId as string | null | undefined;
+  const providerId = data.providerId as string | null | undefined;
   return row({
     ...data,
     rep: repId ? (REPS[repId] ?? null) : null,
+    student: studentId ? (STUDENTS[studentId] ?? null) : null,
+    provider: providerId ? (PROVIDERS[providerId] ?? null) : null,
     atLocation: atLocationId
       ? {
           id: atLocationId,
@@ -180,7 +207,10 @@ function build(
               locations: [{ locationId: 'loc-nb' }],
             },
       ),
-      count: jest.fn(async ({ where }) => where.id.in.length),
+      count: jest.fn(async ({ where }) =>
+        // The provider check for a student rotation.
+        where.AND ? (PROVIDERS[where.AND[0].id] ? 1 : 0) : where.id.in.length,
+      ),
     },
     jobRole: {
       count: jest.fn(async ({ where }) =>
@@ -201,18 +231,24 @@ function build(
     rep: {
       findUnique: jest.fn(async ({ where }) => REPS[where.id] ?? null),
     },
+    student: {
+      findUnique: jest.fn(async ({ where }) => STUDENTS[where.id] ?? null),
+    },
   };
   const inbox = { notify: jest.fn().mockResolvedValue(undefined) };
   const meet = { createLink: jest.fn().mockResolvedValue('https://meet.google.com/new-meet-abc') };
   const phlebotomists = { remember: jest.fn().mockResolvedValue(undefined) };
+  const notifications = { personal: jest.fn().mockResolvedValue(undefined) };
   return {
     meet,
     phlebotomists,
+    notifications,
     service: new EventsService(
       prisma as never,
       inbox as never,
       meet as never,
       phlebotomists as never,
+      notifications as never,
     ),
     prisma,
     practiceEvent,
@@ -503,7 +539,7 @@ describe('EventsService', () => {
         }),
       });
       await service.remove('ev-1', manager);
-      expect(inbox.notify.mock.calls[0][0]).toEqual([]);
+      expect(inbox.notify).not.toHaveBeenCalled();
     });
   });
 });
@@ -1525,6 +1561,112 @@ describe('replies to meetings', () => {
     expect(practiceEventReply.findMany.mock.calls[0][0].where).toEqual({
       eventId: 'ev-1',
       answer: 'NOT_GOING',
+    });
+  });
+
+  describe('student rotations', () => {
+    const rotation = (over: Partial<EventInput> = {}) =>
+      input({
+        kind: PracticeEventKind.ROTATION,
+        title: undefined as unknown as string,
+        place: undefined,
+        studentId: 'stu-jane',
+        providerId: 'emp-dr',
+        atLocationId: 'loc-nb',
+        ...over,
+      });
+
+    it('is named after the student, for everyone, with the provider told by email', async () => {
+      const { service, practiceEvent, inbox, notifications } = build({ invited: ['emp-dr'] });
+      const made = await service.create(rotation({ audience: EventAudience.LOCATION }), manager);
+
+      const written = practiceEvent.createMany.mock.calls[0][0].data[0];
+      expect(written).toMatchObject({
+        kind: PracticeEventKind.ROTATION,
+        title: 'Jane Student',
+        audience: EventAudience.EVERYONE,
+        studentId: 'stu-jane',
+        providerId: 'emp-dr',
+        atLocationId: 'loc-nb',
+        place: null,
+        meetingUrl: null,
+      });
+      expect(made.student).toMatchObject({ name: 'Jane Student', kind: 'MEDICAL_STUDENT' });
+      expect(made.provider).toEqual({ id: 'emp-dr', name: 'Dr. Jose Badia' });
+
+      expect(inbox.notify).not.toHaveBeenCalled();
+      expect(notifications.personal).toHaveBeenCalledTimes(1);
+      const [who, kind, words] = notifications.personal.mock.calls[0];
+      expect(who).toEqual(['emp-dr']);
+      expect(kind).toBe(NotificationKind.EVENT);
+      expect(words.title).toBe('Student with you: Jane Student');
+      expect(words.body).toContain('North Bergen');
+      expect(words.body).toContain('Medical student, Rutgers, with Dr. Jose Badia');
+      expect(words.link).toMatch(/^\/schedule\/calendar\?month=2099-10-01$/);
+    });
+
+    it('tells only the provider: the audience for the bell is them alone', async () => {
+      const { service, prisma } = build({ invited: ['emp-dr'] });
+      await service.create(rotation(), manager);
+      const asked = prisma.employee.findMany.mock.calls[0][0].where;
+      expect(asked).toMatchObject({ id: 'emp-dr' });
+    });
+
+    it('needs a student, a provider in a provider job role and an office', async () => {
+      const { service } = build();
+      await expect(service.create(rotation({ studentId: undefined }), manager)).rejects.toThrow(
+        'Choose the student.',
+      );
+      await expect(
+        service.create(rotation({ studentId: '00000000-0000-0000-0000-000000000000' }), manager),
+      ).rejects.toThrow('no longer on the list');
+      await expect(service.create(rotation({ providerId: undefined }), manager)).rejects.toThrow(
+        'Choose the provider',
+      );
+      await expect(service.create(rotation({ providerId: 'emp-1' }), manager)).rejects.toThrow(
+        'provider job role',
+      );
+      await expect(
+        service.create(rotation({ atLocationId: undefined }), manager),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('a new provider hears the student is with them, the old one that they are not', async () => {
+      const before = stored({
+        kind: PracticeEventKind.ROTATION,
+        title: 'Jane Student',
+        studentId: 'stu-jane',
+        providerId: 'emp-dr',
+        atLocationId: 'loc-nb',
+        place: null,
+      });
+      const { service, notifications } = build({
+        existing: before,
+        invited: [['emp-dr'], ['emp-np']],
+      });
+      await service.update('ev-1', rotation({ providerId: 'emp-np' }), manager);
+
+      const sent = notifications.personal.mock.calls.map(([who, , words]) => [who, words.title]);
+      expect(sent).toEqual([
+        [['emp-np'], 'Student with you: Jane Student'],
+        [['emp-dr'], 'No longer with you: Jane Student'],
+      ]);
+    });
+
+    it('tells the provider when a date is cancelled', async () => {
+      const existing = stored({
+        kind: PracticeEventKind.ROTATION,
+        title: 'Jane Student',
+        studentId: 'stu-jane',
+        providerId: 'emp-dr',
+        atLocationId: 'loc-nb',
+      });
+      const { service, notifications } = build({ existing, invited: ['emp-dr'] });
+      await service.remove('ev-1', manager);
+      expect(notifications.personal.mock.calls[0][0]).toEqual(['emp-dr']);
+      expect(notifications.personal.mock.calls[0][2].title).toBe(
+        'Student rotation cancelled: Jane Student',
+      );
     });
   });
 });

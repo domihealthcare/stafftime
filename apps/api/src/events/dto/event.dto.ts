@@ -87,16 +87,19 @@ export class ScopeQuery {
 /// is saved is exactly what the form showed.
 export class EventInput {
   /// An event (the default), a closure (an office shut), a holiday (a named
-  /// day that shuts nothing), a diagnostics date, a rep lunch or the phlebotomist.
+  /// day that shuts nothing), a diagnostics date, a rep lunch, the
+  /// phlebotomist or a student rotation.
   @IsOptional()
   @IsEnum(PracticeEventKind)
   kind?: PracticeEventKind;
 
-  /// Not for a rep lunch: that is named after its rep. Optional for the
-  /// phlebotomist: with none it is "Phlebotomist".
+  /// Not for a rep lunch or a student rotation: those are named after the
+  /// rep or the student. Optional for the phlebotomist: with none it is
+  /// "Phlebotomist".
   @ValidateIf(
     (dto: EventInput) =>
       dto.kind !== PracticeEventKind.REP_LUNCH &&
+      dto.kind !== PracticeEventKind.ROTATION &&
       !(dto.kind === PracticeEventKind.PHLEBOTOMY && !dto.title?.trim()),
   )
   @IsString()
@@ -167,6 +170,16 @@ export class EventInput {
   @IsOptional()
   @IsUUID()
   repId?: string;
+
+  /// A student rotation: the student, from the list. Its title is their name.
+  @IsOptional()
+  @IsUUID()
+  studentId?: string;
+
+  /// A student rotation: the provider they are with.
+  @IsOptional()
+  @IsUUID()
+  providerId?: string;
 
   /// For CHOSEN.
   @IsOptional()

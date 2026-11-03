@@ -42,6 +42,7 @@ const PRINT_INK: Record<CalendarKind, string> = {
   DIAGNOSTIC: 'text-sky-800 font-semibold',
   REP_LUNCH: 'text-rose-800',
   PHLEBOTOMY: 'text-orange-800',
+  ROTATION: 'text-teal-800',
   EVENT: 'text-indigo-800',
 };
 
@@ -345,6 +346,10 @@ function printLine(event: PracticeEvent, day: string): string {
       return `${event.title} ${time}`;
     case 'PHLEBOTOMY':
       return `💉 ${event.title} ${time}${
+        event.atLocation ? ` · ${officeShort(event.atLocation.name)}` : ''
+      }`;
+    case 'ROTATION':
+      return `🎓 ${shortTitle(event)} ${time}${
         event.atLocation ? ` · ${officeShort(event.atLocation.name)}` : ''
       }`;
     case 'REP_LUNCH':

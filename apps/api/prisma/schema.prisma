@@ -371,6 +371,8 @@ model Employee {
   notifications             Notification[]
   assistantUsage            AssistantUsage[]
   createdEvents             PracticeEvent[]          @relation("EventCreatedBy")
+  /// Student rotations with them, as the provider.
+  studentRotations          PracticeEvent[]          @relation("EventProvider")
   eventInvites              PracticeEventInvitee[]   @relation("EventInvitee")
   eventReplies              PracticeEventReply[]
   downtimesStarted          Downtime[]               @relation("DowntimeStartedBy")
@@ -1981,6 +1983,12 @@ enum PracticeEventKind {
   /// Entered by managers, like diagnostics; for everyone. The title is who,
   /// or just "Phlebotomist".
   PHLEBOTOMY
+  /// A student or resident on rotation with a provider at an office
+  /// (3 November 2026, Dominguez: "we have students/residents who do
+  /// rotations at our office(s) with specific providers"). Entered by
+  /// managers; for everyone to see; only the provider is told. The title is
+  /// the student's name, kept if they are taken off the list.
+  ROTATION
 }
 
 /// Who an event is for. The same three choices as a survey.
@@ -2038,6 +2046,11 @@ model PracticeEvent {
   /// A rep lunch: the rep, from the managers' list. The lunch stays if the
   /// rep is removed; its title still names them.
   repId        String?       @db.Uuid
+  /// A student rotation: the student, from the managers' list. The date
+  /// stays if the student is removed; its title still names them.
+  studentId    String?       @db.Uuid
+  /// A student rotation: the provider they are with. Only they are told.
+  providerId   String?       @db.Uuid
 
   /// The series this date belongs to, if it repeats. Each date is its own
   /// row, so one can be moved or removed without the rest.
@@ -2053,6 +2066,8 @@ model PracticeEvent {
   location   Location?              @relation("EventForLocation", fields: [locationId], references: [id], onDelete: SetNull)
   atLocation Location?              @relation("EventAtLocation", fields: [atLocationId], references: [id], onDelete: SetNull)
   rep        Rep?                   @relation(fields: [repId], references: [id], onDelete: SetNull)
+  student    Student?               @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  provider   Employee?              @relation("EventProvider", fields: [providerId], references: [id], onDelete: SetNull)
   createdBy  Employee?              @relation("EventCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   series     PracticeEventSeries?   @relation(fields: [seriesId], references: [id], onDelete: SetNull)
   invitees   PracticeEventInvitee[]
@@ -2111,6 +2126,35 @@ model Rep {
 /// future scheduling (should be able to delete name as well)"). A name is kept
 /// when a date is saved with it; managers remove one from the form. Each date
 /// keeps the name as its own title, so removing one changes no date.
+/// What a student on rotation is.
+enum StudentKind {
+  MEDICAL_STUDENT
+  RESIDENT
+  NP_STUDENT
+  PA_STUDENT
+  NURSING_STUDENT
+  OTHER
+}
+
+/// A student or resident who rotates with the practice's providers
+/// (3 November 2026, Dominguez). **Names only**: no account, no sign-in,
+/// never on the rota, hours or payroll, and no contact details, date of birth
+/// or paperwork (the school keeps those). Kept by managers and admins, to
+/// pick when a rotation date goes on the calendar. The schema guard pins it.
+model Student {
+  id        String      @id @default(uuid()) @db.Uuid
+  name      String
+  kind      StudentKind @default(MEDICAL_STUDENT)
+  /// Their school or program, as typed: "Rutgers NJMS, 3rd year".
+  school    String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  rotations PracticeEvent[]
+
+  @@map("students")
+}
+
 model Phlebotomist {
   id        String   @id @default(uuid()) @db.Uuid
   name      String   @unique

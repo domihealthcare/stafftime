@@ -1253,7 +1253,8 @@ export interface EventSeries extends Omit<RepeatInput, 'monthlyMode' | 'monthlyW
 /// What an entry on the practice calendar is: a meeting or day out, an
 /// office shut, a named day that shuts nothing, when a test is offered, a
 /// rep lunch, or when the phlebotomist is at an office.
-export type EventKind = 'EVENT' | 'CLOSURE' | 'HOLIDAY' | 'DIAGNOSTIC' | 'REP_LUNCH' | 'PHLEBOTOMY';
+export type EventKind =
+  'EVENT' | 'CLOSURE' | 'HOLIDAY' | 'DIAGNOSTIC' | 'REP_LUNCH' | 'PHLEBOTOMY' | 'ROTATION';
 
 /// How a rep feeds the office: they bring catering, or the office orders.
 export type RepFood = 'CATERING' | 'SELF_ORDER';
@@ -1262,6 +1263,30 @@ export type RepStatus = 'PREFERRED' | 'OK' | 'RESTRICTED' | 'DO_NOT_BOOK';
 
 /// A rep who books lunches, from Manage → Offices → Reps (managers and admins).
 /// A phlebotomist's saved name, to pick for a phlebotomist date.
+/// What a student on rotation is (November 2026).
+export type StudentKind =
+  'MEDICAL_STUDENT' | 'RESIDENT' | 'NP_STUDENT' | 'PA_STUDENT' | 'NURSING_STUDENT' | 'OTHER';
+
+/// A student or resident who rotates with a provider: names only.
+export interface Student {
+  id: string;
+  name: string;
+  kind: StudentKind;
+  school: string | null;
+}
+
+/// The students list as managers keep it, with their first and last date.
+export interface StudentListed extends Student {
+  firstDate: string | null;
+  lastDate: string | null;
+}
+
+export interface StudentInput {
+  name: string;
+  kind: StudentKind;
+  school?: string;
+}
+
 export interface Phlebotomist {
   id: string;
   name: string;
@@ -1329,6 +1354,10 @@ export interface PracticeEvent {
   atLocation: { id: string; name: string } | null;
   /// A rep lunch: the rep (null once taken off the list).
   rep: EventRep | null;
+  /// A student rotation: the student (null once taken off the list; the
+  /// title still names them) and the provider they are with.
+  student?: Student | null;
+  provider?: { id: string; name: string } | null;
   /// CHOSEN: who it is for.
   invitees: EventInvitee[];
   /// The series this date belongs to, if it repeats.
@@ -1398,6 +1427,10 @@ export interface EventInput {
   atLocationId?: string;
   /// A rep lunch: the rep. The title is made from their name.
   repId?: string;
+  /// A student rotation: the student (the title is their name) and the
+  /// provider they are with.
+  studentId?: string;
+  providerId?: string;
   invitees?: { employeeIds?: string[]; jobRoleIds?: string[]; locationIds?: string[] };
   repeat?: RepeatInput | null;
   /// Closures and holidays, when making one: also on the same date in each

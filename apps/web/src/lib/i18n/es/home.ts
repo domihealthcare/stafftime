@@ -92,6 +92,8 @@ export const HOME: Record<string, string> = {
   Closed: 'Cerrado',
   'Both offices': 'Ambas oficinas',
   'Calendar →': 'Calendario →',
+  'Students with you': 'Estudiantes contigo',
+  'and {n} more in the next two weeks': 'y {n} más en las próximas dos semanas',
   '{first} – {last} · All day': '{first} – {last} · Todo el día',
   '{day} · All day': '{day} · Todo el día',
 
