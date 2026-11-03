@@ -2272,6 +2272,16 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `20261103010000_student_rotation_kind`, `20261103020000_student_rotations`;
   see *Students and residents on rotation* in `docs/architecture.md`;
   `tests/browser/student-rotations.mjs`. Worth carrying to the EMR module.
+- **Help caught up** (3 November 2026, Dominguez: "add them to the Help page
+  and any other features we have done that may not be at the help page",
+  version 1.42.1): expense reimbursements are numbered steps in both guides
+  (submitting; reviewing and paying back). Added where Help had nothing:
+  "No need to clock in", Go to a week, the Everyone tab and posting News for
+  staff given them (and the two Staff editor switches for admins), "You are
+  the office admin" on Home, students with a provider, days off on the
+  Timesheet with Edit, and the newer Practice settings cards (time off rules,
+  who sees the rota's cost, phone notifications, calendar invites). Help
+  text only. When a feature ships, add its Help topic in the same release.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

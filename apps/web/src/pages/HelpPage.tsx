@@ -228,6 +228,17 @@ const STAFF: Section[] = [
           </p>
         ),
       },
+      {
+        question: 'Home says “No need to clock in”',
+        answer: (
+          <p>
+            Some people do not clock in, the providers for now. An admin sets it. Home then shows
+            your shift for today instead of the button, nobody reminds you to clock in, and the{' '}
+            <Screen>Directory</Screen> shows you <strong>On shift</strong> at that office while your
+            shift runs. If you think you should be clocking in, tell a manager.
+          </p>
+        ),
+      },
     ],
   },
   {
@@ -466,6 +477,29 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'Jumping to a week or month further ahead',
+        answer: (
+          <p>
+            On <Screen>Schedule</Screen>, press <strong>📅 Go to a week</strong> (or{' '}
+            <strong>Go to a month</strong> in the month view), beside Previous and Next. A small
+            calendar opens; the arrows move a month or a year at a time. Press any day to go
+            straight to its week or month.
+          </p>
+        ),
+      },
+      {
+        question: 'Can I see everybody’s schedule?',
+        answer: (
+          <p>
+            Only if an admin has switched it on for you, usually for the person who sends out
+            schedule notices. You then have an <strong>Everyone</strong> tab under{' '}
+            <Screen>Schedule</Screen>: everybody&rsquo;s published shifts by week or month, with
+            time off shown as just &ldquo;Off&rdquo;. It is for reading only; nothing can be changed
+            there.
+          </p>
+        ),
+      },
+      {
         question: 'I was asked to cover a shift',
         answer: (
           <p>
@@ -640,6 +674,18 @@ const STAFF: Section[] = [
           </p>
         ),
       },
+      {
+        question: 'Am I the office admin today?',
+        answer: (
+          <p>
+            If you are the admin at an office on certain days, <Screen>Home</Screen> shows{' '}
+            <strong>You are the office admin</strong> with today and your next days.{' '}
+            <Screen>Schedule</Screen> → <strong>Reviews</strong> shows who is the admin in each
+            office every day of the week. A manager sets it, and can change one day; if you
+            can&rsquo;t make yours, tell them.
+          </p>
+        ),
+      },
     ],
   },
   {
@@ -710,6 +756,12 @@ const STAFF: Section[] = [
               <strong>English</strong> to go back); your phone remembers the choice. A post the
               office has not put into Spanish itself is translated automatically the first time
               somebody asks, and says so. Polls and comments stay as they were written.
+            </p>
+            <p>
+              An admin can let somebody who is not an admin post News too, usually for schedule and
+              pay period notices. If that is you, press <strong>+ New post</strong> on the News page
+              (<strong>All news</strong>), and you can edit or remove any post. Never put patient
+              details in one.
             </p>
           </>
         ),
@@ -1271,6 +1323,24 @@ const PROVIDERS: Section[] = [
     ],
   },
   {
+    title: 'For providers: students and residents',
+    topics: [
+      {
+        question: 'A student or resident is with me',
+        answer: (
+          <p>
+            A manager puts each rotation day on the calendar with you as the provider. You are told
+            on the bell and by email when one is added, moved or cancelled. <Screen>Home</Screen>{' '}
+            shows <strong>Students with you</strong> for the next two weeks, and your{' '}
+            <Screen>Directory</Screen> card says who is with you today. Everybody can see rotations
+            on <Screen>Schedule</Screen> → <strong>Calendar</strong> (🎓). If a day is wrong, tell a
+            manager.
+          </p>
+        ),
+      },
+    ],
+  },
+  {
     title: 'For providers: BrainCheck Care Plan',
     topics: [
       {
@@ -1429,19 +1499,37 @@ const EXPENSES: Section[] = [
         question: 'How do I submit a reimbursement request?',
         answer: (
           <>
+            <ol className="list-decimal space-y-1 pl-5">
+              <li>
+                Open the account menu (your photo, top right) and choose{' '}
+                <Screen>Expense reimbursements</Screen>.
+              </li>
+              <li>
+                Press <strong>+ New reimbursement request</strong>.
+              </li>
+              <li>
+                Fill in the <strong>Description</strong> (what you bought, never a patient&rsquo;s
+                name), the <strong>Amount</strong> and the <strong>Date of purchase</strong>. A{' '}
+                <strong>Category</strong> and <strong>Notes</strong> are optional.
+              </li>
+              <li>
+                Email your receipt: press <strong>Email the receipt</strong> and attach a photo or
+                PDF of it. Receipts are not uploaded to Domi Staff.
+              </li>
+              <li>
+                Tick <strong>I have emailed the receipt to the approvers</strong> and press{' '}
+                <strong>Send</strong>.
+              </li>
+            </ol>
             <p>
-              <Screen>Expense reimbursements</Screen>, in the account menu →{' '}
-              <strong>+ New reimbursement request</strong>: a description, the amount, the date of
-              purchase and, optionally, a category. A receipt is required: email a photo or PDF of
-              it to the approvers named on the form (<strong>Email the receipt</strong> starts the
-              email for you), then confirm that you have. Receipts are not uploaded to Domi Staff.
+              The approvers are told at once. <strong>Your requests</strong> shows where yours is:
+              Waiting for a decision, Approved or Not approved. You are told on the bell and by
+              email when it is decided, and again when it is paid. While it is still waiting you can{' '}
+              <strong>Withdraw</strong> it.
             </p>
             <p>
-              The approvers are notified at once. You are notified under the bell and by email when
-              the request is approved (possibly for a different amount) or declined, and again once
-              it has been paid. Reimbursements are paid separately from payroll, for example by
-              check. While a request is awaiting a decision you can <strong>Withdraw</strong> it.
-              Providers submit CME requests under <Screen>Your CME</Screen> instead.
+              Reimbursements are paid separately from your paycheck, for example by check. Providers
+              ask for CME under <Screen>Your CME</Screen> instead.
             </p>
           </>
         ),
@@ -1707,6 +1795,10 @@ const MANAGERS: Section[] = [
           <ul>
             <li>
               <strong>Copy last week</strong> when most weeks look the same, then adjust.
+            </li>
+            <li>
+              <strong>📅 Go to a week</strong>, beside Previous and Next, opens a small calendar to
+              jump straight to any week (or month, in the month view).
             </li>
             <li>
               A new shift for somebody - the ＋ on the rota, or <strong>+ Add</strong> - starts on
@@ -2275,7 +2367,9 @@ const MANAGERS: Section[] = [
             too. Any manager or admin can, never on their own time off. The change is kept on the
             request with your name, the day and your note (&ldquo;Changed by …&rdquo;), and the
             person is told on the bell and by email. A note on its own is fine too. What you set
-            counts as you set it, even past their balance: nothing is split when you edit.
+            counts as you set it, even past their balance: nothing is split when you edit. Days off
+            also show on the <Screen>Timesheet</Screen> among the punches (no hours), with the same{' '}
+            <strong>Edit</strong> there, so you can change PTO to Unpaid while checking hours.
           </p>
         ),
       },
@@ -2496,24 +2590,56 @@ const MANAGERS: Section[] = [
         answer: (
           <>
             <p>
-              Anybody can submit a reimbursement request for business expenses they paid for
-              personally, from <Screen>Expense reimbursements</Screen> in the account menu, emailing
-              the receipt. The approvers (Dominguez and Angelica Dominguez to start) review them
-              under <Screen>Manage → Finances → Expenses</Screen>: <strong>Approve</strong> once the
-              receipt has been received (confirm it), for the amount requested or another, or{' '}
-              <strong>Decline</strong> with a reason the employee will read. Nobody decides their
-              own. <strong>Manage approvers</strong> changes the list; only the people on it can.
+              Anybody can ask to be paid back for something they bought for the practice (see{' '}
+              <strong>How do I submit a reimbursement request?</strong> in the guide for everyone).
+              Only the approvers decide: Dominguez and Angelica Dominguez to start. Being a manager
+              does not make you one. <strong>Manage approvers</strong> on the Expenses screen
+              changes the list, and only the people on it can.
             </p>
             <p>
-              Reimbursements are not included in payroll or the export. Every approved expense and
-              CME reimbursement not yet paid is listed at the top of{' '}
-              <Screen>Manage → Finances → Export</Screen> (and on the Expenses screen), is named in{' '}
-              <strong>Before you export</strong>, and is counted under{' '}
-              <strong>Payroll is due</strong>. For each, <strong>Mark as paid…</strong> records the
-              payment method (paper check, cash, direct deposit or other), the date and the amount,
-              and notifies the employee; <strong>Defer to next payroll</strong> sets it aside until
-              the next payroll, and <strong>Undo deferral</strong> returns it to the list.
+              <strong>Reviewing a request</strong>
             </p>
+            <ol className="list-decimal space-y-1 pl-5">
+              <li>
+                Go to <Screen>Manage → Finances → Expenses</Screen>. New ones are under{' '}
+                <strong>Awaiting decision</strong>.
+              </li>
+              <li>Check your email for the receipt.</li>
+              <li>
+                Press <strong>Approve…</strong>, check the <strong>Amount approved</strong> (you can
+                change it), tick <strong>The receipt was received by email</strong>, add a note if
+                you like and press <strong>Approve</strong>. It cannot be approved without the tick.
+              </li>
+              <li>
+                Or press <strong>Decline…</strong>, give a reason the employee will read and press{' '}
+                <strong>Decline</strong>.
+              </li>
+            </ol>
+            <p>Nobody decides their own: another approver does.</p>
+            <p>
+              <strong>Paying it back</strong>
+            </p>
+            <ol className="list-decimal space-y-1 pl-5">
+              <li>
+                Approved ones not paid yet are under <strong>Reimbursements pending payment</strong>
+                , on the Expenses screen and at the top of{' '}
+                <Screen>Manage → Finances → Export</Screen>, together with approved CME. They are
+                also named in <strong>Before you export</strong> and counted under{' '}
+                <strong>Payroll is due</strong>.
+              </li>
+              <li>
+                Once it is paid, press <strong>Mark as paid…</strong>, pick the{' '}
+                <strong>Payment method</strong> (paper check, cash, direct deposit or other), the{' '}
+                <strong>Payment date</strong> and the <strong>Amount paid</strong>, add a note like
+                &ldquo;Check #1042&rdquo; and press <strong>Record payment</strong>. The employee is
+                told.
+              </li>
+              <li>
+                Not paying it this time? <strong>Defer to next payroll</strong> sets it aside until
+                the next payroll comes due. <strong>Undo deferral</strong> brings it back now.
+              </li>
+            </ol>
+            <p>Reimbursements are never part of payroll or the export file.</p>
           </>
         ),
       },
@@ -3005,6 +3131,13 @@ const MANAGERS: Section[] = [
               shift&rsquo;s office while it runs.
             </li>
             <li>
+              For somebody with Employee access, <strong>Can post News</strong> lets them write,
+              edit and remove News posts (for schedule and pay period notices), and{' '}
+              <strong>Can see everyone&rsquo;s schedule</strong> gives them a read-only{' '}
+              <strong>Everyone</strong> tab under Schedule: published shifts only, time off as
+              &ldquo;Off&rdquo;. Neither lets them change anything else.
+            </li>
+            <li>
               Tick <strong>Shared account, not a person</strong> for an account several people sign
               in to, like office@domihealthcare.com. Give it Employee access and the job role whose
               screens it needs (Front Desk), and no hire date. It sees what those give it, but never
@@ -3126,14 +3259,35 @@ const MANAGERS: Section[] = [
       {
         question: 'Practice settings',
         answer: (
-          <p>
-            Under the menu → <strong>Practice settings</strong>: the overtime threshold, how early
-            an unpublished week is chased, and the <strong>pay period start</strong> - the first day
-            of any one pay period. The pay-period shortcuts stay greyed out until it is set. The{' '}
-            <strong>ADP TotalSource</strong> section there sets up the ADP import file: the company
-            code, a worksheet exported from ADP pasted in, and which columns take which hours. Each
-            person&rsquo;s ADP File # goes on the Staff screen.
-          </p>
+          <ul>
+            <li>
+              Under the menu → <strong>Practice settings</strong>: the overtime threshold, how early
+              an unpublished week is chased, and the <strong>pay period start</strong> - the first
+              day of any one pay period. The pay-period shortcuts stay greyed out until it is set.
+            </li>
+            <li>
+              <strong>Time off rules</strong>: PTO and sick days a year, carry-over, when the year
+              starts, prorating, and from when new hourly staff earn sick time.
+            </li>
+            <li>
+              <strong>ADP TotalSource</strong> sets up the ADP import file: the company code, a
+              worksheet exported from ADP pasted in, and which columns take which hours. Each
+              person&rsquo;s ADP File # goes on the Staff screen.
+            </li>
+            <li>
+              <strong>Who sees the rota&rsquo;s cost</strong>: the people who see the rota&rsquo;s
+              cost and Pay &amp; raises.
+            </li>
+            <li>
+              <strong>Phone notifications</strong>: press{' '}
+              <strong>Switch on for the practice</strong> once, so staff can turn on bell
+              notifications on their phones.
+            </li>
+            <li>
+              <strong>Calendar invites</strong>: whether shifts and events go out as invites from
+              office@, and <strong>Send now</strong> to send any due.
+            </li>
+          </ul>
         ),
       },
       {
