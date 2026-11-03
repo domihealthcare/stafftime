@@ -414,3 +414,92 @@ describe('Drive folders', () => {
     });
   });
 });
+
+describe('importing many links', () => {
+  function importer(existing: { url: string; jobRoleId: string | null }[] = []) {
+    const built = build();
+    const prisma = built.prisma as typeof built.prisma & {
+      jobRole: { count: jest.Mock };
+      resource: { createMany: jest.Mock };
+    };
+    prisma.jobRole.count = jest.fn(async ({ where }) => where.id.in.length);
+    prisma.resource.findMany = jest.fn().mockResolvedValue(existing);
+    prisma.resource.aggregate = jest.fn(async ({ where }) => ({
+      _max: { sortOrder: where.jobRoleId === 'role-fd' ? 40 : null },
+    }));
+    prisma.resource.createMany = jest.fn().mockResolvedValue({ count: 0 });
+    return { service: built.service, prisma };
+  }
+
+  it('adds each link to its section, after what is there, as web addresses', async () => {
+    const { service, prisma } = importer();
+    const result = await service.importLinks(
+      {
+        links: [
+          { title: ' ADP ', url: 'workforcenow.adp.com', jobRoleId: null },
+          { title: 'Availity', url: 'https://www.availity.com/', jobRoleId: 'role-fd' },
+          { title: 'Quest', url: 'https://quest.com/', jobRoleId: 'role-fd' },
+        ],
+      },
+      manager,
+    );
+    expect(result).toEqual({ added: 3, skipped: [] });
+    const data = prisma.resource.createMany.mock.calls[0][0].data;
+    expect(data).toEqual([
+      expect.objectContaining({
+        title: 'ADP',
+        url: 'https://workforcenow.adp.com/',
+        jobRoleId: null,
+        kind: ResourceKind.LINK,
+        sortOrder: 10,
+      }),
+      expect.objectContaining({ title: 'Availity', jobRoleId: 'role-fd', sortOrder: 50 }),
+      expect.objectContaining({ title: 'Quest', jobRoleId: 'role-fd', sortOrder: 60 }),
+    ]);
+  });
+
+  it('skips a link already in that section, or twice in the list, and names it', async () => {
+    const { service, prisma } = importer([{ url: 'https://www.availity.com/', jobRoleId: null }]);
+    const result = await service.importLinks(
+      {
+        links: [
+          { title: 'Availity', url: 'https://www.availity.com/', jobRoleId: null },
+          { title: 'Availity for FD', url: 'https://www.availity.com/', jobRoleId: 'role-fd' },
+          { title: 'Quest', url: 'https://quest.com/', jobRoleId: null },
+          { title: 'Quest again', url: 'https://quest.com/', jobRoleId: null },
+        ],
+      },
+      manager,
+    );
+    expect(result.added).toBe(2);
+    expect(result.skipped.map((link) => link.title)).toEqual(['Availity', 'Quest again']);
+    expect(prisma.resource.createMany.mock.calls[0][0].data).toHaveLength(2);
+  });
+
+  it('refuses the lot when one is not a web address, saying which', async () => {
+    const { service, prisma } = importer();
+    await expect(
+      service.importLinks(
+        {
+          links: [
+            { title: 'ADP', url: 'https://adp.com', jobRoleId: null },
+            { title: 'A bookmarklet', url: 'javascript:alert(1)', jobRoleId: null },
+          ],
+        },
+        manager,
+      ),
+    ).rejects.toThrow(/Link 2 \(A bookmarklet\)/);
+    expect(prisma.resource.createMany).not.toHaveBeenCalled();
+  });
+
+  it('refuses a job role that is no longer there', async () => {
+    const { service, prisma } = importer();
+    prisma.jobRole.count = jest.fn().mockResolvedValue(0);
+    await expect(
+      service.importLinks(
+        { links: [{ title: 'ADP', url: 'https://adp.com', jobRoleId: 'gone' }] },
+        manager,
+      ),
+    ).rejects.toThrow(BadRequestException);
+  });
+});

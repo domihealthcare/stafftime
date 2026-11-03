@@ -15,6 +15,7 @@
   "dependencies": {
     "@simplewebauthn/browser": "14.0.0",
     "pdf-lib": "1.17.1",
+    "pdfjs-dist": "6.4.299",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router": "7.18.4"

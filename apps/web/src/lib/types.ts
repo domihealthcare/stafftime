@@ -142,6 +142,9 @@ export interface Employee extends EmployeeSummary {
   canPostNews?: boolean;
   /// An admin has switched on the read-only whole schedule for them.
   canSeeEveryonesSchedule?: boolean;
+  /// An admin has chosen them to stamp a provider's saved signature on a PDF
+  /// (November 2026).
+  canStampSignatures?: boolean;
   /// Signed-in person only: how many passkeys (Face ID and the like) they
   /// have, November 2026.
   passkeys?: number;
@@ -3060,4 +3063,34 @@ export interface PayoutPaidInput {
   paidCents: number;
   how: ReimbursementMethod;
   note?: string;
+}
+
+/// Saved signatures for Fill and sign a PDF (November 2026).
+export interface SignaturePerson {
+  id: string;
+  name: string;
+  firstName: string;
+  lastName: string;
+  preferredName: string | null;
+  photoUpdatedAt: string | null;
+}
+
+export interface SignatureOverview {
+  /// A provider here: they may save their own.
+  isProvider: boolean;
+  /// An admin chose them to stamp a provider's.
+  canStamp: boolean;
+  /// Their own, once saved (providers only).
+  mine: { updatedAt: string } | null;
+  /// The signatures they may stamp now.
+  stampable: (SignaturePerson & { updatedAt: string; isMine: boolean })[];
+  /// Who may stamp a provider's (for providers and admins).
+  stampers: SignaturePerson[];
+  /// Stamps of their own signature, or every stamp for an admin.
+  uses: { id: string; usedAt: string; owner: SignaturePerson; usedBy: SignaturePerson | null }[];
+}
+
+export interface ImportedLinksResult {
+  added: number;
+  skipped: { title: string; url: string; reason: string }[];
 }

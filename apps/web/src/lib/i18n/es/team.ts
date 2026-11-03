@@ -234,6 +234,7 @@ export const TEAM: Record<string, string> = {
     'Qué seguro cubre cada ultrasonido o prueba, cuánto tarda, la preparación y el precio de pago propio.',
   'Phone book': 'Guía telefónica',
   'Front desk guide': 'Guía de recepción',
+  'Fill and sign a PDF': 'Llenar y firmar un PDF',
   'Booking rules, results calls, message scripts to copy, payments, uploading and medications.':
     'Reglas para citas, llamadas de resultados, mensajes para copiar, pagos, documentos y medicamentos.',
   'Labs, hospitals, imaging, home care, equipment and specialists we refer to - searchable, and yours to keep up to date.':

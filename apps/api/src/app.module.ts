@@ -35,6 +35,7 @@ import { OfficeAdminsModule } from './office-admins/office-admins.module';
 import { CmeModule } from './cme/cme.module';
 import { ExpensesModule } from './expenses/expenses.module';
 import { StaffNotesModule } from './staff-notes/staff-notes.module';
+import { SignaturesModule } from './signatures/signatures.module';
 import { DowntimeModule } from './downtime/downtime.module';
 import { BadgesModule } from './badges/badges.module';
 import { QuizzesModule } from './quizzes/quizzes.module';
@@ -90,6 +91,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     CmeModule,
     ExpensesModule,
     StaffNotesModule,
+    SignaturesModule,
     DowntimeModule,
     BadgesModule,
     QuizzesModule,

@@ -1341,6 +1341,74 @@ const PROVIDERS: Section[] = [
     ],
   },
   {
+    title: 'Filling in and signing a PDF',
+    topics: [
+      {
+        question: 'How do I fill in and sign a PDF?',
+        answer: (
+          <>
+            <p>
+              <Screen>Resources</Screen> → <strong>Fill and sign a PDF</strong> (also under
+              Shortcuts on <Screen>Home</Screen>) is for providers, and for the staff an admin has
+              chosen to stamp a provider&rsquo;s signature. Press <strong>Choose a PDF</strong> (or
+              drop one on the box), then pick what to add and click on the page where it goes:
+            </p>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              <li>
+                <strong>Add text</strong>, then type. Enter starts a new line, and{' '}
+                <strong>Text size</strong> above the page makes it bigger or smaller.
+              </li>
+              <li>
+                <strong>✓ Tick</strong> for a box, and <strong>Today&rsquo;s date</strong>.
+              </li>
+              <li>
+                <strong>Stamp a signature…</strong>: choose whose, then click where it goes. Drag
+                the small square at its corner to make it bigger or smaller.
+              </li>
+            </ul>
+            <p className="mt-2">
+              Drag anything to move it (text by the handle at its left), or press it and use the
+              arrow keys. The red × takes it off. When it is done, press{' '}
+              <strong>Download PDF</strong> and put the file where it belongs, in eCW or wherever it
+              is going.
+            </p>
+            <p className="mt-2">
+              The PDF never leaves your computer: it opens in your browser, nothing on it is sent to
+              Domi Staff or saved, and closing the page clears it. That is why it is fine for a
+              document with a patient&rsquo;s details, and also why you should download it before
+              you leave the page. A PDF locked with a password cannot be filled in here.
+            </p>
+          </>
+        ),
+      },
+      {
+        question: 'Saving your signature (providers)',
+        answer: (
+          <p>
+            On <strong>Fill and sign a PDF</strong>, under <strong>Your signature</strong>, enter
+            your tablet PIN (or password), sign in the box with your finger, a pen or the mouse, and
+            press <strong>Save this signature</strong>. It is then ready to stamp, like an ink
+            stamp. <strong>Sign again</strong> replaces it and <strong>Remove it</strong> takes it
+            away. The staff an admin has chosen can stamp it too; the page says who, and{' '}
+            <strong>Stamps of your signature</strong> lists every time anybody did, with when. Only
+            the signature is kept, never the documents it went on.
+          </p>
+        ),
+      },
+      {
+        question: 'Stamping a provider’s signature',
+        answer: (
+          <p>
+            If an admin has chosen you, <strong>Stamp a signature…</strong> lists every provider who
+            has saved one. It asks for your tablet PIN first. Use a provider&rsquo;s signature only
+            on what they have asked you to sign for them: each stamp is logged with your name, and
+            the provider sees it.
+          </p>
+        ),
+      },
+    ],
+  },
+  {
     title: 'For providers: BrainCheck Care Plan',
     topics: [
       {
@@ -2857,6 +2925,40 @@ const MANAGERS: Section[] = [
             &ldquo;Anyone with the link&rdquo;. Staff then open its files through the app, so nobody
             needs access in Drive and nothing changes there when somebody joins or leaves. Google
             Docs, Sheets and Slides open as PDFs; Google Forms open only in Drive.
+          </p>
+        ),
+      },
+      {
+        question: 'Adding many links at once, from bookmarks',
+        answer: (
+          <>
+            <p>
+              On <Screen>Resources</Screen>, press <strong>Add several links</strong>. Either choose
+              your browser&rsquo;s bookmarks file, or paste a list with one link to a line
+              (&ldquo;ADP https://workforcenow.adp.com&rdquo;). To get the file in Chrome or Edge:
+              the menu → Bookmarks (Favorites in Edge) → Bookmark manager → the menu at the top
+              right → <strong>Export bookmarks</strong>; in Safari: File → Export → Bookmarks.
+            </p>
+            <p className="mt-2">
+              Each link is listed with the bookmarks folder it came from. Untick any you do not
+              want, fix the names, and choose a section for each (or tick several and use{' '}
+              <strong>Put the ticked ones in</strong>), then press <strong>Add</strong>. The file is
+              read on your computer; only the names and addresses you tick are saved. A link already
+              in its section is left out and named. Never put a password in a link or its name.
+            </p>
+          </>
+        ),
+      },
+      {
+        question: 'Who can stamp a provider’s signature?',
+        answer: (
+          <p>
+            Providers save their own signature on <strong>Fill and sign a PDF</strong>. An admin
+            chooses which staff may stamp a provider&rsquo;s: <Screen>Manage → Staff</Screen> →{' '}
+            <strong>Edit</strong> → <strong>Can stamp a provider&rsquo;s signature</strong>. They
+            can then put any provider&rsquo;s saved signature on a PDF. Every stamp is logged: the
+            provider sees the stamps of theirs, and an admin sees all of them, on the same page. The
+            documents themselves never reach Domi Staff, so they are not listed.
           </p>
         ),
       },

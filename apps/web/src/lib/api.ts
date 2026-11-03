@@ -188,6 +188,8 @@ import type {
   StaffNote,
   StaffNoteInput,
   StaffNoteList,
+  SignatureOverview,
+  ImportedLinksResult,
   PayoutPaidInput,
   ReimbursementMethod,
   CmeRequest,
@@ -1002,6 +1004,7 @@ export const api = {
       isSharedAccount: boolean;
       canPostNews: boolean;
       canSeeEveryonesSchedule: boolean;
+      canStampSignatures: boolean;
       /// ACTIVE brings back somebody marked as having left.
       employmentStatus: 'ACTIVE';
       locationIds: string[];
@@ -2442,6 +2445,26 @@ export const api = {
     request<{ sections: ResourceSection[]; driveShareWith: string | null }>('/resources'),
   resource: (id: string) =>
     request<Resource & { jobRole: { id: string; name: string } | null }>(`/resources/${id}`),
+  /// Many links at once, from a pasted list or a bookmarks file read in
+  /// this browser (November 2026): only the titles and addresses are sent.
+  importLinks: (links: { title: string; url: string; jobRoleId: string | null }[]) =>
+    request<ImportedLinksResult>('/resources/import', {
+      method: 'POST',
+      body: JSON.stringify({ links }),
+    }),
+  /// Saved signatures for Fill and sign a PDF (November 2026). The pictures
+  /// are behind the PIN; the PDF itself is never sent.
+  signatures: () => request<SignatureOverview>('/signatures'),
+  mySignature: () => request<{ image: string; updatedAt: string } | null>('/signatures/mine'),
+  saveSignature: (image: string) =>
+    request<{ updatedAt: string }>('/signatures/mine', {
+      method: 'PUT',
+      body: JSON.stringify({ image }),
+    }),
+  removeSignature: (employeeId: string) =>
+    request<{ removed: boolean }>(`/signatures/${employeeId}`, { method: 'DELETE' }),
+  stampSignature: (employeeId: string) =>
+    request<{ image: string }>(`/signatures/${employeeId}/stamp`, { method: 'POST' }),
   createResource: (body: {
     jobRoleId: string | null;
     kind: ResourceKind;

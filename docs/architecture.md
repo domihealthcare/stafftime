@@ -6259,3 +6259,87 @@ separate **Students** calendar (`students.ics`) carries them all.
 `20261103010000_student_rotation_kind` and `20261103020000_student_rotations`.
 Worth carrying to the EMR module, where a student could sit beside the
 provider's real appointment schedule.
+
+## Fill and sign a PDF, and saved signatures (November 2026)
+
+Dominguez, 3 November 2026: "is there a way for staff to be able to upload
+pdf's and write text and put signature stamps and then download it (it
+would have PHI)". Then, on the signature: "the documents will likely
+require a inked stamp - it should be a saved signature, which primarily is
+for providers to have and for staff (who we select) should be able to
+use". Asked to choose, he picked **staff stamp a provider's** (like the ink
+stamp of a doctor's signature at the front desk), each use logged.
+
+**The PDF never reaches the server**, the clinical forms' way: it is read
+from the computer into the page's memory (`file.arrayBuffer()`), shown with
+**pdf.js** (`pdfjs-dist` 6.4.299, pinned; its worker is the app's own file,
+`?url`, so the CSP's `'self'` covers it, and it is handed bytes, never a web
+address), filled in on the screen, written with **pdf-lib** and downloaded
+with `savePdf`. Nothing is stored in the browser. It lives in
+`src/clinical/pdf-sign/`, so the lint rules there (no `lib/api`, no
+`fetch`, no storage, no `console`) hold it to that; the page around it
+(`pages/PdfSignPage.tsx`) is the only part that talks to the server, and
+only about signatures. Leaving with a PDF open asks first (`useLeaveGuard`).
+`tests/browser/pdf-sign.mjs` watches every request for the fake patient's
+name and for PDF bytes.
+
+**What can be put on a page**: typed text (Helvetica, 8 to 24 point, more
+than one line), a tick, today's date (New Jersey's), and a signature. Each
+is kept in points from the top-left of the page **as shown**; pdf.js's
+viewport transform at 100% turns that back into the page's own coordinates
+(`geometry.ts`, tested against pdf.js's own formula for pages turned 0, 90,
+180 and 270 degrees), and what is drawn is turned by the page's /Rotate so it
+reads the right way up. A PDF with a password, or locked against changes, is
+turned away when opened (pdf-lib could not write into it). Characters the
+standard font cannot write (emoji) are dropped. Fillable form fields are not
+filled; text is drawn on the page, which prints and goes into eCW the same.
+
+**Saved signatures** (`SavedSignature`: the PNG and when, one per person).
+Only a provider (a job role with *uses clinical forms*) saves one, their own,
+drawn on the screen (`components/SignaturePad.tsx`: cropped to the ink, on
+a clear background). The server takes nothing but a PNG of a signature's
+size, at most 60 kB (`signatures/signature.ts`, a database constraint too).
+**Who stamps**: a provider their own; the people an admin ticks on the Staff
+editor (`Employee.canStampSignatures`, not a shared account, off while an
+admin views as somebody, like every per-person list) any current
+provider's. Somebody no longer a provider cannot be stamped, even by
+themselves. The picture is handed out only by `POST
+/signatures/:id/stamp`, **behind the PIN** (`PayLockGuard`, like pay and
+staff notes: a login left open should not hand anybody a signature), and
+**every stamp is logged** (`SignatureUse`: whose, who, when; never the
+document). The provider sees the stamps of theirs and who may stamp it; an
+admin sees every stamp. Both tables are pinned by the schema guard.
+
+**Who opens the page**: providers, the chosen staff, managers and admins
+(`canUsePdfSigner`); listed under **Everyone** on Resources, for them only,
+and in Home's Shortcuts (Dominguez: "Everyone section as the managers/staff
+will use it mostly not providers"; it had first sat with the providers'
+forms). Typing on a PDF is the same
+for all of them; stamping is decided by the server.
+
+This is the first "choose a file" button outside the profile photo. It does
+not change *Data this app does not hold*: the file is read in the browser
+and not one byte of it is sent. The browser suites that say a screen takes no
+file still hold for their screens.
+
+`src/signatures/`, `clinical/pdf-sign/` (`PdfEditor.tsx`, `geometry.ts`,
+`render.ts`, `write.ts`), migration `20261103030000_saved_signatures`;
+`tests/browser/pdf-sign.mjs`. Worth carrying to the EMR module, where a
+provider's signature on a document would sit beside the chart.
+
+## Adding many links to Resources (November 2026)
+
+Dominguez, 3 November 2026: "i have a bunch of links from bookmarked sites
+that staff use, where can i put these? Resources?" Yes: **Add several links**
+on Resources (managers and admins). Every browser exports bookmarks as the
+same old Netscape HTML file; `lib/bookmarks.ts` reads it in the browser,
+folders and all, or a pasted list (one link to a line, in the usual shapes),
+keeps web addresses only (a `javascript:` bookmarklet or `chrome://` page is
+left out and counted), and each address once. The pop-up
+(`components/ImportLinks.tsx`) lists them to untick, rename and put in a
+section, with the folder each came from and a warning for one already in
+its section. `POST /resources/import` takes up to 300, checks every address
+as a single link is checked (`safeLink`), refuses the lot if one is not a web
+address (saying which), and skips and names one already in its section or
+twice in the list. Only names and addresses are sent: never the file, its
+icons or folders. `tests/browser/import-links.mjs`.
