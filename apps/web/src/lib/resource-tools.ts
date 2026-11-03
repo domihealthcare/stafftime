@@ -125,9 +125,10 @@ const REIMBURSEMENTS: ResourceTool = {
 };
 
 /// Fill and sign a PDF (November 2026) is not for choosing by job role
-/// either: it is the providers', and the staff an admin picks to stamp a
-/// provider's signature (`canUsePdfSigner`). Listed with the providers' forms,
-/// or under Everyone for somebody who does not see that section.
+/// either: it is for providers, the staff an admin picks to stamp a
+/// provider's signature, and managers and admins (`canUsePdfSigner`). Listed
+/// under Everyone, for whoever may use it (Dominguez: "Everyone section as
+/// the managers/staff will use it mostly not providers").
 const PDF_SIGN: ResourceTool = {
   key: 'pdf-sign',
   to: '/pdf-sign',
@@ -181,11 +182,7 @@ export function toolsBySection(
     if (homes.length) homes.forEach((section) => put(tool, setting, section));
     else put(tool, setting, null);
   }
-  if (canUsePdfSigner(employee)) {
-    const providers = sections.filter((section) => section.jobRole?.usesClinicalForms);
-    if (providers.length) providers.forEach((section) => put(PDF_SIGN, undefined, section));
-    else put(PDF_SIGN, undefined, null);
-  }
+  if (canUsePdfSigner(employee)) put(PDF_SIGN, undefined, null);
   if (isManager(employee)) {
     const managers = sections.find((section) => /^manager/i.test(section.jobRole?.name ?? ''));
     put(REIMBURSEMENTS, undefined, managers ?? null);

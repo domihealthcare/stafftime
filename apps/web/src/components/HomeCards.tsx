@@ -4,6 +4,7 @@ import { useAiOn } from '../lib/ai';
 import { api } from '../lib/api';
 import {
   canUseCarePlan,
+  canUsePdfSigner,
   canUseTool,
   canUseCognitiveAssessment,
   canUseWellnessForm,
@@ -228,9 +229,9 @@ export function QuickActions() {
             {t('Forms')}
           </Link>
         )}
-        {/* Fill and sign a PDF (November 2026): for providers and the staff
-            chosen to stamp a provider's signature. */}
-        {(employee?.usesClinicalForms || employee?.canStampSignatures) && (
+        {/* Fill and sign a PDF (November 2026): for providers, the staff
+            chosen to stamp a provider's signature, managers and admins. */}
+        {employee !== null && canUsePdfSigner(employee) && (
           <Link to="/pdf-sign" className={button}>
             {t('Fill and sign a PDF')}
           </Link>

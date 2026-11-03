@@ -216,7 +216,11 @@ await step('the chosen member of staff finds it on Home and Resources, and opens
   await staff.goto(`${BASE}/`, { waitUntil: 'networkidle' });
   await staff.getByTestId('quick-actions').getByRole('link', { name: 'Fill and sign a PDF' }).waitFor({ timeout: 10000 });
   await staff.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
-  await staff.getByTestId('tool-pdf-sign').getByRole('link', { name: /Fill and sign a PDF/ }).click();
+  await staff
+    .getByTestId('section-Everyone')
+    .getByTestId('tool-pdf-sign')
+    .getByRole('link', { name: /Fill and sign a PDF/ })
+    .click();
   await staff.getByLabel('Choose a PDF').waitFor({ state: 'attached', timeout: 10000 });
   // Unlocked first, so the stamp list is there without a prompt.
   await unlock(staff);
@@ -342,6 +346,14 @@ await step('the provider sees who stamped their signature, and the admin sees ev
 });
 
 await step('a manager not chosen opens it but has no signature to stamp', async () => {
+  // Managers use it most (Dominguez): under Everyone, not Provider, and on Home.
+  await manager.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
+  await manager.getByTestId('section-Everyone').getByTestId('tool-pdf-sign').waitFor({ timeout: 10000 });
+  if ((await manager.getByTestId('section-Provider').getByTestId('tool-pdf-sign').count()) > 0) {
+    throw new Error('it is under Provider too');
+  }
+  await manager.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+  await manager.getByTestId('quick-actions').getByRole('link', { name: 'Fill and sign a PDF' }).waitFor({ timeout: 10000 });
   await unlock(manager);
   await manager.goto(`${BASE}/pdf-sign`, { waitUntil: 'networkidle' });
   await manager.getByLabel('Choose a PDF').setInputFiles(pdfPath);

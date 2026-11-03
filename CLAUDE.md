@@ -2297,10 +2297,11 @@ Beyond the phases, the parts worth knowing about before picking up work:
   text only. When a feature ships, add its Help topic in the same release.
 - **Fill and sign a PDF, and saved signatures** (3 November 2026, Dominguez,
   version 1.43.0; chosen: **staff stamp a provider's**, like the ink stamp at
-  the front desk): `/pdf-sign`, on Resources with the providers' forms and in
-  Home's Shortcuts, for providers, the staff an admin ticks (**Can stamp a
-  provider's signature** on the Staff editor, `Employee.canStampSignatures`),
-  managers and admins. **Choose a PDF** opens it in the browser (pdf.js,
+  the front desk): `/pdf-sign`, under **Everyone** on Resources and in
+  Home's Shortcuts (Dominguez: "Everyone section as the managers/staff will
+  use it mostly not providers"), for providers, the staff an admin ticks
+  (**Can stamp a provider's signature** on the Staff editor,
+  `Employee.canStampSignatures`), managers and admins; nobody else sees it. **Choose a PDF** opens it in the browser (pdf.js,
   `pdfjs-dist` 6.4.299 pinned); **Add text**, **✓ Tick**, **Today's date**
   and **Stamp a signature…**, each clicked onto the page, dragged or moved
   with the arrow keys; **Download PDF** writes them in with pdf-lib as

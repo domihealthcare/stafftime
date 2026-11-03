@@ -6311,9 +6311,10 @@ document). The provider sees the stamps of theirs and who may stamp it; an
 admin sees every stamp. Both tables are pinned by the schema guard.
 
 **Who opens the page**: providers, the chosen staff, managers and admins
-(`canUsePdfSigner`); listed on Resources with the Provider section's forms
-(under Everyone for a chosen member of staff who is not a provider) and in
-Home's Shortcuts for providers and the chosen. Typing on a PDF is the same
+(`canUsePdfSigner`); listed under **Everyone** on Resources, for them only,
+and in Home's Shortcuts (Dominguez: "Everyone section as the managers/staff
+will use it mostly not providers"; it had first sat with the providers'
+forms). Typing on a PDF is the same
 for all of them; stamping is decided by the server.
 
 This is the first "choose a file" button outside the profile photo. It does
