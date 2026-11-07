@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { Avatar } from '../components/Avatar';
 import { useConfirm } from '../components/ConfirmDialog';
+import { CoverDialog, OverrideForm } from '../components/call-routing/CoverDialog';
 import { Modal } from '../components/Modal';
 import { ScheduleTabs } from '../components/ScheduleTabs';
 import {
@@ -16,20 +17,28 @@ import {
   inputClass,
 } from '../components/ui';
 import { ApiError, api } from '../lib/api';
+import { overrideRange, overrideTouches } from '../lib/call-routing';
 import { addCalendarDays } from '../lib/dates';
 import { formatCalendarDate } from '../lib/format';
 import { canSeeOnCall, clockWords, entryWords, WEEKDAYS } from '../lib/on-call';
 import { formatPracticeDateTime, practiceDate } from '../lib/practice-time';
 import { useIsManager, useSession } from '../lib/session';
 import { useIsPhone } from '../lib/use-is-phone';
-import type { OnCallDay, OnCallPerson, OnCallRota, OnCallSchedule, OnCallSwap } from '../lib/types';
+import type {
+  OnCallCover,
+  OnCallDay,
+  OnCallPerson,
+  OnCallRota,
+  OnCallSchedule,
+  OnCallSwap,
+} from '../lib/types';
 
 /**
  * The provider on-call schedule (October 2026, Dominguez: "provider on call
  * schedule will def be needed"). Who takes the after-hours calls, a day at a
- * time - noon to noon, the answering service's day. A usual pattern by
+ * time - from the hand-over time (6 AM) to the same time next day. A usual pattern by
  * weekday with exceptions ("every weekend except the 4th"), changed for one
- * day by a manager, or swapped between providers: one asks, the other says
+ * day by a manager, overridden for part of a day, or swapped between providers: one asks, the other says
  * yes. Providers, managers and admins only. Never hours or pay.
  */
 export function OnCallPage() {
@@ -38,6 +47,8 @@ export function OnCallPage() {
   const [month, setMonth] = useState(() => practiceDate().slice(0, 7));
   const [schedule, setSchedule] = useState<OnCallSchedule | null>(null);
   const [swaps, setSwaps] = useState<OnCallSwap[]>([]);
+  const [covers, setCovers] = useState<OnCallCover[]>([]);
+  const [editing, setEditing] = useState<OnCallCover | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [opened, setOpened] = useState<OnCallDay | null>(null);
@@ -48,11 +59,16 @@ export function OnCallPage() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([api.onCall(range.from, range.to), api.onCallSwaps()])
-      .then(([found, swapList]) => {
+    Promise.all([
+      api.onCall(range.from, range.to),
+      api.onCallSwaps(),
+      api.onCallCovers(range.from, range.to),
+    ])
+      .then(([found, swapList, coverList]) => {
         if (cancelled) return;
         setSchedule(found);
         setSwaps(swapList);
+        setCovers(coverList);
         setError(null);
       })
       .catch((err) => {
@@ -76,7 +92,7 @@ export function OnCallPage() {
     <div className="mx-auto max-w-6xl">
       <PageHeading
         title="On call"
-        subtitle="Which provider takes the after-hours calls. Each day’s turn runs from noon to noon the next day."
+        subtitle="Which provider takes the after-hours calls. Each day’s turn runs from the hand-over time (6 AM) to the same time the next day."
       />
       <ScheduleTabs />
       <p className="mb-3 flex flex-wrap gap-4 text-sm">
@@ -118,6 +134,17 @@ export function OnCallPage() {
               days={schedule.days}
               me={employee?.id ?? null}
               onOpen={setOpened}
+              covers={covers}
+            />
+            <OverridesList
+              covers={covers}
+              canEdit={isManager}
+              onEdit={setEditing}
+              onChanged={(message) => {
+                setNotice(message);
+                reload();
+              }}
+              onError={setError}
             />
             <PatternCard
               providers={schedule.providers}
@@ -132,6 +159,19 @@ export function OnCallPage() {
               <strong>Separate calendars</strong> → <strong>My on call</strong>.
             </p>
           </>
+        )}
+        {editing && schedule && (
+          <CoverDialog
+            date={editing.startsLocal.slice(0, 10)}
+            cover={editing}
+            providers={schedule.providers}
+            onClose={() => setEditing(null)}
+            onSaved={(message) => {
+              setEditing(null);
+              setNotice(message);
+              reload();
+            }}
+          />
         )}
         {opened && schedule && (
           <DayDialog
@@ -271,12 +311,14 @@ function MonthView({
   days,
   me,
   onOpen,
+  covers,
 }: {
   month: string;
   onMonth: (month: string) => void;
   days: OnCallDay[];
   me: string | null;
   onOpen: (day: OnCallDay) => void;
+  covers: OnCallCover[];
 }) {
   const isPhone = useIsPhone();
   const today = practiceDate();
@@ -312,6 +354,22 @@ function MonthView({
         )}
         {entry.source === 'SWAPPED' && <span className="text-xs text-amber-700">↔ swapped</span>}
         {entry.source === 'CHANGED' && <span className="text-xs text-amber-700">✎ changed</span>}
+        {covers
+          .filter((cover) => overrideTouches(cover, entry.date))
+          .map((cover) => {
+            const starts = cover.startsLocal.slice(0, 10) === entry.date;
+            return (
+              <span
+                key={cover.id}
+                data-testid={`override-mark-${entry.date}`}
+                className="text-xs text-violet-700"
+              >
+                {starts
+                  ? `${clockWords(cover.startsLocal.slice(11, 16))}-${clockWords(cover.endsLocal.slice(11, 16))}: ${shortName(cover.employee)}`
+                  : `+ override: ${shortName(cover.employee)}`}
+              </span>
+            );
+          })}
       </button>
     );
   };
@@ -365,7 +423,7 @@ function MonthView({
       )}
       <p className="text-xs text-slate-500">
         Press a day to {me ? 'ask to swap one of yours, or ' : ''}see more. ↔ swapped between
-        providers · ✎ changed by a manager.
+        providers · ✎ changed by a manager · purple: an override for part of a day.
       </p>
     </section>
   );
@@ -399,6 +457,7 @@ function DayDialog({
   const [partner, setPartner] = useState('');
   const [takeDate, setTakeDate] = useState('');
   const [partnerDays, setPartnerDays] = useState<OnCallDay[]>([]);
+  const [mode, setMode] = useState<'whole' | 'part'>('whole');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -524,8 +583,44 @@ function DayDialog({
       )}
 
       {canChange && (
+        <div
+          className="mt-4 flex gap-2 border-t border-slate-100 pt-4"
+          role="group"
+          aria-label="What to change"
+        >
+          <button
+            type="button"
+            aria-pressed={mode === 'whole'}
+            onClick={() => setMode('whole')}
+            className={buttonClass(mode === 'whole' ? 'primary' : 'secondary', 'sm')}
+          >
+            Whole day
+          </button>
+          <button
+            type="button"
+            aria-pressed={mode === 'part'}
+            onClick={() => setMode('part')}
+            className={buttonClass(mode === 'part' ? 'primary' : 'secondary', 'sm')}
+          >
+            Part of the day
+          </button>
+        </div>
+      )}
+      {canChange && mode === 'part' && (
+        <div className="mt-3">
+          <h3 className="mb-2 text-sm font-semibold text-slate-900">Override part of the day</h3>
+          <OverrideForm
+            date={entry.date}
+            cover={null}
+            providers={providers}
+            onCancel={() => setMode('whole')}
+            onSaved={onDone}
+          />
+        </div>
+      )}
+      {canChange && mode === 'whole' && (
         <form
-          className="mt-4 space-y-3 border-t border-slate-100 pt-4"
+          className="mt-3 space-y-3"
           aria-label="Change this day"
           onSubmit={(event) => {
             event.preventDefault();
@@ -776,7 +871,7 @@ function PatternEditor({
   onSaved: (rotas: OnCallRota[]) => void;
 }) {
   const [startsOn, setStartsOn] = useState(practiceDate());
-  const [changesAt, setChangesAt] = useState(from?.changesAt ?? '12:00');
+  const [changesAt, setChangesAt] = useState(from?.changesAt ?? '06:00');
   const [weekly, setWeekly] = useState<Record<number, string>>(() =>
     Object.fromEntries(
       [1, 2, 3, 4, 5, 6, 7].map((weekday) => [
@@ -989,7 +1084,10 @@ function PatternEditor({
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Turns hand over at" hint="The answering service’s day: noon to noon.">
+        <Field
+          label="Turns hand over at"
+          hint="Each turn runs from this time to the same time the next day (6 AM to start)."
+        >
           {(props) => (
             <input
               {...props}
@@ -1025,6 +1123,89 @@ function PatternEditor({
         </button>
       </div>
     </form>
+  );
+}
+
+// -------------------------------------------------------------- overrides
+
+function OverridesList({
+  covers,
+  canEdit,
+  onEdit,
+  onChanged,
+  onError,
+}: {
+  covers: OnCallCover[];
+  canEdit: boolean;
+  onEdit: (cover: OnCallCover) => void;
+  onChanged: (message: string) => void;
+  onError: (message: string) => void;
+}) {
+  const confirm = useConfirm();
+  const now = Date.now();
+  const live = covers.filter((cover) => Date.parse(cover.endsAt) > now);
+
+  async function remove(cover: OnCallCover) {
+    const sure = await confirm({
+      title: `Remove the override for ${cover.employee.name}?`,
+      body: 'The usual pattern takes over for that time again.',
+      confirmLabel: 'Yes, remove it',
+      cancelLabel: 'Keep it',
+    });
+    if (!sure) return;
+    try {
+      await api.deleteOnCallCover(cover.id);
+      onChanged('The override is removed.');
+    } catch (err) {
+      onError(err instanceof ApiError ? err.message : 'Could not remove it.');
+    }
+  }
+
+  return (
+    <section aria-labelledby="on-call-overrides" className="space-y-2">
+      <h2 id="on-call-overrides" className="text-base font-semibold text-slate-900">
+        Overrides
+      </h2>
+      {live.length === 0 ? (
+        <EmptyState>
+          No overrides this month.
+          {canEdit && ' Press a day above and choose Part of the day to add one.'}
+        </EmptyState>
+      ) : (
+        <ul className="space-y-2">
+          {live.map((cover) => (
+            <li key={cover.id}>
+              <Card className="flex flex-wrap items-center gap-3 p-3" testId={`cover-${cover.id}`}>
+                <p className="min-w-0 flex-1 text-sm text-slate-800">
+                  {overrideRange(cover.startsLocal, cover.endsLocal)}:{' '}
+                  <strong>{cover.employee.name}</strong>
+                  {cover.backup && <span> (backup {cover.backup.name})</span>}.
+                  {cover.note && <span className="text-slate-600"> {cover.note}</span>}
+                </p>
+                {canEdit && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => onEdit(cover)}
+                      className={buttonClass('secondary', 'sm')}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void remove(cover)}
+                      className="text-sm font-medium text-slate-500 hover:text-rose-700"
+                    >
+                      Remove
+                    </button>
+                  </>
+                )}
+              </Card>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 

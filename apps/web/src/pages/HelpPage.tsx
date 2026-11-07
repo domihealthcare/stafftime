@@ -1305,8 +1305,8 @@ const PROVIDERS: Section[] = [
           <>
             <p>
               <Screen>Schedule</Screen> → <strong>On call</strong>: who takes the after-hours calls
-              each day, a turn running from noon to noon the next day. <strong>On call now</strong>{' '}
-              is on <Screen>Home</Screen> too. Your days are shaded.
+              each day, a turn running from the hand-over time (6 AM) to the same time the next day.{' '}
+              <strong>On call now</strong> is on <Screen>Home</Screen> too. Your days are shaded.
             </p>
             <p>
               To swap, press one of your days, choose who should take it and - if you like - one of
@@ -2651,32 +2651,36 @@ const MANAGERS: Section[] = [
             <Screen>Schedule</Screen> → <strong>On call</strong> →{' '}
             <strong>The usual pattern</strong> → <strong>Change it</strong>: a provider for each
             weekday, then any exceptions - “the 4th Saturday → Dr. Badia” - and the hand-over time
-            (noon, for the answering service). It is saved from a day you choose, so who was on call
-            before stays as it was. Weekends are counted by their Saturday, so the 4th weekend is
-            the 4th Saturday and the Sunday after it. For one day only, press the day and choose who
-            is on call (with a note if you like);
-            <strong> Back to the usual</strong> undoes it. Both providers are told. Swaps the
-            providers agree between themselves happen on their own, and you are told. On call is
-            never hours or pay.
+            (6 AM to start). It is saved from a day you choose, so who was on call before stays as
+            it was. Weekends are counted by their Saturday, so the 4th weekend is the 4th Saturday
+            and the Sunday after it. For one day only, press the day and choose who is on call (with
+            a note if you like) under <strong>Whole day</strong>;<strong> Back to the usual</strong>{' '}
+            undoes it. For only part of a day or night, choose <strong>Part of the day</strong>{' '}
+            instead: an <strong>override</strong>, listed under the month with Edit and Remove. Both
+            providers are told. Swaps the providers agree between themselves happen on their own,
+            and you are told. On call is never hours or pay.
           </p>
         ),
       },
       {
-        question: 'The after-hours phone line: covers, backups and what callers hear',
+        question: 'The after-hours phone line: overrides, backups and what callers hear',
         answer: (
           <>
             <p>
               <Screen>Schedule</Screen> → <strong>On call</strong> →{' '}
-              <strong>After-hours calls</strong>. The line rings whoever is on call: a{' '}
-              <strong>cover</strong> first, then the day&rsquo;s change or swap, then the usual
+              <strong>After-hours calls</strong>. The line rings whoever is on call: an{' '}
+              <strong>override</strong> first, then the day&rsquo;s change or swap, then the usual
               pattern, then the <strong>default provider</strong>. Each pattern entry and changed
               day can have a <strong>Backup</strong>, rung if the provider does not press 1.
             </p>
             <p>
-              For part of a night, a vacation evening or any odd hours, press a day under{' '}
-              <strong>Next 60 days</strong> and add a cover: from when, until when, who and their
-              backup. Nothing else changes, and the providers are told. The grid shows who the line
-              will ring at every hour.
+              For part of a night, a vacation evening or any odd hours, press a day on the{' '}
+              <Screen>Schedule → On call</Screen> page, choose <strong>Part of the day</strong> and
+              add an override: from when, until when (the next morning is fine), who and their
+              backup. Nothing else changes. Overrides are listed under the month, where managers can{' '}
+              <strong>Edit</strong> or <strong>Remove</strong> them, and a day with one is marked on
+              the calendar. This screen keeps the line&rsquo;s status, what callers hear and the
+              providers&rsquo; phones.
             </p>
             <p>
               <strong>What callers hear</strong> holds every message in English and Spanish, the

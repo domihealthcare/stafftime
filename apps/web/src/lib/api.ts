@@ -43,7 +43,6 @@ import type {
   OnCallCover,
   OnCallCoverInput,
   OnCallRota,
-  OnCallRoutingView,
   OnCallSchedule,
   OnCallSwap,
   EveryonesSchedule,
@@ -1738,8 +1737,8 @@ export const api = {
     }[];
   }) => request<OnCallRota[]>('/on-call/rotas', { method: 'PUT', body: JSON.stringify(body) }),
   /// After-hours call routing (November 2026): managers and admins.
-  onCallRouting: (from: string, days: number) =>
-    request<OnCallRoutingView>(`/on-call/routing${toQuery({ from, days: String(days) })}`),
+  onCallCovers: (from: string, to: string) =>
+    request<OnCallCover[]>(`/on-call/covers${toQuery({ from, to })}`),
   createOnCallCover: (body: OnCallCoverInput) =>
     request<OnCallCover>('/on-call/covers', { method: 'POST', body: JSON.stringify(body) }),
   updateOnCallCover: (id: string, body: OnCallCoverInput) =>

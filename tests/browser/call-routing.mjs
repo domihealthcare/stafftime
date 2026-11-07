@@ -257,7 +257,7 @@ await step('pressing 2 gives the Spanish greeting only, then a Dial that is not 
   spanishCall = await callIn(2);
   const { chosen } = spanishCall;
   must(chosen.status === 200, `answered ${chosen.status}`);
-  must(chosen.text.includes('Ha comunicado con el proveedor'), 'no Spanish greeting');
+  must(chosen.text.includes('Ha llamado al proveedor de guardia de Domi Healthcare'), 'no Spanish greeting');
   must(!chosen.text.includes('You have reached'), 'the English greeting is there too');
   const dial = dialOf(chosen.text);
   must(dial, 'no Dial');
@@ -277,7 +277,7 @@ await step('no key, once: the menu again; no key twice: the English greeting', a
   const wrong = await post(`${VOICE}/language?try=1`, { ...base, Digits: '7' });
   must(wrong.text.includes('language?try=2'), 'a wrong key did not bring the menu again');
   const second = await post(`${VOICE}/language?try=2`, base);
-  must(second.text.includes('You have reached the urgent on-call provider'), 'no English greeting on the second go');
+  must(second.text.includes('You have reached the Domi Healthcare on-call provider'), 'no English greeting on the second go');
   must(dialOf(second.text), 'no Dial after the second go');
 });
 
@@ -307,8 +307,8 @@ await step('nobody answering walks the chain, with hold words, to the closing me
 
 await step('the English hold words and closing words are used for an English call', async () => {
   const { base, chosen, path: first } = await callIn(1);
-  must(chosen.text.includes('You have reached the urgent on-call provider'), 'no English greeting');
-  must(!chosen.text.includes('Ha comunicado'), 'the Spanish greeting is there too');
+  must(chosen.text.includes('You have reached the Domi Healthcare on-call provider'), 'no English greeting');
+  must(!chosen.text.includes('Ha llamado al proveedor'), 'the Spanish greeting is there too');
   const dial = dialOf(chosen.text);
   const next = await post(resolve(dial.action, first), { ...base, DialCallStatus: 'no-answer', DialBridged: 'false' });
   must(next.text.includes('Please continue to hold'), 'no English hold words');
@@ -356,10 +356,13 @@ await step('the manager reaches After-hours calls from Schedule, On call', async
   await manager.getByRole('heading', { name: 'On call', exact: true }).waitFor();
   await manager.getByRole('link', { name: 'After-hours calls' }).click();
   await manager.getByRole('heading', { name: 'After-hours calls', exact: true }).waitFor();
-  for (const heading of ['The line', 'Next 60 days', 'Covers', 'What callers hear']) {
+  for (const heading of ['The line', 'What callers hear']) {
     await manager.getByRole('heading', { name: heading, exact: true }).waitFor();
   }
   await manager.getByRole('heading', { name: /^Providers.? phones$/ }).waitFor();
+  await manager.getByText('Who the line rings comes from the').waitFor();
+  must((await manager.getByRole('heading', { name: 'Next 60 days' }).count()) === 0, 'the 60-day grid is still there');
+  must((await manager.getByRole('heading', { name: 'Covers', exact: true }).count()) === 0, 'the Covers list is still there');
 });
 
 await step('the status card says the line is switched on and the fallback is set', async () => {
@@ -390,26 +393,40 @@ await step('Providers phones lists who can be dialled and who cannot', async () 
 
 // --------------------------------------------------------------- 3. covers
 
-await step('a manager adds a cover from the 60-day grid, and it is listed', async () => {
-  await manager.goto(`${BASE}/on-call/routing`, { waitUntil: 'networkidle' });
-  await manager.getByTestId(`routing-day-${today}`).getByRole('button').first().click();
-  const dialog = manager.getByTestId('cover-dialog');
-  await dialog.getByRole('heading', { name: 'Add a cover' }).waitFor();
+await step('a manager adds a part-of-day override from the On call page, and it is listed and marked', async () => {
+  await manager.goto(`${BASE}/on-call`, { waitUntil: 'networkidle' });
+  await manager.getByTestId(`on-call-${today}`).click();
+  const day = manager.getByTestId('on-call-day');
+  await day.getByRole('button', { name: 'Part of the day' }).click();
+  const form = day.getByRole('form', { name: 'Override' });
+  // The defaults are 6 PM that day until 6 AM the next.
+  must((await form.getByLabel('From time').inputValue()) === '18:00', 'the default start is not 6 PM');
+  must((await form.getByLabel('Until time').inputValue()) === '06:00', 'the default end is not 6 AM');
+  must((await form.getByLabel('Until date').inputValue()) === addDays(today, 1), 'the default end date is not the next day');
   // From yesterday to the day after tomorrow, so it holds the moment the calls are made.
-  await dialog.getByLabel('From date').fill(addDays(today, -1));
-  await dialog.getByLabel('From time').fill('00:00');
-  await dialog.getByLabel('Until date').fill(addDays(today, 2));
-  await dialog.getByLabel('Until time').fill('23:00');
-  await dialog.getByLabel('Provider on call').selectOption({ label: 'Max Assistant' });
-  await dialog.getByLabel('Backup').selectOption({ label: 'Frankie Front-Desk' });
-  await dialog.getByLabel('Note').fill('ui cover');
-  await dialog.getByRole('button', { name: 'Save cover' }).click();
-  await manager.getByText('Saved. The cover is added.').waitFor();
+  await form.getByLabel('From date').fill(addDays(today, -1));
+  await form.getByLabel('From time').fill('00:00');
+  await form.getByLabel('Until date').fill(addDays(today, 2));
+  await form.getByLabel('Until time').fill('23:00');
+  await form.getByLabel('Provider on call').selectOption({ label: 'Max Assistant' });
+  await form.getByLabel('Backup').selectOption({ label: 'Frankie Front-Desk' });
+  await form.getByLabel('Note').fill('ui cover');
+  await form.getByRole('button', { name: 'Save override' }).click();
+  await manager.getByText('Saved. The override is added.').waitFor();
   const card = manager.getByTestId(/^cover-/).filter({ hasText: 'ui cover' });
   await card.waitFor();
   await card.getByText('Max Assistant').waitFor();
-  await card.getByText('backup: Frankie Front-Desk').waitFor();
+  await card.getByText('backup Frankie Front-Desk').waitFor();
   uiCoverId = (await card.getAttribute('data-testid')).replace('cover-', '');
+  await manager.getByTestId(`on-call-${today}`).getByTestId(`override-mark-${today}`).first().waitFor();
+});
+
+await step('providers see the overrides read-only', async () => {
+  await frankie.goto(`${BASE}/on-call`, { waitUntil: 'networkidle' });
+  const card = frankie.getByTestId(`cover-${uiCoverId}`);
+  await card.getByText('Max Assistant').waitFor();
+  must((await card.getByRole('button', { name: 'Edit' }).count()) === 0, 'a provider sees Edit');
+  must((await card.getByRole('button', { name: 'Remove' }).count()) === 0, 'a provider sees Remove');
 });
 
 await step('a call made during the cover dials its provider, and the backup second', async () => {
@@ -420,14 +437,14 @@ await step('a call made during the cover dials its provider, and the backup seco
   must(dialOf(next.text)?.number === '+12015550103', 'the backup (Frankie) was not rung second');
 });
 
-await step('the cover can be changed', async () => {
+await step('the override can be changed', async () => {
   const card = manager.getByTestId(`cover-${uiCoverId}`);
   await card.getByRole('button', { name: 'Edit' }).click();
   const dialog = manager.getByTestId('cover-dialog');
-  await dialog.getByRole('heading', { name: 'Change a cover' }).waitFor();
+  await dialog.getByRole('heading', { name: 'Change an override' }).waitFor();
   await dialog.getByLabel('Note').fill('ui cover changed');
-  await dialog.getByRole('button', { name: 'Save cover' }).click();
-  await manager.getByText('Saved. The cover is changed.').waitFor();
+  await dialog.getByRole('button', { name: 'Save override' }).click();
+  await manager.getByText('Saved. The override is changed.').waitFor();
   await manager.getByTestId(`cover-${uiCoverId}`).getByText('ui cover changed').waitFor();
 });
 
@@ -435,7 +452,7 @@ await step('removing it asks first, and the earlier cover takes over again', asy
   const card = manager.getByTestId(`cover-${uiCoverId}`);
   await card.getByRole('button', { name: 'Remove' }).click();
   await manager.getByRole('button', { name: 'Yes, remove it' }).click();
-  await manager.getByText('The cover is removed.').waitFor();
+  await manager.getByText('The override is removed.').waitFor();
   await card.waitFor({ state: 'detached' });
   uiCoverId = null;
   const { chosen } = await callIn(1);
@@ -596,8 +613,8 @@ await step('clean-up: the suite takes its cover away', async () => {
     const gone = await call(manager, `/on-call/covers/${id}`, { method: 'DELETE' });
     must(gone.status < 300 || gone.status === 404, `removing a cover answered ${gone.status}`);
   }
-  const view = (await call(manager, `/on-call/routing?from=${today}&days=7`)).body;
-  must(!view.covers.some((c) => c.note && c.note.includes('call-routing-suite')), 'the suite cover is still there');
+  const covers = (await call(manager, `/on-call/covers?from=${today}&to=${addDays(today, 7)}`)).body;
+  must(!covers.some((c) => c.note && c.note.includes('call-routing-suite')), 'the suite cover is still there');
 });
 
 await browser.close();
