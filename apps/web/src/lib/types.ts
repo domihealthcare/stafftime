@@ -2193,7 +2193,7 @@ export interface OnCallRota {
 /// Which layer of the schedule decided who is on call.
 export type OnCallLayer = 'COVER' | 'CHANGED' | 'SWAPPED' | 'USUAL' | 'DEFAULT' | 'NONE';
 
-/// A time-range cover: who is on call between two moments.
+/// A time-range override (a cover in the database): who is on call between two moments.
 export interface OnCallCover {
   id: string;
   /// Instants (ISO).
@@ -2215,28 +2215,6 @@ export interface OnCallCoverInput {
   employeeId: string;
   backupEmployeeId?: string | null;
   note?: string;
-}
-
-/// One stretch of time with the same answer, for the 60-day view.
-export interface OnCallSegment {
-  startsAt: string;
-  endsAt: string;
-  employeeId: string | null;
-  backupEmployeeId: string | null;
-  source: OnCallLayer;
-  coverId: string | null;
-  turnDate: string;
-}
-
-export interface OnCallRoutingView {
-  from: string;
-  days: number;
-  segments: OnCallSegment[];
-  covers: OnCallCover[];
-  /// Everybody named in the segments and covers, and every provider.
-  people: OnCallPerson[];
-  providers: OnCallPerson[];
-  defaultProviderId: string | null;
 }
 
 export type CallMessageKey =

@@ -95,6 +95,13 @@ export class OnCallService {
       current.employeeId,
     ]);
 
+    // The override running now, if any: the one made last wins.
+    const override = await this.prisma.onCallCover.findFirst({
+      where: { startsAt: { lte: now }, endsAt: { gt: now } },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: { endsAt: true, employee: { select: PERSON } },
+    });
+
     return {
       days: views.map((day, index) => ({
         ...day,
@@ -102,11 +109,18 @@ export class OnCallService {
         backup: backupIds[index] ? (people.get(backupIds[index] as string) ?? null) : null,
         note: changed.notes.get(day.date) ?? null,
       })),
-      now: {
-        date: nowDate,
-        employee: current.employeeId ? (people.get(current.employeeId) ?? null) : null,
-        until: zonedTimeToUtc(addDaysTo(nowDate, 1), current.changesAt, PRACTICE_ZONE),
-      },
+      now: override
+        ? {
+            // An override running now beats the day, as on the phone line.
+            date: nowDate,
+            employee: named(override.employee),
+            until: override.endsAt,
+          }
+        : {
+            date: nowDate,
+            employee: current.employeeId ? (people.get(current.employeeId) ?? null) : null,
+            until: zonedTimeToUtc(addDaysTo(nowDate, 1), current.changesAt, PRACTICE_ZONE),
+          },
       providers: await this.providers(),
     };
   }

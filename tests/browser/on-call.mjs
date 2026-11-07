@@ -21,8 +21,8 @@ const step = async (name, fn) => {
 /**
  * The provider on-call schedule (Dominguez, October 2026): a usual pattern
  * by weekday with an exception for the 4th weekend, a day changed by a
- * manager, and a swap one provider asks for and the other accepts. Noon to
- * noon; providers, managers and admins only.
+ * manager, and a swap one provider asks for and the other accepts. Turns run
+ * from 6 AM to 6 AM the next day; providers, managers and admins only.
  *
  * Frankie (front desk) and Max (MA) are made providers here; the seed puts
  * their job roles back. run-all.sh clears the on-call tables.
@@ -209,7 +209,7 @@ await step('a provider cannot change a day or the pattern, or swap a day not the
   if (day.status !== 403) throw new Error(`changing a day answered ${day.status}`);
   const rota = await call(frankie, '/on-call/rotas', {
     method: 'PUT',
-    body: JSON.stringify({ startsOn: today, changesAt: '12:00', entries: [] }),
+    body: JSON.stringify({ startsOn: today, changesAt: '06:00', entries: [] }),
   });
   if (rota.status !== 403) throw new Error(`the pattern answered ${rota.status}`);
   const swap = await call(frankie, '/on-call/swaps', {
@@ -219,7 +219,7 @@ await step('a provider cannot change a day or the pattern, or swap a day not the
   if (swap.status !== 400) throw new Error(`swapping Max’s day answered ${swap.status}`);
 });
 
-await step('a provider’s calendar feed carries their own turns, noon to noon', async () => {
+await step('a provider’s calendar feed carries their own turns, 6 AM to 6 AM', async () => {
   const link = await call(frankie, '/calendar/link', { method: 'POST' });
   const url = link.body.url ?? link.body.feedUrl;
   const token = link.body.token ?? (url ? url.split('/calendar/')[1].split('/')[0] : null);

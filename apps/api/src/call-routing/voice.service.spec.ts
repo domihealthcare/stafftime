@@ -135,7 +135,7 @@ describe('VoiceService', () => {
       const xml = allXml(
         await service.language({ CallSid: 'CA1', Digits: '1', To: '+12015558888' }, { try: '1' }),
       );
-      expect(xml).toContain('urgent on-call provider');
+      expect(xml).toContain('Domi Healthcare on-call provider');
       expect(xml).not.toContain('proveedor de guardia');
       expect(xml).toContain('callerId="+12015559999"');
       expect(xml).toContain('timeout="25"');
@@ -149,7 +149,7 @@ describe('VoiceService', () => {
       const { service } = build();
       const xml = await service.language({ CallSid: 'CA1', Digits: '2' }, { try: '1' });
       expect(xml).toContain('proveedor de guardia');
-      expect(xml).not.toContain('urgent on-call provider');
+      expect(xml).not.toContain('Domi Healthcare on-call provider');
       expect(queryOf(xml, 'url').get('lang')).toBe('es');
       expect(service.whisper({ lang: 'es', t: NOW() })).toContain('Spanish-speaking caller');
       expect(service.whisper({ lang: 'en', t: NOW() })).toContain('English-speaking caller');
@@ -158,7 +158,7 @@ describe('VoiceService', () => {
     it('no input twice means English', async () => {
       const { service } = build();
       const xml = await service.language({ CallSid: 'CA1' }, { try: '2' });
-      expect(xml).toContain('urgent on-call provider');
+      expect(xml).toContain('Domi Healthcare on-call provider');
     });
 
     it('an invalid key the first time replays the menu', async () => {
@@ -167,7 +167,7 @@ describe('VoiceService', () => {
       expect(xml).toContain('action="language?try=2"');
       expect(routing.planAt).not.toHaveBeenCalled();
       const second = await service.language({ CallSid: 'CA1', Digits: '7' }, { try: '2' });
-      expect(second).toContain('urgent on-call provider');
+      expect(second).toContain('Domi Healthcare on-call provider');
     });
 
     it('callerId falls back to the number that was called', async () => {

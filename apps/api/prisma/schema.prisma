@@ -3505,9 +3505,9 @@ model OnCallRota {
   id        String   @id @default(uuid()) @db.Uuid
   startsOn  DateTime @unique @db.Date
   /// When a turn hands over, "HH:MM" in New Jersey: the day's turn runs from
-  /// this time on its date to the same time the next day. Noon, for the
-  /// answering service.
-  changesAt String   @default("12:00")
+  /// this time on its date to the same time the next day. 6 AM since
+  /// November 2026 (noon before, for the old answering service).
+  changesAt String   @default("06:00")
 
   createdById String?  @db.Uuid
   createdAt   DateTime @default(now())

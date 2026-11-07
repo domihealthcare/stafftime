@@ -182,6 +182,17 @@ describe('OnCallRoutingService covers', () => {
     ).rejects.toThrow('does not happen');
   });
 
+  it('lists the overrides touching New Jersey days, refusing a bad range', async () => {
+    const { service, prisma } = build([]);
+    prisma.onCallCover.findMany.mockResolvedValue([]);
+    await service.listCovers('2026-11-01', '2026-11-30');
+    const where = prisma.onCallCover.findMany.mock.calls[0][0].where;
+    expect(where.startsAt.lt.toISOString()).toBe('2026-12-01T05:00:00.000Z'); // EST midnight
+    expect(where.endsAt.gt.toISOString()).toBe('2026-11-01T04:00:00.000Z'); // EDT midnight
+    await expect(service.listCovers('2026-11-30', '2026-11-01')).rejects.toThrow('from and to');
+    await expect(service.listCovers('2026-01-01', '2026-12-31')).rejects.toThrow('At most');
+  });
+
   it('refuses a cover already over', async () => {
     const { service } = build([]);
     await expect(

@@ -5,7 +5,7 @@ import {
   PRACTICE_ZONE,
   zonedTimeToUtc,
 } from '../common/util/zoned-time.util';
-import { rotaOn, weekOfMonthOf } from './on-call';
+import { DEFAULT_HAND_OVER, rotaOn, weekOfMonthOf } from './on-call';
 import type { RotaRule } from './on-call';
 
 /**
@@ -93,7 +93,7 @@ export interface OnCallSegment extends OnCallAnswer {
  * exactly one answer and hand-overs only ever move forward.
  */
 function handOverAt(date: string, rotas: RotaRule[]): Date {
-  const changesAt = rotaOn(date, rotas)?.changesAt ?? '12:00';
+  const changesAt = rotaOn(date, rotas)?.changesAt ?? DEFAULT_HAND_OVER;
   return zonedTimeToUtc(date, changesAt, PRACTICE_ZONE);
 }
 

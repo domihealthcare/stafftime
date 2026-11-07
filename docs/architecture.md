@@ -6353,7 +6353,11 @@ app answers with TwiML. Set-up and the test plan with staff phones are in
 `docs/call-routing-setup.md`.
 
 **Who is on call** stays the On call schedule's job, so Home, the calendar
-links and the phone never disagree. `on-call/call-routing-lookup.ts` (pure)
+links and the phone never disagree. Since 7 November 2026 (Dominguez) a cover
+is called an **override** on screen and is added from the On call page itself
+(press a day: Whole day or Part of the day); there is no separate grid. Turns
+hand over at **6 AM** (`DEFAULT_HAND_OVER`), and "on call now" counts an
+override running now. `on-call/call-routing-lookup.ts` (pure)
 adds two layers to it: a **cover** (`OnCallCover`, an instant range; the
 latest made wins an overlap) above the day's change or swap, and the
 **default provider** (`CallRoutingSettings.defaultProviderId`) below the

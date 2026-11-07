@@ -35,6 +35,10 @@ export interface OnCallDayView {
   changesAt: string;
 }
 
+/// When a turn hands over with no pattern saying otherwise: 6 AM (Dominguez,
+/// November 2026; it was noon for the old answering service).
+export const DEFAULT_HAND_OVER = '06:00';
+
 export const WEEKS_OF_MONTH = [0, 1, 2, 3, 4, -1] as const;
 
 /// Which week of the month a day is in, for the rota: the nth of its weekday,
@@ -74,7 +78,7 @@ export function onCallOn(
   changed: Map<string, { employeeId: string; swapped: boolean }>,
 ): OnCallDayView {
   const rota = rotaOn(date, rotas);
-  const changesAt = rota?.changesAt ?? '12:00';
+  const changesAt = rota?.changesAt ?? DEFAULT_HAND_OVER;
   const change = changed.get(date);
   if (change) {
     return {
@@ -91,7 +95,7 @@ export function onCallOn(
 /// The day whose turn is running at a moment, given the date and "HH:MM" it
 /// is in New Jersey: before the hand-over it is still yesterday's.
 export function turnDateAt(today: string, timeNow: string, rotas: RotaRule[]): string {
-  const changesAt = rotaOn(today, rotas)?.changesAt ?? '12:00';
+  const changesAt = rotaOn(today, rotas)?.changesAt ?? DEFAULT_HAND_OVER;
   return timeNow < changesAt ? addDaysTo(today, -1) : today;
 }
 

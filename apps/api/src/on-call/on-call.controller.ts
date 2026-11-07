@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
@@ -105,6 +106,19 @@ export class OnCallController {
   @Roles(Role.MANAGER)
   saveRoutingSettings(@Body() dto: CallRoutingSettingsInput, @CurrentUser() user: AuthUser) {
     return this.routing.saveSettings(dto, user);
+  }
+
+  /// Overrides on top of the schedule: read by whoever sees the schedule.
+  @Get('covers')
+  async covers(
+    @Query('from') from: string,
+    @Query('to') to: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    if (!(await this.onCall.canSee(user))) {
+      throw new ForbiddenException('The on-call schedule is for providers, managers and admins.');
+    }
+    return this.routing.listCovers(from, to);
   }
 
   @Post('covers')
