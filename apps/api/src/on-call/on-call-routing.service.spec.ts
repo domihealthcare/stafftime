@@ -93,6 +93,12 @@ describe('OnCallRoutingService.planAt', () => {
     expect(plan.problems).toEqual([]);
   });
 
+  it("rings a provider's own on-call number before their Directory phone", async () => {
+    answer();
+    const { service } = build([person(A, { onCallPhone: '+12014014089' }), person(C)]);
+    expect((await service.planAt(NOW)).onCall?.phone).toBe('+12014014089');
+  });
+
   it('skips a provider with no usable phone to the default, and says so', async () => {
     answer();
     const { service } = build([person(A, { phone: 'x12' }), person(C)]);

@@ -37,7 +37,8 @@ provider's voicemail (the greeting is about 25 seconds since 7 November
 cell rings.
 
 The provider's phone shows the **Twilio number**, not the patient's. The
-caller's number is in **Schedule -> On call -> Call log** for 90 days, for
+caller's number is under **Recent calls** at the bottom of **Schedule -> On
+call** for 90 days, for
 providers, managers and admins.
 
 If Domi Staff cannot read the schedule (the database is slow or down), the
@@ -49,14 +50,16 @@ dead end.
 
 ## Before you start: things only you can decide
 
-- **Each provider's Directory phone must be their cell.** The admin page
-  (Schedule -> On call -> After-hours calls -> Providers' phones) shows which
-  ones can be dialled. Fix one under Manage -> Staff -> Edit.
+- **Each provider's number.** The line rings a provider's **on-call
+  number** (theirs to set in **Your profile**, or an admin's under Manage ->
+  Staff -> Edit), or their Directory phone when they have not set one. Schedule
+  -> On call -> Phone line settings -> Providers' phones shows which number
+  is rung for each, and whether it can be dialled.
 - **How long each provider's phone rings before its voicemail answers.** It
   must be longer than the 20 seconds the line rings, or their voicemail picks
   up during try 1 and records the whisper as a short junk message. Most
   phones ring about 25 to 30 seconds. If one is shorter, either ask the
-  carrier to lengthen it or lower "Ring each provider for" on the admin page.
+  carrier to lengthen it or lower "Ring each provider for" under Phone line settings.
 - **No BAA** (Dominguez, November 2026): Twilio only signs one on its paid
   Security or Enterprise Editions; you chose to go ahead without one.
 
@@ -96,7 +99,7 @@ the latest -> ... -> Redeploy):
 | `TWILIO_WEBHOOK_BASE_URL` | `https://staff.domihealthcare.com` |
 | `ONCALL_FALLBACK_PHONE` | Dr. Jonathan Dominguez's cell, `+1` and ten digits |
 
-Then open **Schedule -> On call -> After-hours calls**: the status card
+Then open **Schedule -> On call -> Phone line settings**: the status card
 should say the line is switched on and the fallback cell is set.
 
 ## Part 3: point the number at Domi Staff (about 5 minutes)
@@ -134,7 +137,7 @@ should say the line is switched on and the fallback cell is set.
 
 Do these by calling the **Twilio number directly** from a staff cell, with
 two providers' cells to hand (or one provider and a manager made backup).
-After each, look at **Schedule -> On call -> Call log**.
+After each, look at **Recent calls** at the bottom of **Schedule -> On call**.
 
 1. **Set up**: on **Schedule -> On call**, press today and choose **Part of
    the day**: an override for the next hour with provider A and backup B (so
@@ -174,7 +177,7 @@ After each, look at **Schedule -> On call -> Call log**.
    included.
 3. After hours, call the **main office number** from a staff cell. It should
    go through to the menu exactly as in Part 4.
-4. Look at the Call log: does it show **your cell's number**, or the
+4. Look at Recent calls: does it show **your cell's number**, or the
    office's? That says whether Weave passes on the caller's number when it
    forwards. If it shows the office number, providers will rely on the
    callback number the caller leaves in voicemail; ask Weave support whether
@@ -189,18 +192,19 @@ After each, look at **Schedule -> On call -> Call log**.
   service). For part of a night, or any odd hours, press the day and choose
   **Part of the day**: an **override** beats the day and the pattern, and
   nothing else changes. The line rings exactly what the On call page shows.
-- **What callers hear**: After-hours calls -> What callers hear. To use your
+- **What callers hear**: On call -> Phone line settings -> What callers hear. To use your
   own recording, upload the MP3 to **Twilio -> Assets** (Develop -> Functions
   and Assets -> Assets), copy its https link and paste it beside the message.
   Nothing is uploaded to Domi Staff.
-- **Who is rung by default**: After-hours calls -> Default provider. Keep
+- **Who is rung by default**: On call -> Phone line settings -> Default
+  provider. Keep
   `ONCALL_FALLBACK_PHONE` in Vercel and the TwiML Bin in step with it.
 
 ## If something goes wrong
 
 - **Callers hear "an application error has occurred"**: the TwiML Bin is not
   set as the fallback (Part 3, step 5). Set it; then check Vercel's logs.
-- **Every call goes to the fallback cell**: the Call log says "Fallback used".
+- **Every call goes to the fallback cell**: Recent calls says "Fallback used".
   Look for problems on the admin page (no default provider, phones that
   cannot be dialled), then Vercel's logs for "call-routing".
 - **The log is empty though calls work, or every call goes to the

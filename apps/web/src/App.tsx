@@ -82,8 +82,6 @@ const ScheduleReviewsPage = lazy(() =>
 const OnCallPage = lazy(() =>
   import('./pages/OnCallPage').then((m) => ({ default: m.OnCallPage })),
 );
-const CallRoutingPage = lazy(() => import('./pages/CallRoutingPage'));
-const CallLogPage = lazy(() => import('./pages/CallLogPage'));
 const QuizPage = lazy(() => import('./pages/QuizPage').then((m) => ({ default: m.QuizPage })));
 const QuizzesPage = lazy(() =>
   import('./pages/QuizzesPage').then((m) => ({ default: m.QuizzesPage })),
@@ -321,8 +319,8 @@ function Routed() {
           <Route path="quizzes/:id" element={<QuizPage />} />
           <Route path="quizzes/:id/results" element={<QuizResultsPage />} />
           <Route path="on-call" element={<OnCallPage />} />
-          <Route path="on-call/routing" element={<CallRoutingPage />} />
-          <Route path="on-call/calls" element={<CallLogPage />} />
+          <Route path="on-call/routing" element={<Navigate to="/on-call#phone-line" replace />} />
+          <Route path="on-call/calls" element={<Navigate to="/on-call#calls" replace />} />
           <Route path="schedule-reviews" element={<ScheduleReviewsPage />} />
           <Route path="timesheet" element={<TimesheetPage />} />
           <Route path="schedule" element={<SchedulePage />} />

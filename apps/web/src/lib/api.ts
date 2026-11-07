@@ -1003,6 +1003,7 @@ export const api = {
       postNominals: string | null;
       email: string;
       phone: string | null;
+      onCallPhone: string | null;
       role: string;
       payType: string;
       clocksIn: boolean;
@@ -2355,6 +2356,7 @@ export const api = {
     preferredName?: string;
     pronouns?: string;
     phone?: string;
+    onCallPhone?: string;
     about?: string;
     language?: 'en' | 'es';
   }) => request<Profile>('/profile', { method: 'PATCH', body: JSON.stringify(body) }),

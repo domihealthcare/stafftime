@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { EmploymentStatus, Prisma } from '@prisma/client';
 import { assertBirthday } from '../common/birthday';
+import { onCallNumber } from '../common/util/on-call-number';
 import { practiceToday } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
@@ -71,6 +72,7 @@ export class EmployeesService {
           preferredName: optionalText(employee.preferredName),
           postNominals: optionalText(employee.postNominals),
           phone: optionalText(employee.phone),
+          onCallPhone: onCallNumber(employee.onCallPhone),
           adpFileNumber: adpFileNumber?.trim() || null,
           hireDate: employee.hireDate ? new Date(employee.hireDate) : null,
           terminationDate: employee.terminationDate
@@ -227,6 +229,7 @@ export class EmployeesService {
           preferredName: optionalText(employee.preferredName),
           postNominals: optionalText(employee.postNominals),
           phone: optionalText(employee.phone),
+          onCallPhone: onCallNumber(employee.onCallPhone),
           adpFileNumber: adpFileNumber === undefined ? undefined : adpFileNumber?.trim() || null,
           hireDate:
             employee.hireDate === undefined

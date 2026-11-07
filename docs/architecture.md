@@ -6357,7 +6357,10 @@ links and the phone never disagree. Since 7 November 2026 (Dominguez) a cover
 is called an **override** on screen and is added from the On call page itself
 (press a day: Whole day or Part of the day); there is no separate grid. Turns
 hand over at **6 AM** (`DEFAULT_HAND_OVER`), and "on call now" counts an
-override running now. `on-call/call-routing-lookup.ts` (pure)
+override running now. Since version 1.46.0 the line's settings and its
+recent calls are sections of the On call page, and the number rung for a
+provider is their own **on-call number** (`Employee.onCallPhone`, set in
+Your profile) or else their Directory phone (`numberToRing`). `on-call/call-routing-lookup.ts` (pure)
 adds two layers to it: a **cover** (`OnCallCover`, an instant range; the
 latest made wins an overlap) above the day's change or swap, and the
 **default provider** (`CallRoutingSettings.defaultProviderId`) below the

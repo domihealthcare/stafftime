@@ -1,59 +1,32 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
-import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
-import { ApiError, api } from '../lib/api';
+import { Alert, Badge, Card, EmptyState, Spinner } from '../ui';
+import { ApiError, api } from '../../lib/api';
 import {
   formatCaller,
   outcomeTone,
   outcomeWords,
   resultWords,
   roleWords,
-} from '../lib/call-routing';
-import { canSeeOnCall } from '../lib/on-call';
-import { formatPracticeDateTime } from '../lib/practice-time';
-import { useIsManager, useSession } from '../lib/session';
-import type { CallLogEntry } from '../lib/types';
+} from '../../lib/call-routing';
+import { formatPracticeDateTime } from '../../lib/practice-time';
+import type { CallLogEntry } from '../../lib/types';
 
 /// The after-hours calls of the last 30 days, newest first.
-export function CallLogPage() {
-  const { employee } = useSession();
-  const isManager = useIsManager();
-  const allowed = canSeeOnCall(employee);
+export function RecentCalls() {
   const [calls, setCalls] = useState<CallLogEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!allowed) return;
     api
       .callLog()
       .then((found) => setCalls([...found].sort((a, b) => b.startedAt.localeCompare(a.startedAt))))
       .catch((err) => setError(err instanceof ApiError ? err.message : 'Could not load it.'));
-  }, [allowed]);
-
-  if (!allowed) {
-    return (
-      <div className="max-w-3xl">
-        <PageHeading title="Call log" />
-        <Alert tone="info">The call log is for providers and managers.</Alert>
-      </div>
-    );
-  }
+  }, []);
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <PageHeading
-        title="Call log"
-        subtitle="After-hours calls in the last 30 days, newest first."
-      />
-      <p className="mb-4 flex flex-wrap gap-4 text-sm">
-        <Link to="/on-call" className="font-medium text-brand-700 underline">
-          On call schedule
-        </Link>
-        {isManager && (
-          <Link to="/on-call/routing" className="font-medium text-brand-700 underline">
-            After-hours calls
-          </Link>
-        )}
+    <div className="pt-3">
+      <p className="mb-3 text-sm text-slate-600">
+        After-hours calls in the last 30 days, newest first.
       </p>
       {error && <Alert>{error}</Alert>}
       {!calls ? (
@@ -153,5 +126,3 @@ function Attempts({ call }: { call: CallLogEntry }) {
     </ol>
   );
 }
-
-export default CallLogPage;

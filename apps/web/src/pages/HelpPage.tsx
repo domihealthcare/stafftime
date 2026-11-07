@@ -1337,10 +1337,12 @@ const PROVIDERS: Section[] = [
               leave a voicemail on your phone.
             </p>
             <p>
-              The caller&rsquo;s number, when to call back, is in <Screen>Schedule</Screen> →{' '}
-              <strong>On call</strong> → <strong>Call log</strong> for 30 days. If nobody could be
-              reached you are also told under the bell, by email and on your phone, with the number.
-              Nothing is recorded. Make sure the phone number on your profile is your cell.
+              The caller&rsquo;s number, when to call back, is under <strong>Recent calls</strong>{' '}
+              at the bottom of <Screen>Schedule</Screen> → <strong>On call</strong>, for 30 days. If
+              nobody could be reached you are also told under the bell, by email and on your phone,
+              with the number. Nothing is recorded. The line rings the{' '}
+              <strong>On-call number</strong> you set in <Screen>Your profile</Screen> (say, a
+              different cell for call nights), or your phone number if you set none.
             </p>
           </>
         ),
@@ -2667,11 +2669,10 @@ const MANAGERS: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Schedule</Screen> → <strong>On call</strong> →{' '}
-              <strong>After-hours calls</strong>. The line rings whoever is on call: an{' '}
-              <strong>override</strong> first, then the day&rsquo;s change or swap, then the usual
-              pattern, then the <strong>default provider</strong>. Each pattern entry and changed
-              day can have a <strong>Backup</strong>, rung if the provider does not press 1.
+              <Screen>Schedule</Screen> → <strong>On call</strong>. The line rings whoever is on
+              call: an <strong>override</strong> first, then the day&rsquo;s change or swap, then
+              the usual pattern, then the <strong>default provider</strong>. Each pattern entry and
+              changed day can have a <strong>Backup</strong>, rung if the provider does not press 1.
             </p>
             <p>
               For part of a night, a vacation evening or any odd hours, press a day on the{' '}
@@ -2679,16 +2680,17 @@ const MANAGERS: Section[] = [
               add an override: from when, until when (the next morning is fine), who and their
               backup. Nothing else changes. Overrides are listed under the month, where managers can{' '}
               <strong>Edit</strong> or <strong>Remove</strong> them, and a day with one is marked on
-              the calendar. This screen keeps the line&rsquo;s status, what callers hear and the
-              providers&rsquo; phones.
+              the calendar. The line&rsquo;s status, what callers hear and the providers&rsquo;
+              phones are at the bottom of the same page, under <strong>Phone line settings</strong>.
             </p>
             <p>
               <strong>What callers hear</strong> holds every message in English and Spanish, the
               voices, how long each phone rings and the default provider. To use your own recording,
               put the MP3 on Twilio Assets and paste its https link beside the message.{' '}
               <strong>Providers&rsquo; phones</strong> shows whose number cannot be dialled: fix it
-              under <Screen>Manage → Staff</Screen> → Edit. Setting the line up in Twilio, Vercel
-              and Weave is in <code>docs/call-routing-setup.md</code>.
+              in <Screen>Your profile</Screen> (<strong>On-call number</strong>), or an admin can
+              set it under <Screen>Manage → Staff</Screen> → Edit. Setting the line up in Twilio,
+              Vercel and Weave is in <code>docs/call-routing-setup.md</code>.
             </p>
           </>
         ),

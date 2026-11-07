@@ -11,6 +11,7 @@ import { InboxService } from '../email/inbox.service';
 import { PinService } from '../kiosk/pin.service';
 import { mainFirst } from '../job-roles/main-job-role';
 import { PrismaService } from '../prisma/prisma.service';
+import { onCallNumber } from '../common/util/on-call-number';
 import { UpdateProfileDto } from './dto/profile.dto';
 import { checkPhoto, PhotoError } from './photo';
 
@@ -23,6 +24,7 @@ const PROFILE_SELECT = {
   language: true,
   email: true,
   phone: true,
+  onCallPhone: true,
   about: true,
   photoUpdatedAt: true,
   birthdayMonth: true,
@@ -118,6 +120,7 @@ export class ProfileService {
         preferredName: clean(dto.preferredName),
         pronouns: clean(dto.pronouns),
         phone: clean(dto.phone),
+        onCallPhone: onCallNumber(dto.onCallPhone),
         about: clean(dto.about),
         language: dto.language,
       },
