@@ -57,7 +57,7 @@ describe('CallLogService', () => {
     expect(words.body).toBe(
       'Missed after-hours call from (201) 555-0142 at 9:14 PM. Nobody could take it. Please call back.',
     );
-    expect(words.link).toBe('/on-call/calls');
+    expect(words.link).toBe('/on-call#calls');
   });
 
   it('does not send a second time', async () => {

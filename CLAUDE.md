@@ -2381,7 +2381,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Twilio's signed query string, so it needs no database; any error still
   returns TwiML; and Twilio's own "Primary handler fails" TwiML Bin rings the
   same cell if the app is down. **Screens**: Schedule -> On call ->
-  **After-hours calls** (`/on-call/routing`, managers and admins: the
+  **After-hours calls** (`/on-call/routing`, folded into the On call page
+  as Phone line settings since 1.46.0; managers and admins: the
   line's status, who is on call each hour for 60 days, covers, what callers
   hear with an optional recording link from Twilio Assets, default provider,
   providers' phones) and **Call log** (`/on-call/calls`, providers, managers
@@ -2419,6 +2420,25 @@ Beyond the phases, the parts worth knowing about before picking up work:
   the Spanish needs a native speaker's read. Skipping the greeting with a key
   was offered and turned down. `tests/browser/on-call.mjs`,
   `call-routing.mjs`.
+- **The phone line is part of the On call page, and an on-call number of
+  their own** (7 November 2026, Dominguez: "i still want this aftercalls
+  thing to not be separate from the on-call calendar as they are 1 and the
+  same - maybe this section can just be like a settings part of the on call
+  schedule. Also providers should be able to change the number they use for
+  their on call ... this should be in their profile"; version 1.46.0): the
+  separate After-hours calls and Call log screens are gone. At the bottom of
+  **Schedule -> On call** are **Phone line settings** (managers and admins,
+  folded: the line's status, what callers hear, voices, ring time, default
+  provider, providers' numbers) and **Recent calls** (providers, managers and
+  admins, folded, last 30 days); `/on-call/routing` and `/on-call/calls`
+  lead there (the missed-call alert links to `/on-call#calls`). **On-call
+  number** (`Employee.onCallPhone`, E.164, migration
+  `20261107030000_on_call_number`): set in **Your profile** by providers, or
+  by an admin in the Staff editor; the line rings it, else the Directory
+  phone (`numberToRing` in `common/util/phone.ts`); a number that is not a
+  ten-digit US one is refused (`common/util/on-call-number.ts`). Never shown
+  in the Directory. Providers' phones says which number is rung for each.
+  `tests/browser/call-routing.mjs`.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

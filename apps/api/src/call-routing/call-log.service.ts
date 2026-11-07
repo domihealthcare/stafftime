@@ -181,7 +181,7 @@ export class CallLogService {
     await this.notifications.personal(ids, NotificationKind.ON_CALL, {
       title: 'Missed after-hours call',
       body,
-      link: '/on-call/calls',
+      link: '/on-call#calls',
     });
     return true;
   }
