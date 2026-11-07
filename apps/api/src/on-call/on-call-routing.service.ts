@@ -38,6 +38,9 @@ const DIALLER = {
 
 type Dialler = Prisma.EmployeeGetPayload<{ select: typeof DIALLER }>;
 
+/// How many days of overrides one request may list.
+const MAX_LIST_DAYS = 100;
+
 const COVER_SELECT = {
   id: true,
   startsAt: true,
@@ -228,6 +231,37 @@ export class OnCallRoutingService {
   }
 
   // ----------------------------------------------------------------- covers
+
+  /// Every override touching New Jersey days `from` to `to` (inclusive), by
+  /// start. Who may read them is checked by the caller (as the schedule).
+  async listCovers(from: string, to: string) {
+    if (!DATE_ONLY.test(from ?? '') || !DATE_ONLY.test(to ?? '') || to < from) {
+      throw new BadRequestException(
+        'Give the days as from and to, the first no later than the last.',
+      );
+    }
+    if (addDaysTo(from, MAX_LIST_DAYS) < to) {
+      throw new BadRequestException(`At most ${MAX_LIST_DAYS} days at a time.`);
+    }
+    const start = zonedTimeToUtc(from, '00:00', PRACTICE_ZONE);
+    const end = zonedTimeToUtc(addDaysTo(to, 1), '00:00', PRACTICE_ZONE);
+    const rows = await this.prisma.onCallCover.findMany({
+      where: { startsAt: { lt: end }, endsAt: { gt: start } },
+      orderBy: { startsAt: 'asc' },
+      select: COVER_SELECT,
+    });
+    return rows.map(coverView);
+  }
+
+  /// The override running at a moment, if any: the one made last wins.
+  async coverAt(at: Date) {
+    const row = await this.prisma.onCallCover.findFirst({
+      where: { startsAt: { lte: at }, endsAt: { gt: at } },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: COVER_SELECT,
+    });
+    return row ? coverView(row) : null;
+  }
 
   async createCover(dto: OnCallCoverInput, actor: AuthUser, now = new Date()) {
     this.assertManager(actor);

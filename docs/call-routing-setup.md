@@ -11,7 +11,7 @@ How a call goes, with the times on the admin page's defaults:
 1. "Thank you for calling Domi Healthcare. For English, press 1." then
    "Para español, oprima 2." (about 7 seconds). No key, or a wrong one: the
    menu once more, then English.
-2. The greeting in the chosen language only (about 40 seconds).
+2. The greeting in the chosen language only (about 25 seconds).
 3. **Try 1**: the on-call provider's cell rings for 20 seconds. When they
    answer they hear "Domi Healthcare after-hours call, English-speaking
    caller. Press 1 to accept." Only pressing 1 connects the caller.
@@ -31,8 +31,9 @@ How a call goes, with the times on the admin page's defaults:
    rung get an alert too ("ended before anybody pressed 1. If they left no
    voicemail, please call back").
 
-Worst case, English, with a backup: about 2 minutes 15 seconds from pickup to
-the provider's voicemail. The caller hears ringing, never silence, while a
+Worst case, English, with a backup: about 2 minutes from pickup to the
+provider's voicemail (the greeting is about 25 seconds since 7 November
+2026). The caller hears ringing, never silence, while a
 cell rings.
 
 The provider's phone shows the **Twilio number**, not the patient's. The
@@ -135,8 +136,9 @@ Do these by calling the **Twilio number directly** from a staff cell, with
 two providers' cells to hand (or one provider and a manager made backup).
 After each, look at **Schedule -> On call -> Call log**.
 
-1. **Set up**: on **After-hours calls**, add a cover for the next hour with
-   provider A and backup B (so the test does not depend on the usual pattern).
+1. **Set up**: on **Schedule -> On call**, press today and choose **Part of
+   the day**: an override for the next hour with provider A and backup B (so
+   the test does not depend on the usual pattern).
 2. **English**: call, press 1. You hear the English greeting. A's phone shows
    the Twilio number; A answers, hears "English-speaking caller", presses 1:
    you are connected. Log: *Accepted by A*.
@@ -150,11 +152,11 @@ After each, look at **Schedule -> On call -> Call log**.
 6. **Nobody answers**: neither presses 1. After B, A's phone rings again with
    no whisper; let it go to A's voicemail and leave a test message. Log:
    *Rang through to A's phone*. Check the message is in A's own voicemail.
-7. **Override day**: remove the cover. Under On call, change tonight's turn to
-   provider B (one day only) and call: B rings first. Put it back to the
-   usual afterwards.
-8. **Split night**: add a cover for the next 15 minutes for B, then from 15
-   minutes on for A. Call during each.
+7. **Override day**: remove the override. Under On call, press today and
+   choose **Whole day** with provider B, and call: B rings first. Put it back
+   to the usual afterwards.
+8. **Split night**: add a part-of-the-day override for the next 15 minutes
+   for B, then one from 15 minutes on for A. Call during each.
 9. **Caller hangs up**: call, press 1, and hang up while A's phone rings. Log:
    *Caller hung up*, and A and B get a missed-call alert with your number.
 10. **Fallback** (optional, with Dominguez watching): in Twilio, change "A
@@ -182,9 +184,11 @@ After each, look at **Schedule -> On call -> Call log**.
 ## Changing things later
 
 - **Who is on call**: Schedule -> On call, as before (the usual pattern, one
-  day changed, swaps), now with an optional **backup** on each. For part of a
-  night, or any odd hours, add a **cover** on After-hours calls: it beats the
-  day and the pattern, and nothing else changes.
+  day changed, swaps), now with an optional **backup** on each. A day's turn
+  runs from **6 AM** to 6 AM the next day (it was noon for the old answering
+  service). For part of a night, or any odd hours, press the day and choose
+  **Part of the day**: an **override** beats the day and the pattern, and
+  nothing else changes. The line rings exactly what the On call page shows.
 - **What callers hear**: After-hours calls -> What callers hear. To use your
   own recording, upload the MP3 to **Twilio -> Assets** (Develop -> Functions
   and Assets -> Assets), copy its https link and paste it beside the message.

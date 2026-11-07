@@ -980,9 +980,10 @@ Beyond the phases, the parts worth knowing about before picking up work:
 - **Provider on call** (10 October 2026, Dominguez: "provider on call
   schedule will def be needed"): **Schedule → On call** (`/on-call`, a third
   tab; providers — a job role with *uses clinical forms* — managers and
-  admins only). Each day's turn runs **noon to noon** ("because we are
-  limited to our answering/forwarding service"), the hand-over time saved
-  with the pattern. A **usual pattern** by weekday with **exceptions** for a
+  admins only). Each day's turn ran **noon to noon** ("because we are
+  limited to our answering/forwarding service") until the after-hours phone
+  line replaced it; **6 AM to 6 AM from the day after version 1.45.0 went
+  live**, the hand-over time saved with the pattern. A **usual pattern** by weekday with **exceptions** for a
   week of the month (1st–4th, last; the most particular wins), saved from a
   chosen day so the past stays as it was; **weekends counted by their
   Saturday** (the 4th weekend is the 4th Saturday and the Sunday after).
@@ -997,8 +998,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
   (all-in-one and **My on call**). **Not paid, never hours** (Dominguez).
   `on-call/on-call.ts` (rules, pure) and `on-call.service.ts`,
   `pages/OnCallPage.tsx`; `tests/browser/on-call.mjs`. Worth carrying to the
-  EMR module. Dominguez would like to look into something better than the
-  answering service's fixed noon hand-over — not started.
+  EMR module. The answering service's fixed noon hand-over was replaced by
+  the after-hours phone line (November 2026), see below.
 - **Provider schedule reviews** (16 October 2026, Dominguez: "admin/manager/
   staff that are responsible for reviewing providers schedule … so they are
   aware they are to review a certain schedule and others are aware which
@@ -2394,6 +2395,30 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `20261107010000_after_hours_call_routing`;
   `tests/browser/call-routing.mjs`; see *The after-hours phone line* in
   `docs/architecture.md`. Worth carrying to the EMR module.
+- **After-hours line: overrides on the On call page, 6 AM hand-over, a
+  shorter greeting** (7 November 2026, Dominguez, after the first test call:
+  "the after hours schedule should just follow what the oncall schedule is -
+  we should be able to just add overrides instead of a whole new schedule.
+  If you have to decide an hour for the switch of day - it should be 6am";
+  "the greeting still felt quite long"; version 1.45.0): the line always
+  read the On call schedule, but the After-hours calls page's 60-day grid and
+  "covers" looked like a second schedule. Now **pressing a day on Schedule ->
+  On call** offers **Whole day** (the one-day change) or **Part of the day**
+  (an **override**: from, until, provider, backup, note; still
+  `OnCallCover`), and the overrides are listed on the On call page, read by
+  providers too (`GET /on-call/covers`). "On call now" (On call page and
+  Home) counts an override running now. The After-hours calls page keeps the
+  line's status, what callers hear and the providers' phones; the grid is
+  gone. **Turns hand over at 6 AM**: migration
+  `20261107020000_on_call_six_am_short_greeting` copies the pattern in force
+  into a new one from the next day (New Jersey) at 06:00, so earlier days
+  keep their noon hand-over, and the default for a new pattern is 06:00
+  (`DEFAULT_HAND_OVER` in `on-call/on-call.ts`). The same migration shortens
+  both **greetings** (about 25 seconds; the office number is no longer read
+  out, as callers have just dialled it), only where nobody had changed them;
+  the Spanish needs a native speaker's read. Skipping the greeting with a key
+  was offered and turned down. `tests/browser/on-call.mjs`,
+  `call-routing.mjs`.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.
