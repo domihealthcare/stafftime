@@ -2439,6 +2439,20 @@ Beyond the phases, the parts worth knowing about before picking up work:
   ten-digit US one is refused (`common/util/on-call-number.ts`). Never shown
   in the Directory. Providers' phones says which number is rung for each.
   `tests/browser/call-routing.mjs`.
+- **Press 2 for voicemail, and the last ring announces the call** (7 November
+  2026, Dominguez: "the whisper only worked on the first call (the second
+  call no whisper and was straight answered) also is there an option to send
+  to my voicemail when i get prompted with the whisper?"; version 1.47.0):
+  the whisper now says "Press 1 to accept, or 2 to send the caller to your
+  voicemail". **2** is written on that step (`CallLogService.markStep`,
+  "sent to voicemail") and the dial step then skips the backup and rings the
+  same provider once more as the last ring, which they decline (or let ring)
+  so the caller reaches their own voicemail; the default provider still
+  follows if that is not answered at all. **The last ring** (the voicemail
+  try) is no longer silent: answered, it only says "Domi Healthcare
+  after-hours call, English-speaking caller" and connects with no key
+  (whisper `a=1`); a voicemail that answers records that line first.
+  `call-routing/voice.service.ts`; `tests/browser/call-routing.mjs`.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

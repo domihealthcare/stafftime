@@ -14,11 +14,17 @@ How a call goes, with the times on the admin page's defaults:
 2. The greeting in the chosen language only (about 25 seconds).
 3. **Try 1**: the on-call provider's cell rings for 20 seconds. When they
    answer they hear "Domi Healthcare after-hours call, English-speaking
-   caller. Press 1 to accept." Only pressing 1 connects the caller.
+   caller. Press 1 to accept, or 2 to send the caller to your voicemail."
+   Only pressing 1 connects the caller. Pressing 2 skips the backup and goes
+   straight to try 3, so the provider declines (or lets ring) that last ring
+   and the caller leaves a message on their voicemail.
 4. "Please continue to hold while we connect you." **Try 2**: the backup, the
    same way (skipped when there is none).
-5. **Try 3**: the on-call provider again, **without** the whisper, ringing up
-   to 45 seconds, so an unanswered call falls into their own voicemail.
+5. **Try 3**: the on-call provider again, ringing up to 45 seconds, so an
+   unanswered call falls into their own voicemail. No key to press: answered,
+   it only says "Domi Healthcare after-hours call, English-speaking caller"
+   and connects (since 7 November 2026, Dominguez); a voicemail that answers
+   records that line first.
 6. Only if even that is not answered at all (the phone is off, busy, or has
    no voicemail and just rings out): **Try 4**, the default provider (Dr.
    Jonathan Dominguez) with the whisper; then "We could not reach the
@@ -153,7 +159,10 @@ After each, look at **Recent calls** at the bottom of **Schedule -> On call**.
    hear "please continue to hold", then B's phone rings. B presses 1. Log:
    A *declined*, *Accepted by B*.
 6. **Nobody answers**: neither presses 1. After B, A's phone rings again with
-   no whisper; let it go to A's voicemail and leave a test message. Log:
+   only the announcement; let it go to A's voicemail and leave a test message.
+   Then **press 2**: call again, A presses 2 at the whisper; A's phone rings
+   again at once (not B's); A declines it and the caller reaches A's
+   voicemail. Log:
    *Rang through to A's phone*. Check the message is in A's own voicemail.
 7. **Override day**: remove the override. Under On call, press today and
    choose **Whole day** with provider B, and call: B rings first. Put it back
