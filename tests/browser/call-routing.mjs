@@ -329,6 +329,34 @@ await step('the whisper asks the provider to press 1; only 1 connects', async ()
   must(no.text.includes('<Hangup/>'), `9 did not hang up: ${no.text}`);
 });
 
+await step('2 on the whisper sends the caller to the provider\'s voicemail, skipping the backup', async () => {
+  const { callSid, base, chosen, path } = await callIn(1);
+  const dial = dialOf(chosen.text);
+  const whisperPath = resolve(dial.whisper, path);
+  const whisper = await post(whisperPath, { CallSid: sid() });
+  must(
+    whisper.text.includes('or 2 to send the caller to your voicemail'),
+    'the whisper does not offer 2 for voicemail',
+  );
+  const answerPath = resolve(whisper.text.match(/<Gather\b[^>]*\baction="([^"]+)"/)[1], whisperPath);
+  const two = await post(answerPath, { CallSid: sid(), ParentCallSid: callSid, Digits: '2' });
+  must(two.text.includes('<Hangup/>'), `2 did not hang up on the provider: ${two.text}`);
+  // The dial then ends without being bridged; the next ring is the same
+  // provider again (not the backup), with only an announcement.
+  const next = await post(resolve(dial.action, path), {
+    ...base,
+    DialCallStatus: 'completed',
+    DialBridged: 'false',
+  });
+  const again = dialOf(next.text);
+  must(again, `no dial after pressing 2: ${next.text}`);
+  must(again.number === dial.number, `rang ${again.number}, not the same provider ${dial.number}`);
+  must(again.whisper && again.whisper.includes('a=1'), `the last ring has no announcement: ${again.whisper}`);
+  const announce = await post(resolve(again.whisper, path), { CallSid: sid() });
+  must(announce.text.includes('Domi Healthcare after-hours call'), 'the announcement does not say what the call is');
+  must(!announce.text.includes('<Gather') && !announce.text.includes('<Hangup'), 'the announcement asks for a key or hangs up');
+});
+
 await step('a call a provider accepts is logged as accepted', async () => {
   const { base, chosen, path } = await callIn(1);
   const dial = dialOf(chosen.text);

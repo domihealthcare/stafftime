@@ -55,6 +55,8 @@ function build(
     finish: jest.fn().mockResolvedValue(undefined),
     markCallerHungUp: jest.fn().mockResolvedValue({ updated: true, tried: true }),
     sendMissedCallAlert: jest.fn().mockResolvedValue(true),
+    markStep: jest.fn().mockResolvedValue(undefined),
+    stepResult: jest.fn().mockResolvedValue(null),
   };
   const config = { get: (key: string) => env[key] };
   const service = new VoiceService(
@@ -140,7 +142,7 @@ describe('VoiceService', () => {
       expect(xml).toContain('callerId="+12015559999"');
       expect(xml).toContain('timeout="25"');
       expect(xml).toMatch(
-        /<Number url="whisper\?lang=en&amp;t=\d+&amp;e=e1" method="POST">\+12015550101<\/Number>/,
+        /<Number url="whisper\?lang=en&amp;t=\d+&amp;s=1&amp;e=e1" method="POST">\+12015550101<\/Number>/,
       );
       expect(callLog.setLanguage).toHaveBeenCalledWith('CA1', 'en', false);
     });
@@ -207,7 +209,8 @@ describe('VoiceService', () => {
       );
       expect(second).toContain('continue to hold');
       expect(second).toContain('timeout="45"');
-      expect(second).not.toContain('<Number url');
+      // The last ring only announces the call: no key to press.
+      expect(queryOf(second, 'url').get('a')).toBe('1');
     });
 
     it('with nothing configured it says the closing words, never silence', async () => {
@@ -264,8 +267,53 @@ describe('VoiceService', () => {
       const { pages } = await walk([{ status: 'no-answer' }, { status: 'busy' }]);
       expect(pages[2]).toContain('+12015550101');
       expect(pages[2]).toContain('timeout="45"');
-      expect(pages[2]).not.toContain('<Number url');
+      expect(queryOf(pages[2], 'url').get('a')).toBe('1');
       allXml(pages[2]);
+    });
+
+    it('the last ring announces the call and connects by itself', () => {
+      const { service } = build();
+      const xml = service.whisper({ lang: 'es', a: '1', t: NOW() });
+      expect(xml).toContain('Domi Healthcare after-hours call, Spanish-speaking caller.');
+      expect(xml).not.toContain('<Gather');
+      expect(xml).not.toContain('<Hangup');
+    });
+
+    it('the whisper offers 1 to accept and 2 for voicemail', () => {
+      const { service } = build();
+      expect(service.whisper({ lang: 'en', t: NOW(), s: '1' })).toContain(
+        'Press 1 to accept, or 2 to send the caller to your voicemail.',
+      );
+    });
+
+    it('2 on the whisper skips the backup and rings their voicemail', async () => {
+      const { service, callLog } = build({ plan: full });
+      const first = await service.language({ CallSid: 'CA1', Digits: '1' }, {});
+      const whisperQuery = Object.fromEntries(queryOf(first, 'url'));
+      const answered = await service.whisperAnswer(
+        { Digits: '2', ParentCallSid: 'CA1' },
+        whisperQuery,
+      );
+      expect(answered).toContain('<Hangup/>');
+      expect(callLog.markStep).toHaveBeenCalledWith('CA1', 1, 'sent to voicemail');
+      expect(callLog.recordAcceptance).not.toHaveBeenCalled();
+
+      callLog.stepResult.mockResolvedValueOnce('sent to voicemail');
+      const next = await service.dialResult(
+        { CallSid: 'CA1', DialCallStatus: 'completed', DialBridged: 'false' },
+        dialQuery(first),
+      );
+      // Their own phone again, not the backup, as the last ring.
+      expect(next).toContain('+12015550101');
+      expect(next).not.toContain('+12015550102');
+      expect(next).toContain('timeout="45"');
+      expect(queryOf(next, 'url').get('a')).toBe('1');
+      expect(decodeSteps(dialQuery(next).p).map((s) => s.r)).toEqual([
+        'ON_CALL',
+        'FINAL',
+        'DEFAULT',
+      ]);
+      expect(callLog.endAttempt).not.toHaveBeenCalled();
     });
 
     it('the default provider is rung after the final step, with the whisper', async () => {

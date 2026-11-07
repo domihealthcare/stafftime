@@ -79,6 +79,30 @@ export class CallLogService {
     });
   }
 
+  /// Writes a result on a step still ringing (the provider pressed 2).
+  async markStep(callSid: string, stepNumber: number, result: string): Promise<void> {
+    await this.changeAttempts(callSid, (attempts) => {
+      const at = attempts.map((a) => a.step === stepNumber && a.result === null).lastIndexOf(true);
+      if (at === -1) return attempts;
+      const next = [...attempts];
+      next[at] = { ...next[at], result };
+      return next;
+    });
+  }
+
+  /// The result written for a step so far, or null.
+  async stepResult(callSid: string, stepNumber: number): Promise<string | null> {
+    const row = await this.prisma.callLog.findUnique({
+      where: { callSid },
+      select: { attempts: true },
+    });
+    const attempts = (Array.isArray(row?.attempts)
+      ? row.attempts
+      : []) as unknown as CallAttemptRecord[];
+    const found = [...attempts].reverse().find((a) => a.step === stepNumber);
+    return found?.result ?? null;
+  }
+
   /// Kept for older callers: adds a finished try.
   async addAttempt(callSid: string, attempt: CallAttemptRecord): Promise<void> {
     await this.beginAttempt(callSid, attempt);

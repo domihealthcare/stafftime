@@ -50,6 +50,9 @@ interface Content {
   messages: Record<string, Spoken>;
 }
 
+/// The result kept for a step the provider sent to their voicemail with 2.
+export const SENT_TO_VOICEMAIL = 'sent to voicemail';
+
 const ROLES: CallRole[] = ['ON_CALL', 'BACKUP', 'FINAL', 'DEFAULT', 'FALLBACK'];
 const RESULTS: Record<string, string> = {
   'no-answer': 'no answer',
@@ -160,15 +163,24 @@ export class VoiceService {
     );
   }
 
-  /// Played to the provider when their cell answers.
+  /// Played to the provider when their cell answers. On a whisper step: 1
+  /// accepts, 2 sends the caller to their voicemail (Dominguez, November
+  /// 2026). On the last ring (`a=1`) it only says what the call is and
+  /// connects by itself, so a voicemail that answers records that line first.
   whisper(query: Form): string {
     if (this.stale(query)) return response(hangup());
     const who = query.lang === 'es' ? 'Spanish-speaking caller' : 'English-speaking caller';
+    if (query.a === '1') {
+      return response(say(`Domi Healthcare after-hours call, ${who}.`, DEFAULT_VOICE_EN));
+    }
     const answer = `whisper-answer?${new URLSearchParams(this.carry(query)).toString()}`;
     return response(
       gather(
         { action: answer, timeout: 8, numDigits: 1 },
-        say(`Domi Healthcare after-hours call, ${who}. Press 1 to accept.`, DEFAULT_VOICE_EN),
+        say(
+          `Domi Healthcare after-hours call, ${who}. Press 1 to accept, or 2 to send the caller to your voicemail.`,
+          DEFAULT_VOICE_EN,
+        ),
       ),
       hangup(),
     );
@@ -176,8 +188,18 @@ export class VoiceService {
 
   async whisperAnswer(body: Form, query: Form): Promise<string> {
     if (this.stale(query)) return response(hangup());
-    if ((body.Digits ?? '').trim() !== '1') return response(hangup());
+    const digits = (body.Digits ?? '').trim();
     const parent = body.ParentCallSid;
+    if (digits === '2') {
+      // Written down for the dial step that follows, which then rings their
+      // phone once more with no question, for its voicemail.
+      const stepNumber = Number.parseInt(query.s ?? '', 10);
+      if (parent && Number.isInteger(stepNumber)) {
+        await this.quietly(() => this.callLog.markStep(parent, stepNumber, SENT_TO_VOICEMAIL));
+      }
+      return response(hangup());
+    }
+    if (digits !== '1') return response(hangup());
     if (parent) {
       await this.quietly(() => this.callLog.recordAcceptance(parent, query.e ?? null));
     }
@@ -229,6 +251,21 @@ export class VoiceService {
             );
           }
           return response(hangup());
+        }
+
+        // Pressed 2: straight to their own voicemail, skipping the backup.
+        if (callSid && step.w) {
+          const marked = await this.stepResult(callSid, index + 1);
+          if (marked === SENT_TO_VOICEMAIL) {
+            const next = [
+              ...steps.slice(0, index + 1),
+              { ...step, r: 'FINAL' as const, w: 0 as const },
+              ...steps.slice(index + 1).filter((later) => later.r === 'DEFAULT'),
+            ];
+            const parts = this.stepParts(next, index + 1, lang, content, body.To);
+            await this.beginStep(callSid, next, index + 1);
+            return response(...parts);
+          }
         }
 
         const result = RESULTS[status] ?? (status === 'completed' ? 'declined' : 'failed');
@@ -303,15 +340,17 @@ export class VoiceService {
     if (index > 0) parts.push(speak(...this.message(content, 'HOLD', lang)));
     const t = String(Math.floor(this.now() / 1000));
     const query = new URLSearchParams({ l: lang, i: String(index), p: encodeSteps(steps), t });
-    const whisper = new URLSearchParams({ lang, t });
+    const whisper = new URLSearchParams({ lang, t, s: String(index + 1) });
     if (step.id) whisper.set('e', step.id);
+    // The last ring only announces the call (no key to press).
+    if (!step.w) whisper.set('a', '1');
     parts.push(
       dial({
         action: `dial?${query.toString()}`,
         timeout: step.w ? content.ringSeconds : VOICEMAIL_RING_SECONDS,
         callerId: this.config.get<string>('TWILIO_PHONE_NUMBER') || to || undefined,
         number: step.p,
-        whisperUrl: step.w ? `whisper?${whisper.toString()}` : undefined,
+        whisperUrl: `whisper?${whisper.toString()}`,
       }),
     );
     return parts;
@@ -352,6 +391,7 @@ export class VoiceService {
     if (query.lang) out.lang = query.lang;
     if (query.e) out.e = query.e;
     if (query.t) out.t = query.t;
+    if (query.s) out.s = query.s;
     return out;
   }
 
@@ -384,6 +424,16 @@ export class VoiceService {
       result,
       at: new Date(this.now()).toISOString(),
     };
+  }
+
+  /// What was written down for a step while it rang (the provider pressed 2),
+  /// or null; never holds up the call for long.
+  private async stepResult(callSid: string, stepNumber: number): Promise<string | null> {
+    try {
+      return await withTimeout(this.callLog.stepResult(callSid, stepNumber), LOG_TIMEOUT_MS);
+    } catch {
+      return null;
+    }
   }
 
   /// A step address signed more than STEP_MAX_AGE_SECONDS ago, or with no

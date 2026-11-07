@@ -1329,12 +1329,15 @@ const PROVIDERS: Section[] = [
               provider on call. Your phone shows the line&rsquo;s number, not the patient&rsquo;s.
               When you answer you hear{' '}
               <strong>
-                &ldquo;Domi Healthcare after-hours call, English-speaking caller. Press 1 to
-                accept.&rdquo;
+                &ldquo;Domi Healthcare after-hours call, English-speaking caller. Press 1 to accept,
+                or 2 to send the caller to your voicemail.&rdquo;
               </strong>{' '}
-              (or Spanish-speaking). Press <strong>1</strong> to be put through. If you do not, the
-              line tries your backup, then rings you once more with no message, so the caller can
-              leave a voicemail on your phone.
+              (or Spanish-speaking). Press <strong>1</strong> to be put through. Press{' '}
+              <strong>2</strong> and your phone rings once more straight away: decline it, or let it
+              ring, and the caller leaves a message on your own voicemail. If you press nothing, the
+              line tries your backup, then rings you once more. That last ring only says &ldquo;Domi
+              Healthcare after-hours call&rdquo; and puts the caller through when you answer; if
+              your voicemail answers, the message starts with that line.
             </p>
             <p>
               The caller&rsquo;s number, when to call back, is under <strong>Recent calls</strong>{' '}
