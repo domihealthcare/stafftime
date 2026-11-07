@@ -25,6 +25,13 @@ export class UpdateProfileDto {
   @MaxLength(140)
   about?: string;
 
+  /// The number the after-hours line rings when they are on call, if not
+  /// their phone above: a US number. Empty clears it.
+  @IsOptional()
+  @IsString()
+  @MaxLength(25)
+  onCallPhone?: string;
+
   /// The app's language for them: English or Spanish.
   @IsOptional()
   @IsIn(['en', 'es'])

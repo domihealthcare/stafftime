@@ -17,6 +17,18 @@ export function toE164(phone: string | null | undefined): string | null {
   return `+1${national}`;
 }
 
+/// The number the after-hours line rings for somebody: their on-call number
+/// if they set one, else their Directory phone, and which it was.
+export function numberToRing(person: {
+  onCallPhone?: string | null;
+  phone?: string | null;
+}): { phone: string; from: 'ON_CALL_NUMBER' | 'DIRECTORY' } | null {
+  const own = toE164(person.onCallPhone);
+  if (own) return { phone: own, from: 'ON_CALL_NUMBER' };
+  const directory = toE164(person.phone);
+  return directory ? { phone: directory, from: 'DIRECTORY' } : null;
+}
+
 /// "+12015550142" -> "(201) 555-0142", for a screen. Anything else as given.
 export function phoneWords(e164: string | null | undefined): string {
   if (!e164) return '';

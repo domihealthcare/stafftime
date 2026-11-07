@@ -8,7 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { CallMessageKey, EmploymentStatus, Prisma, Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { isoDate, toUtcDate } from '../common/util/calendar-date.util';
-import { toE164 } from '../common/util/phone';
+import { numberToRing, toE164 } from '../common/util/phone';
 import {
   addDaysTo,
   localDateIn,
@@ -32,6 +32,7 @@ const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 const DIALLER = {
   ...PERSON,
   phone: true,
+  onCallPhone: true,
   employmentStatus: true,
   isSharedAccount: true,
 } satisfies Prisma.EmployeeSelect;
@@ -155,12 +156,12 @@ export class OnCallRoutingService {
         problems.push(`${name} is a shared account, which cannot take calls.`);
         return null;
       }
-      const phone = toE164(person.phone);
-      if (!phone) {
+      const ring = numberToRing(person);
+      if (!ring) {
         problems.push(`${name} has no phone number that can be dialled.`);
         return null;
       }
-      return { employeeId: person.id, name, phone };
+      return { employeeId: person.id, name, phone: ring.phone };
     };
 
     const chosen = contact(answer.employeeId, 'provider on call');
@@ -325,6 +326,11 @@ export class OnCallRoutingService {
         id: p.id,
         name: named(p).name,
         phone: p.phone,
+        onCallPhone: p.onCallPhone,
+        // The number the line rings, and whether it is their on-call number
+        // or the Directory phone.
+        rings: numberToRing(p)?.phone ?? null,
+        ringsFrom: numberToRing(p)?.from ?? null,
         dialable: dialable(p),
       })),
       line: {
@@ -471,7 +477,7 @@ function isWorking(status: EmploymentStatus): boolean {
 }
 
 function dialable(person: Dialler): boolean {
-  return isWorking(person.employmentStatus) && !person.isSharedAccount && !!toE164(person.phone);
+  return isWorking(person.employmentStatus) && !person.isSharedAccount && !!numberToRing(person);
 }
 
 /// "2026-11-01T01:30" in New Jersey to an instant, or null if not a real day.

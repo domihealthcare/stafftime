@@ -202,6 +202,11 @@ model Employee {
   /// A number colleagues can reach them on, shown in the Directory. Their own
   /// to set on their profile; an admin can set it too.
   phone          String?
+  /// The number the after-hours phone line rings for them when they are on
+  /// call, if not their Directory phone (November 2026, Dominguez). E.164,
+  /// "+12015550142". Never shown in the Directory. Theirs to set on their
+  /// profile; an admin can set it too.
+  onCallPhone    String?
   /// Birthday - month and day only, never the year (decided with Dominguez,
   /// September 2026): enough for colleagues to wish somebody a happy
   /// birthday, without an age or a date of birth in the app. Shown on the

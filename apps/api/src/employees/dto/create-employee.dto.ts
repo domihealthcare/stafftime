@@ -51,6 +51,14 @@ export class CreateEmployeeDto {
   @Length(7, 25)
   phone?: string | null;
 
+  /// The number the after-hours line rings when they are on call, if not
+  /// their phone. A US number; empty or null clears it.
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null && value !== '')
+  @IsString()
+  @Length(7, 25)
+  onCallPhone?: string | null;
+
   @IsOptional()
   @IsEnum(Role)
   role?: Role;
