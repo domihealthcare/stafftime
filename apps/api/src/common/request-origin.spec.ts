@@ -225,7 +225,8 @@ describe('the after-hours line webhook', () => {
 
   it('still refuses a form anywhere else, or without the signature header', () => {
     expect(refuseForgedRequest('POST', twilio, '/api/on-call/covers')?.statusCode).toBe(415);
-    const { 'x-twilio-signature': _signature, ...unsigned } = twilio;
+    const unsigned: Record<string, string> = { ...twilio };
+    delete unsigned['x-twilio-signature'];
     expect(
       refuseForgedRequest('POST', unsigned, '/api/call-routing/voice/incoming')?.statusCode,
     ).toBe(415);

@@ -201,7 +201,9 @@ describe('what this app deliberately does not store', () => {
         'voiceEs',
       ].sort(),
     );
-    expect(schema).not.toMatch(/model Call\w*\s*\{[^}]*(recording|transcript|voicemail|audioData)/i);
+    expect(schema).not.toMatch(
+      /model Call\w*\s*\{[^}]*(recording|transcript|voicemail|audioData)/i,
+    );
   });
 
   /// Who is the admin in each office (October 2026): who and where, nothing

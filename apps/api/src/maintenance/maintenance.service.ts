@@ -22,6 +22,9 @@ import {
 /// landing.
 const ORPHAN_GRACE_MINUTES = 60;
 
+/// How long an after-hours call stays in the log.
+export const CALL_LOG_DAYS = 90;
+
 export interface PurgeReport {
   expiredSessions: number;
   staleLoginAttempts: number;
@@ -32,6 +35,8 @@ export interface PurgeReport {
   clearedLocations: number;
   /// Bell notifications past their 90 days.
   oldNotifications: number;
+  /// After-hours call log entries past their 90 days.
+  oldCalls: number;
   /// How many managers were told about something that needs a look. Zero when
   /// there was nothing to say, which is most days.
   digestSentTo: number;
@@ -93,6 +98,7 @@ export class MaintenanceService {
       orphanedFiles: await this.deleteOrphanedFiles(),
       clearedLocations: await this.clearOldPunchLocations(),
       oldNotifications: await this.inbox.purgeOld(),
+      oldCalls: await this.deleteOldCalls(),
       // Before the round-up, so it lists last night's as clock-outs to correct.
       autoClockedOut: await this.closeForgottenPunches(),
       // Before the round-up and the invites, so both see the new weeks.
@@ -109,6 +115,22 @@ export class MaintenanceService {
       `Purged ${report.expiredSessions} session(s), ${report.staleLoginAttempts} login attempt(s), ${report.spentResetTokens} reset token(s), ${report.expiredPairingCodes} pairing code(s), ${report.orphanedFiles} orphaned file(s), ${report.clearedLocations} punch location(s), ${report.oldNotifications} notification(s)`,
     );
     return report;
+  }
+
+  /// The after-hours call log keeps the caller's number for 90 days, then
+  /// the whole entry goes (November 2026, Dominguez). Never fails the job.
+  private async deleteOldCalls(now = new Date()): Promise<number> {
+    try {
+      const { count } = await this.prisma.callLog.deleteMany({
+        where: { startedAt: { lt: new Date(now.getTime() - CALL_LOG_DAYS * 86_400_000) } },
+      });
+      return count;
+    } catch (error) {
+      this.logger.error(
+        `Could not clear old calls: ${error instanceof Error ? error.message : error}`,
+      );
+      return 0;
+    }
   }
 
   /**
