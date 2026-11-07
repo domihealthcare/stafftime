@@ -66,6 +66,9 @@ app does not hold*, its own database) are unchanged by this.
 - **SavedSignature** (November 2026) - a provider's drawn signature, a small
   PNG, stamped on PDFs by them or by staff an admin chose; each stamp logged
   (`SignatureUse`). The PDFs never reach the server
+- **OnCallCover** / **CallLog** (November 2026) - the after-hours phone line:
+  a time-range override of who is on call, and one row per call (who was
+  tried, who took it, the caller's number). No recording of any kind
 - **PayrollExport** — export batch record: date range, target system, status,
   generated file reference (for audit trail / re-export)
 
@@ -140,6 +143,18 @@ wrote (and a post's Spanish, once translated, stays on the post). Off until
 push service (Apple's, Google's), encrypted with the device's own keys so
 that service cannot read them — the same words as the bell, which never
 carry patient details.
+
+**The after-hours phone line** (November 2026, Dominguez) carries patients'
+calls through **Twilio** to the on-call provider's cell. Nothing is recorded,
+transcribed or kept as voicemail on Twilio (every Dial says
+`do-not-record`); a message is left on the provider's own phone. The app
+keeps a **call log** with the **caller's full number** (Dominguez's choice,
+so providers can call back, as their phone shows the Twilio number), the
+language, who was tried and who took it, **for 90 days**, seen by providers,
+managers and admins; never a name or anything said. A missed call's alert
+(bell, email, phone) carries the number. **No BAA with Twilio** (Twilio signs
+one only on its paid Security or Enterprise Editions; Dominguez chose to go
+ahead without, November 2026). The schema guard pins `CallLog`.
 
 Nothing is uploaded to the app, with **one deliberate exception**: a
 **profile photo** of yourself (confirmed by Dominguez, September 2026). The
@@ -2329,6 +2344,56 @@ Beyond the phases, the parts worth knowing about before picking up work:
   /resources/import`, up to 300; one already in its section is left out and
   named). Only names and addresses are sent. `components/ImportLinks.tsx`;
   `tests/browser/import-links.mjs`.
+- **The after-hours phone line** (7 November 2026, Dominguez, version
+  1.44.0: replaces Talkroute, "we can't change one specific date without
+  changing the whole weekly pattern"): Weave's **Closed** routing forwards
+  every call to **one Twilio number**; Twilio posts to
+  `/api/call-routing/voice/*` (`@Public`, every request's
+  **X-Twilio-Signature** checked against `TWILIO_AUTH_TOKEN` over
+  `TWILIO_WEBHOOK_BASE_URL` + the path; the forged-request rule lets only
+  those signed form posts through, `request-origin.ts`). The caller hears
+  the **language menu** (1 English, 2 Spanish; nothing or a wrong key, once
+  more, then English), **the greeting in that language only**, then the
+  cells are rung: **the on-call provider with a whisper** ("Domi Healthcare
+  after-hours call, English-speaking caller. Press 1 to accept"; only 1
+  connects), **the backup** the same way, **the on-call again with no
+  whisper** so it falls into their own voicemail, and only if even that
+  fails **the default provider** (Dr. Jonathan Dominguez) with the whisper,
+  then a closing message and a **missed-call alert** to the on-call and
+  backup (also when the caller hangs up after a provider was tried). "Please
+  continue to hold" between tries. Voices `Polly.Joanna-Neural` /
+  `Polly.Lupe-Neural`; each cell rings 20 seconds (setting). The providers'
+  phones show the **Twilio number**. **Who is on call** is the existing On
+  call schedule (Dominguez chose one hand-over time per pattern), plus an
+  optional **backup** on each pattern entry and changed day, and
+  **time-range covers** (`OnCallCover`, managers: "Fri 6pm to Sat 7am: Dr.
+  B", splitting a night without touching the pattern; the latest made wins
+  an overlap), then the **default provider**
+  (`on-call/call-routing-lookup.ts`, pure, tested over midnight and both
+  clock changes; a turn is found by its hand-over instant, not the HH:MM
+  comparison of `turnDateAt`, which goes backwards in the repeated hour).
+  The number dialled is the provider's **Directory phone** (Dominguez's
+  choice), read as a US number (`common/util/phone.ts`); one that is
+  missing or not a US number is skipped and shown on the admin page.
+  **Fail-safe**: the plan is worked out once per call with a 3-second limit,
+  else `ONCALL_FALLBACK_PHONE` (Vercel); each later step carries the plan in
+  Twilio's signed query string, so it needs no database; any error still
+  returns TwiML; and Twilio's own "Primary handler fails" TwiML Bin rings the
+  same cell if the app is down. **Screens**: Schedule -> On call ->
+  **After-hours calls** (`/on-call/routing`, managers and admins: the
+  line's status, who is on call each hour for 60 days, covers, what callers
+  hear with an optional recording link from Twilio Assets, default provider,
+  providers' phones) and **Call log** (`/on-call/calls`, providers, managers
+  and admins, last 30 days). The hold and closing words and their Spanish
+  are Claude's and need a native speaker's read. **Not on the live site
+  yet**: Dominguez buys the number and sets it up from
+  `docs/call-routing-setup.md` (which is also the test plan with staff
+  phones), and whether Weave passes the caller's number on is found in the
+  first test. `src/call-routing/`, `on-call/on-call-routing.service.ts`,
+  `pages/CallRoutingPage.tsx`, `pages/CallLogPage.tsx`, migration
+  `20261107010000_after_hours_call_routing`;
+  `tests/browser/call-routing.mjs`; see *The after-hours phone line* in
+  `docs/architecture.md`. Worth carrying to the EMR module.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.
