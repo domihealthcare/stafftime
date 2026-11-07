@@ -45,6 +45,7 @@ reset_state() {
     -c "delete from requirements;" \
     -c "delete from quiz_attempts; delete from quizzes where title <> 'Downtime procedures';" \
     -c "delete from on_call_swaps; delete from on_call_days; delete from on_call_rotas;" \
+    -c "delete from call_logs; delete from on_call_covers; update call_routing_settings set \"voiceEn\" = 'Polly.Joanna-Neural', \"voiceEs\" = 'Polly.Lupe-Neural', \"ringSeconds\" = 20;" \
     -c "delete from schedule_review_days; delete from schedule_reviewers;" \
     -c "delete from office_admin_days; delete from office_admins;" \
     -c "delete from shifts where notes = 'office-admins-suite';" \
