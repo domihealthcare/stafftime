@@ -98,7 +98,9 @@ function handOverAt(date: string, rotas: RotaRule[]): Date {
 }
 
 /// The date of the turn running at `at`: the latest day whose hand-over has passed.
-function turnDateOf(at: Date, rotas: RotaRule[]): string {
+/// The turn running at a moment: the latest date whose hand-over instant is at or
+/// before it. Also what the On call screen calls "now", so the two agree.
+export function turnDateOf(at: Date, rotas: RotaRule[]): string {
   const today = localDateIn(at, PRACTICE_ZONE);
   for (let back = 0; back <= 3; back++) {
     const date = addDaysTo(today, -back);

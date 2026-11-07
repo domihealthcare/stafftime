@@ -19,11 +19,17 @@ How a call goes, with the times on the admin page's defaults:
    same way (skipped when there is none).
 5. **Try 3**: the on-call provider again, **without** the whisper, ringing up
    to 45 seconds, so an unanswered call falls into their own voicemail.
-6. Only if even that fails (voicemail off or full): **Try 4**, the default
-   provider (Dr. Jonathan Dominguez) with the whisper; then "We could not
-   reach the on-call provider ..." and the call ends, and the on-call provider
-   and backup get a **missed-call alert** (bell, email, phone) with the
-   caller's number.
+6. Only if even that is not answered at all (the phone is off, busy, or has
+   no voicemail and just rings out): **Try 4**, the default provider (Dr.
+   Jonathan Dominguez) with the whisper; then "We could not reach the
+   on-call provider ..." and the call ends, and the on-call provider and
+   backup get a **missed-call alert** (bell, email, phone) with the caller's
+   number. A **full** voicemail box usually still answers with the
+   carrier's own message, and the line cannot tell that from a person, so
+   try 4 does not happen then: keep voicemail boxes from filling up.
+   If the caller hangs up while a provider's phone is ringing, the providers
+   rung get an alert too ("ended before anybody pressed 1. If they left no
+   voicemail, please call back").
 
 Worst case, English, with a backup: about 2 minutes 15 seconds from pickup to
 the provider's voicemail. The caller hears ringing, never silence, while a
@@ -193,6 +199,14 @@ After each, look at **Schedule -> On call -> Call log**.
 - **Every call goes to the fallback cell**: the Call log says "Fallback used".
   Look for problems on the admin page (no default provider, phones that
   cannot be dialled), then Vercel's logs for "call-routing".
-- **The log is empty though calls work**: the token or the address does not
-  match. `TWILIO_WEBHOOK_BASE_URL` must be exactly the address in Twilio's
-  "A call comes in" box, up to `/api`.
+- **The log is empty though calls work, or every call goes to the
+  TwiML Bin**: the token or the address does not match. Vercel's logs say
+  "Refused a phone line request" with the address that was checked.
+  `TWILIO_WEBHOOK_BASE_URL` is only the start of the address, with no `/api`
+  and no slash at the end: `https://staff.domihealthcare.com`, matching the
+  start of the address in Twilio's "A call comes in" box.
+- **The fallback TwiML Bin only covers the first step.** If the app stops
+  answering part-way through a call (after the language menu), Twilio cannot
+  use it. The app answers every step within 8 seconds, rings the fallback
+  cell itself when the schedule cannot be read, and never waits long on
+  writing the log; test 10 in Part 4 checks the first step only.

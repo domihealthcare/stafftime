@@ -169,7 +169,9 @@ export class OnCallRoutingService {
         : data.defaultProviderId === answer.backupEmployeeId
           ? backupContact
           : contact(data.defaultProviderId, 'default provider');
-    const onCall = chosen ?? defaultContact;
+    // Nobody dialable on call: their backup steps up before the default
+    // provider, as the schedule meant them to be next.
+    const onCall = chosen ?? backupContact ?? defaultContact;
     const backup =
       backupContact && backupContact.employeeId !== onCall?.employeeId ? backupContact : null;
     const fallback =
@@ -244,7 +246,9 @@ export class OnCallRoutingService {
     const checked = await this.checkCover(dto, now);
     const row = await this.prisma.onCallCover.update({
       where: { id },
-      data: { ...checked, setById: actor.id },
+      // A changed cover counts as the newest, so it wins any overlap as the
+      // manager would expect.
+      data: { ...checked, setById: actor.id, createdAt: now },
       select: COVER_SELECT,
     });
     await this.tellCover(row, actor, 'changed');
@@ -385,6 +389,11 @@ export class OnCallRoutingService {
     }
     const startsAt = fromLocal(dto.startsAt);
     const endsAt = fromLocal(dto.endsAt);
+    if (startsAt === 'NO_SUCH_TIME' || endsAt === 'NO_SUCH_TIME') {
+      throw new BadRequestException(
+        'That time does not happen: the clocks go from 2 AM straight to 3 AM that night.',
+      );
+    }
     if (!startsAt || !endsAt)
       throw new BadRequestException('Give the start and end as real dates.');
     if (endsAt <= startsAt) throw new BadRequestException('The cover has to end after it starts.');
@@ -432,10 +441,13 @@ function dialable(person: Dialler): boolean {
 }
 
 /// "2026-11-01T01:30" in New Jersey to an instant, or null if not a real day.
-function fromLocal(text: string): Date | null {
+/// A time skipped when the clocks go forward is refused rather than moved; a
+/// time that happens twice when they go back is the first of the two.
+function fromLocal(text: string): Date | null | 'NO_SUCH_TIME' {
   const [date, time] = text.split('T');
   const instant = zonedTimeToUtc(date, time, PRACTICE_ZONE);
-  return localDateIn(instant, PRACTICE_ZONE) === date ? instant : null;
+  if (localDateIn(instant, PRACTICE_ZONE) !== date) return null;
+  return localTimeIn(instant, PRACTICE_ZONE) === time ? instant : 'NO_SUCH_TIME';
 }
 
 function coverView(row: CoverRow) {

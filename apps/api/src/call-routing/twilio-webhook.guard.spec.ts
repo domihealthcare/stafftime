@@ -1,6 +1,6 @@
 import { ForbiddenException, ServiceUnavailableException } from '@nestjs/common';
 import type { ExecutionContext } from '@nestjs/common';
-import { TwilioWebhookGuard } from './twilio-webhook.guard';
+import { TwilioWebhookGuard, urlsTwilioMaySign } from './twilio-webhook.guard';
 import { twilioSignature } from './twilio-signature';
 
 const TOKEN = 'a-test-token-0123456789';
@@ -56,5 +56,26 @@ describe('TwilioWebhookGuard', () => {
     const other = { ...body, AccountSid: 'AC2' };
     const signature = twilioSignature(TOKEN, BASE + PATH, other);
     expect(() => guardWith(env).canActivate(context(other, signature))).toThrow(ForbiddenException);
+  });
+});
+
+describe('urlsTwilioMaySign', () => {
+  it('tries the address with and without the default port', () => {
+    expect(
+      urlsTwilioMaySign('https://staff.domihealthcare.com/api/call-routing/voice/dial?i=1'),
+    ).toEqual([
+      'https://staff.domihealthcare.com/api/call-routing/voice/dial?i=1',
+      'https://staff.domihealthcare.com:443/api/call-routing/voice/dial?i=1',
+    ]);
+    expect(urlsTwilioMaySign('https://staff.domihealthcare.com:443/api/x')).toEqual([
+      'https://staff.domihealthcare.com:443/api/x',
+      'https://staff.domihealthcare.com/api/x',
+    ]);
+  });
+
+  it('leaves another port alone', () => {
+    expect(urlsTwilioMaySign('http://localhost:3000/api/x')).toEqual([
+      'http://localhost:3000/api/x',
+    ]);
   });
 });

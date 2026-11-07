@@ -129,6 +129,15 @@ describe('OnCallRoutingService.planAt', () => {
     expect(plan.problems).toHaveLength(2);
   });
 
+  it('lets the backup step up before the default when the provider cannot be rung', async () => {
+    answer({ backupEmployeeId: B });
+    const { service } = build([person(A, { phone: null }), person(B), person(C)]);
+    const plan = await service.planAt(NOW);
+    expect(plan.onCall?.employeeId).toBe(B);
+    expect(plan.backup).toBeNull();
+    expect(plan.fallback?.employeeId).toBe(C);
+  });
+
   it('has nobody when not even the default can be dialled', async () => {
     answer({ employeeId: null, source: 'NONE' });
     const { service } = build([person(C, { phone: null })]);
@@ -160,6 +169,17 @@ describe('OnCallRoutingService covers', () => {
       service.createCover({ ...input, backupEmployeeId: A }, manager, NOW),
     ).rejects.toThrow('backup');
     await expect(service.createCover(input, employee, NOW)).rejects.toThrow('managers');
+  });
+
+  it('refuses a time skipped when the clocks go forward', async () => {
+    const { service } = build([]);
+    await expect(
+      service.createCover(
+        { ...input, startsAt: '2027-03-14T02:15', endsAt: '2027-03-14T08:00' },
+        manager,
+        NOW,
+      ),
+    ).rejects.toThrow('does not happen');
   });
 
   it('refuses a cover already over', async () => {

@@ -13,14 +13,14 @@ import {
   addDaysTo,
   datesBetween,
   localDateIn,
-  localTimeIn,
   PRACTICE_ZONE,
   zonedTimeToUtc,
 } from '../common/util/zoned-time.util';
 import { NotificationsService } from '../email/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { OnCallDayInput, OnCallRotaInput, OnCallSwapInput } from './dto/on-call.dto';
-import { clockWords, onCallOn, RotaRule, turnDateAt, usualOn } from './on-call';
+import { turnDateOf } from './call-routing-lookup';
+import { clockWords, onCallOn, RotaRule, usualOn } from './on-call';
 
 /// The most a screen asks for at once.
 const MAX_DAYS = 93;
@@ -83,7 +83,8 @@ export class OnCallService {
       from < today ? addDaysTo(from, -1) : addDaysTo(today, -1),
       to > today ? to : today,
     );
-    const nowDate = turnDateAt(today, localTimeIn(now, PRACTICE_ZONE), rotas);
+    // The same turn the phone line rings, even in the hour the clocks repeat.
+    const nowDate = turnDateOf(now, rotas);
     const dates = datesBetween(from, to);
     const views = dates.map((date) => onCallOn(date, rotas, changed.map));
     const current = onCallOn(nowDate, rotas, changed.map);
@@ -390,6 +391,9 @@ export class OnCallService {
       throw new ConflictException('That has already been answered.');
     const giveDate = isoDate(swap.giveDate);
     const takeDate = swap.takeDate ? isoDate(swap.takeDate) : null;
+    /// Each day keeps the backup it had (its own, else the pattern's), unless
+    /// that is the provider now taking it.
+    const backupFor = new Map<string, string | null>();
 
     if (accept) {
       const today = localDateIn(now, PRACTICE_ZONE);
@@ -405,6 +409,12 @@ export class OnCallService {
         throw new ConflictException(
           'The schedule has changed since this was asked, so it cannot go ahead.',
         );
+      }
+      const swapped: [string, string, string][] = [[giveDate, swap.requesterId, swap.partnerId]];
+      if (takeDate) swapped.push([takeDate, swap.partnerId, swap.requesterId]);
+      for (const [date, was, becomes] of swapped) {
+        const backup = this.backupOf({ date, employeeId: was }, rotas, changed.backups);
+        backupFor.set(date, backup && backup !== becomes ? backup : null);
       }
     }
 
@@ -423,8 +433,20 @@ export class OnCallService {
         for (const [date, employeeId] of days) {
           await tx.onCallDay.upsert({
             where: { date: toUtcDate(date) },
-            create: { date: toUtcDate(date), employeeId, swapId: id, setById: actor.id },
-            update: { employeeId, swapId: id, setById: actor.id, note: null },
+            create: {
+              date: toUtcDate(date),
+              employeeId,
+              backupEmployeeId: backupFor.get(date) ?? null,
+              swapId: id,
+              setById: actor.id,
+            },
+            update: {
+              employeeId,
+              backupEmployeeId: backupFor.get(date) ?? null,
+              swapId: id,
+              setById: actor.id,
+              note: null,
+            },
           });
         }
       }

@@ -49,6 +49,8 @@ function build(
     start: jest.fn().mockResolvedValue(undefined),
     setLanguage: jest.fn().mockResolvedValue(undefined),
     addAttempt: jest.fn().mockResolvedValue(undefined),
+    beginAttempt: jest.fn().mockResolvedValue(undefined),
+    endAttempt: jest.fn().mockResolvedValue(undefined),
     recordAcceptance: jest.fn().mockResolvedValue(undefined),
     finish: jest.fn().mockResolvedValue(undefined),
     markCallerHungUp: jest.fn().mockResolvedValue({ updated: true, tried: true }),
@@ -63,6 +65,9 @@ function build(
   );
   return { service, prisma, routing, callLog };
 }
+
+/// A step address's time, as Twilio would send it back now.
+const NOW = () => String(Math.floor(Date.now() / 1000));
 
 const queryOf = (xml: string, attr: 'action' | 'url'): URLSearchParams => {
   const match = new RegExp(`${attr}="[^"?]*\\?([^"]*)"`).exec(xml);
@@ -134,8 +139,8 @@ describe('VoiceService', () => {
       expect(xml).not.toContain('proveedor de guardia');
       expect(xml).toContain('callerId="+12015559999"');
       expect(xml).toContain('timeout="25"');
-      expect(xml).toContain(
-        '<Number url="whisper?lang=en&amp;e=e1" method="POST">+12015550101</Number>',
+      expect(xml).toMatch(
+        /<Number url="whisper\?lang=en&amp;t=\d+&amp;e=e1" method="POST">\+12015550101<\/Number>/,
       );
       expect(callLog.setLanguage).toHaveBeenCalledWith('CA1', 'en', false);
     });
@@ -146,8 +151,8 @@ describe('VoiceService', () => {
       expect(xml).toContain('proveedor de guardia');
       expect(xml).not.toContain('urgent on-call provider');
       expect(queryOf(xml, 'url').get('lang')).toBe('es');
-      expect(service.whisper({ lang: 'es' })).toContain('Spanish-speaking caller');
-      expect(service.whisper({ lang: 'en' })).toContain('English-speaking caller');
+      expect(service.whisper({ lang: 'es', t: NOW() })).toContain('Spanish-speaking caller');
+      expect(service.whisper({ lang: 'en', t: NOW() })).toContain('English-speaking caller');
     });
 
     it('no input twice means English', async () => {
@@ -291,7 +296,13 @@ describe('VoiceService', () => {
 
     it('records each attempt with its result', async () => {
       const { callLog } = await walk([{ status: 'no-answer' }, { status: 'completed' }]);
-      const results = callLog.addAttempt.mock.calls.map((c) => [c[1].role, c[1].result]);
+      const begun = callLog.beginAttempt.mock.calls.map((c) => [c[1].role, c[1].result]);
+      expect(begun).toEqual([
+        ['ON_CALL', null],
+        ['BACKUP', null],
+        ['FINAL', null],
+      ]);
+      const results = callLog.endAttempt.mock.calls.map((c) => [c[1].role, c[1].result]);
       expect(results).toEqual([
         ['ON_CALL', 'no answer'],
         ['BACKUP', 'declined'],
@@ -317,7 +328,8 @@ describe('VoiceService', () => {
     it('a logging failure does not change the TwiML', async () => {
       const { service, callLog } = build({ plan: full });
       const first = await service.language({ CallSid: 'CA1', Digits: '1' }, {});
-      callLog.addAttempt.mockRejectedValue(new Error('db'));
+      callLog.endAttempt.mockRejectedValue(new Error('db'));
+      callLog.beginAttempt.mockRejectedValue(new Error('db'));
       const next = await service.dialResult(
         { CallSid: 'CA1', DialCallStatus: 'no-answer' },
         dialQuery(first),
@@ -329,10 +341,99 @@ describe('VoiceService', () => {
       const { service } = build();
       const xml = await service.dialResult(
         { CallSid: 'CA1', DialCallStatus: 'no-answer' },
-        { p: 'garbage', i: '0' },
+        { p: 'garbage', i: '0', t: NOW() },
       );
       expect(xml).toContain('+12015550188');
       expect(xml).not.toContain('<Number url');
+    });
+
+    it('the fail-safe dial, once over, says the closing words and never dials again', async () => {
+      const { service, callLog } = build();
+      const first = await service.dialResult(
+        { CallSid: 'CA1', DialCallStatus: 'no-answer' },
+        { p: 'garbage', i: '0', t: NOW() },
+      );
+      for (const status of ['no-answer', 'completed']) {
+        const next = await service.dialResult(
+          { CallSid: 'CA1', DialCallStatus: status, DialBridged: 'false' },
+          dialQuery(first),
+        );
+        expect(next).not.toContain('<Dial');
+        expect(next).toContain('could not reach');
+        expect(next).toContain('<Hangup/>');
+      }
+      expect(callLog.finish).toHaveBeenCalledWith('CA1', 'NOT_REACHED');
+    });
+
+    it('a step past the end of the plan finishes instead of dialling', async () => {
+      const { service } = build({ plan: full });
+      const first = await service.language({ CallSid: 'CA1', Digits: '1' }, {});
+      const xml = await service.dialResult(
+        { CallSid: 'CA1', DialCallStatus: 'no-answer' },
+        { ...dialQuery(first), i: '9' },
+      );
+      expect(xml).not.toContain('<Dial');
+      expect(xml).toContain('<Hangup/>');
+    });
+
+    it('an old or undated step address is a replay: hang up, write nothing', async () => {
+      const { service, callLog } = build({ plan: full });
+      const first = await service.language({ CallSid: 'CA1', Digits: '1' }, {});
+      const old = String(Math.floor(Date.now() / 1000) - 5 * 3600);
+      for (const query of [
+        { ...dialQuery(first), t: old },
+        { ...dialQuery(first), t: '' },
+      ]) {
+        const xml = await service.dialResult(
+          { CallSid: 'CA1', DialCallStatus: 'no-answer' },
+          query,
+        );
+        expect(xml).toBe('<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>');
+      }
+      expect(
+        await service.whisperAnswer({ Digits: '1', ParentCallSid: 'CA1' }, { e: 'e1', t: old }),
+      ).toContain('<Hangup/>');
+      expect(callLog.endAttempt).not.toHaveBeenCalled();
+      expect(callLog.recordAcceptance).not.toHaveBeenCalled();
+    });
+
+    it('answers in time with the fail-safe when the log hangs', async () => {
+      jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
+      try {
+        const { service, callLog } = build({ plan: full });
+        callLog.setLanguage.mockReturnValue(new Promise(() => undefined));
+        callLog.beginAttempt.mockReturnValue(new Promise(() => undefined));
+        const pending = service.language({ CallSid: 'CA1', Digits: '1' }, {});
+        await jest.advanceTimersByTimeAsync(2500);
+        const xml = await pending;
+        expect(xml).toContain('+12015550101');
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it('a slow alert does not hold the closing words past the step limit', async () => {
+      jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
+      try {
+        const { service, callLog } = build();
+        callLog.sendMissedCallAlert.mockReturnValue(new Promise(() => undefined));
+        const pending = service.dialResult(
+          { CallSid: 'CA1', DialCallStatus: 'no-answer' },
+          {
+            l: 'en',
+            i: '0',
+            t: NOW(),
+            p: Buffer.from(
+              JSON.stringify([{ r: 'ON_CALL', n: 'Dr. A', id: 'e1', p: '+12015550101', w: 1 }]),
+            ).toString('base64url'),
+          },
+        );
+        await jest.advanceTimersByTimeAsync(6000);
+        const xml = await pending;
+        expect(xml).toContain('could not reach');
+      } finally {
+        jest.useRealTimers();
+      }
     });
 
     it('carries only dialable phones in the query', async () => {
@@ -353,16 +454,19 @@ describe('VoiceService', () => {
   describe('whisper answer and status', () => {
     it('1 connects and records the acceptance', async () => {
       const { service, callLog } = build();
-      const xml = await service.whisperAnswer({ Digits: '1', ParentCallSid: 'CA1' }, { e: 'e1' });
+      const xml = await service.whisperAnswer(
+        { Digits: '1', ParentCallSid: 'CA1' },
+        { e: 'e1', t: NOW() },
+      );
       expect(xml).toContain('<Response/>');
       expect(callLog.recordAcceptance).toHaveBeenCalledWith('CA1', 'e1');
     });
 
     it('anything else hangs up on the provider', async () => {
       const { service, callLog } = build();
-      expect(await service.whisperAnswer({ Digits: '2', ParentCallSid: 'CA1' }, {})).toContain(
-        '<Hangup/>',
-      );
+      expect(
+        await service.whisperAnswer({ Digits: '2', ParentCallSid: 'CA1' }, { t: NOW() }),
+      ).toContain('<Hangup/>');
       expect(callLog.recordAcceptance).not.toHaveBeenCalled();
     });
 
@@ -370,7 +474,23 @@ describe('VoiceService', () => {
       const { service, callLog } = build();
       const xml = await service.status({ CallSid: 'CA1', CallStatus: 'completed' });
       expect(xml).toContain('<Response/>');
-      expect(callLog.sendMissedCallAlert).toHaveBeenCalledWith('CA1');
+      expect(callLog.sendMissedCallAlert).toHaveBeenCalledWith('CA1', 'HUNG_UP');
+    });
+
+    it('a call nobody could be rung for still alerts somebody', async () => {
+      const { service, callLog } = build({
+        plan: plan({ onCall: null }),
+        env: { ONCALL_FALLBACK_PHONE: '' },
+      });
+      const xml = await service.language({ CallSid: 'CA1', Digits: '1' }, {});
+      expect(xml).toContain('could not reach');
+      expect(callLog.sendMissedCallAlert).toHaveBeenCalledWith('CA1', 'NOBODY_TO_RING');
+    });
+
+    it('keeps no number for the stand-ins Twilio uses for a hidden caller', async () => {
+      const { service, callLog } = build();
+      await service.incoming({ CallSid: 'CA1', From: '+266696687' });
+      expect(callLog.start).toHaveBeenCalledWith('CA1', null);
     });
 
     it('no alert when nobody had been tried, or the call was already settled', async () => {

@@ -14,6 +14,10 @@ function build(row: Record<string, unknown> = {}) {
       findMany: jest.fn().mockResolvedValue([]),
       deleteMany: jest.fn().mockResolvedValue({ count: 4 }),
     },
+    callRoutingSettings: {
+      findUnique: jest.fn().mockResolvedValue({ defaultProviderId: 'e9' }),
+    },
+    employee: { findMany: jest.fn().mockResolvedValue([{ id: 'a1' }, { id: 'a2' }]) },
   };
   const notifications = { personal: jest.fn().mockResolvedValue(undefined) };
   return {
@@ -75,7 +79,15 @@ describe('CallLogService', () => {
   it('marks a hang-up only while in progress and not accepted', async () => {
     const { service, prisma } = build({ attempts: [attempt('ON_CALL', 'e1')] });
     expect(await service.markCallerHungUp('CA1')).toEqual({ updated: true, tried: true });
+    // First a call somebody pressed 1 on is settled as accepted ...
     expect(prisma.callLog.updateMany.mock.calls[0][0].where).toEqual({
+      callSid: 'CA1',
+      outcome: 'IN_PROGRESS',
+      acceptedById: { not: null },
+    });
+    expect(prisma.callLog.updateMany.mock.calls[0][0].data.outcome).toBe('ACCEPTED');
+    // ... then the rest as the caller hanging up.
+    expect(prisma.callLog.updateMany.mock.calls[1][0].where).toEqual({
       callSid: 'CA1',
       outcome: 'IN_PROGRESS',
       acceptedById: null,
@@ -87,7 +99,51 @@ describe('CallLogService', () => {
   it('adds an attempt after the ones already there', async () => {
     const { service, prisma } = build({ attempts: [attempt('ON_CALL', 'e1')] });
     await service.addAttempt('CA1', attempt('BACKUP', 'e2') as never);
-    expect(prisma.callLog.upsert.mock.calls[0][0].update.attempts).toHaveLength(2);
+    expect(prisma.callLog.updateMany.mock.calls[0][0].data.attempts).toHaveLength(2);
+  });
+
+  it('fills in the result of a step begun before it rang', async () => {
+    const begun = { ...attempt('ON_CALL', 'e1'), result: null };
+    const { service, prisma } = build({ attempts: [begun] });
+    await service.endAttempt('CA1', { ...begun, result: 'declined' } as never);
+    const attempts = prisma.callLog.updateMany.mock.calls[0][0].data.attempts;
+    expect(attempts).toHaveLength(1);
+    expect(attempts[0].result).toBe('declined');
+  });
+
+  it('never brings back a call that is not in the log (a replay)', async () => {
+    const { service, prisma } = build();
+    prisma.callLog.findUnique.mockResolvedValue(null);
+    await service.beginAttempt('CA-old', attempt('ON_CALL', 'e1') as never);
+    await service.setLanguage('CA-old', 'en', false);
+    await service.finish('CA-old', 'NOT_REACHED' as never);
+    expect(prisma.callLog.upsert).not.toHaveBeenCalled();
+    for (const [args] of prisma.callLog.updateMany.mock.calls) {
+      expect(args.where.callSid).toBe('CA-old');
+    }
+  });
+
+  it('tells the default provider when nobody on the schedule was rung', async () => {
+    const { service, notifications } = build({ attempts: [attempt('FALLBACK', null)] });
+    await service.sendMissedCallAlert('CA1', 'NOBODY_TO_RING');
+    const [ids, , words] = notifications.personal.mock.calls[0];
+    expect(ids).toEqual(['e9']);
+    expect(words.body).toContain('nobody on call could be rung');
+  });
+
+  it('tells the admins when there is no default provider either', async () => {
+    const { service, prisma, notifications } = build({ attempts: [] });
+    prisma.callRoutingSettings.findUnique.mockResolvedValue({ defaultProviderId: null });
+    await service.sendMissedCallAlert('CA1', 'NOBODY_TO_RING');
+    expect(notifications.personal.mock.calls[0][0]).toEqual(['a1', 'a2']);
+  });
+
+  it('a caller who hung up is asked about voicemail, not called missed', async () => {
+    const { service, notifications } = build({ attempts: [attempt('FINAL', 'e1')] });
+    await service.sendMissedCallAlert('CA1', 'HUNG_UP');
+    const words = notifications.personal.mock.calls[0][2];
+    expect(words.body).toContain('ended before anybody pressed 1');
+    expect(words.body).toContain('If they left no voicemail');
   });
 
   it('shapes the list for the screen', async () => {
