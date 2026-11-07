@@ -30,6 +30,7 @@ import { ToolAccessModule } from './tool-access/tool-access.module';
 import { InvoicesModule } from './invoices/invoices.module';
 import { RequirementsModule } from './requirements/requirements.module';
 import { OnCallModule } from './on-call/on-call.module';
+import { CallRoutingModule } from './call-routing/call-routing.module';
 import { ScheduleReviewsModule } from './schedule-reviews/schedule-reviews.module';
 import { OfficeAdminsModule } from './office-admins/office-admins.module';
 import { CmeModule } from './cme/cme.module';
@@ -86,6 +87,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     PhoneBookModule,
     RequirementsModule,
     OnCallModule,
+    CallRoutingModule,
     ScheduleReviewsModule,
     OfficeAdminsModule,
     CmeModule,

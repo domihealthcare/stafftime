@@ -102,6 +102,29 @@ describe('OnCallService swaps', () => {
     ]);
   });
 
+  it('a swapped day keeps its backup, unless the backup is who takes it', async () => {
+    const { service, prisma } = build();
+    // Mondays: Frankie with Pat as backup; Thursdays: Max with Frankie as backup.
+    prisma.onCallRota.findMany.mockResolvedValue([
+      {
+        ...ROTA,
+        entries: ROTA.entries.map((entry) => ({
+          ...entry,
+          backupEmployeeId: entry.employeeId === 'max' ? 'frankie' : 'pat',
+        })),
+      },
+    ]);
+    await service.answerSwap('swap-1', true, max, NOW);
+    const backups = prisma.onCallDay.upsert.mock.calls.map((call: any[]) => [
+      call[0].create.date.toISOString().slice(0, 10),
+      call[0].create.backupEmployeeId,
+    ]);
+    expect(backups).toEqual([
+      ['2026-10-19', 'pat'],
+      ['2026-10-22', null],
+    ]);
+  });
+
   it('only the provider asked can answer', async () => {
     const { service } = build();
     await expect(service.answerSwap('swap-1', true, manager, NOW)).rejects.toBeInstanceOf(
@@ -126,5 +149,38 @@ describe('OnCallService swaps', () => {
       ConflictException,
     );
     expect(prisma.onCallDay.upsert).not.toHaveBeenCalled();
+  });
+});
+
+describe('OnCallService backups', () => {
+  it('refuses a backup who is the provider', async () => {
+    const { service } = build();
+    await expect(
+      service.saveRota(
+        {
+          startsOn: '2026-10-20',
+          changesAt: '12:00',
+          entries: [
+            { weekday: 1, weekOfMonth: 0, employeeId: 'frankie', backupEmployeeId: 'frankie' },
+          ],
+        },
+        manager,
+        NOW,
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(
+      service.setDay('2026-10-20', { employeeId: 'max', backupEmployeeId: 'max' }, manager, NOW),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('stores a day backup', async () => {
+    const { service, prisma } = build();
+    await service.setDay(
+      '2026-10-20',
+      { employeeId: 'max', backupEmployeeId: 'frankie' },
+      manager,
+      NOW,
+    );
+    expect(prisma.onCallDay.upsert.mock.calls[0][0].create.backupEmployeeId).toBe('frankie');
   });
 });

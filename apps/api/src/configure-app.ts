@@ -22,7 +22,7 @@ export function configureApp(app: NestExpressApplication): void {
   // rather than JSON. Before the body parsers, so a forged body is never read.
   // Why, and what still passes: common/request-origin.ts.
   app.use((request: Request, response: Response, next: NextFunction) => {
-    const refusal = refuseForgedRequest(request.method, request.headers);
+    const refusal = refuseForgedRequest(request.method, request.headers, request.path);
     if (!refusal) return next();
     forgedLog.warn(
       `${refusal.statusCode} ${request.method} ${request.path}: ` +
@@ -36,6 +36,9 @@ export function configureApp(app: NestExpressApplication): void {
   // Room for a profile photo: the browser keeps one under 180,000 characters,
   // and Express's own limit is 100 kB.
   app.useBodyParser('json', { limit: '300kb' });
+  // Only Twilio's webhooks get this far with a form body (see the rule
+  // above); a call's fields are a few hundred bytes.
+  app.useBodyParser('urlencoded', { extended: false, limit: '20kb' });
 
   // Nobody needs telling what the server runs on.
   app.disable('x-powered-by');

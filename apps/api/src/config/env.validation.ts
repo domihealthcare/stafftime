@@ -138,6 +138,37 @@ class EnvironmentVariables {
   @IsString()
   ANTHROPIC_API_KEY?: string;
 
+  /// The after-hours phone line (November 2026). Twilio's account id, its
+  /// auth token (what signs every webhook; unset, the line refuses every
+  /// call so Twilio's own fallback takes over) and the line's number, shown
+  /// as the caller ID on providers' phones. See docs/call-routing-setup.md.
+  @IsOptional()
+  @IsString()
+  TWILIO_ACCOUNT_SID?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(16)
+  TWILIO_AUTH_TOKEN?: string;
+
+  @IsOptional()
+  @IsString()
+  TWILIO_PHONE_NUMBER?: string;
+
+  /// The address Twilio is given for the webhooks, e.g.
+  /// https://staff.domihealthcare.com. The signature is worked out over the
+  /// exact address Twilio called, so it must match. Unset: APP_URL.
+  @IsOptional()
+  @IsString()
+  TWILIO_WEBHOOK_BASE_URL?: string;
+
+  /// A cell rung when the schedule cannot be read at all (the database is
+  /// down): the default provider's. Kept here, not in the database, on
+  /// purpose.
+  @IsOptional()
+  @IsString()
+  ONCALL_FALLBACK_PHONE?: string;
+
   /// Phone notifications (web push): a key pair, if one should be set here
   /// rather than made by the app when an admin switches them on (Practice
   /// settings). Both or neither; these win over the app's own.

@@ -13,14 +13,14 @@ import {
   addDaysTo,
   datesBetween,
   localDateIn,
-  localTimeIn,
   PRACTICE_ZONE,
   zonedTimeToUtc,
 } from '../common/util/zoned-time.util';
 import { NotificationsService } from '../email/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { OnCallDayInput, OnCallRotaInput, OnCallSwapInput } from './dto/on-call.dto';
-import { clockWords, onCallOn, RotaRule, turnDateAt } from './on-call';
+import { turnDateOf } from './call-routing-lookup';
+import { clockWords, onCallOn, RotaRule, usualOn } from './on-call';
 
 /// The most a screen asks for at once.
 const MAX_DAYS = 93;
@@ -83,16 +83,23 @@ export class OnCallService {
       from < today ? addDaysTo(from, -1) : addDaysTo(today, -1),
       to > today ? to : today,
     );
-    const nowDate = turnDateAt(today, localTimeIn(now, PRACTICE_ZONE), rotas);
+    // The same turn the phone line rings, even in the hour the clocks repeat.
+    const nowDate = turnDateOf(now, rotas);
     const dates = datesBetween(from, to);
     const views = dates.map((date) => onCallOn(date, rotas, changed.map));
     const current = onCallOn(nowDate, rotas, changed.map);
-    const people = await this.people([...views.map((day) => day.employeeId), current.employeeId]);
+    const backupIds = views.map((day) => this.backupOf(day, rotas, changed.backups));
+    const people = await this.people([
+      ...views.map((day) => day.employeeId),
+      ...backupIds,
+      current.employeeId,
+    ]);
 
     return {
-      days: views.map((day) => ({
+      days: views.map((day, index) => ({
         ...day,
         employee: day.employeeId ? (people.get(day.employeeId) ?? null) : null,
+        backup: backupIds[index] ? (people.get(backupIds[index] as string) ?? null) : null,
         note: changed.notes.get(day.date) ?? null,
       })),
       now: {
@@ -114,7 +121,12 @@ export class OnCallService {
         startsOn: true,
         changesAt: true,
         entries: {
-          select: { weekday: true, weekOfMonth: true, employee: { select: PERSON } },
+          select: {
+            weekday: true,
+            weekOfMonth: true,
+            employee: { select: PERSON },
+            backup: { select: PERSON },
+          },
           orderBy: [{ weekday: 'asc' }, { weekOfMonth: 'asc' }],
         },
       },
@@ -130,6 +142,7 @@ export class OnCallService {
           weekday: entry.weekday,
           weekOfMonth: entry.weekOfMonth,
           employee: named(entry.employee),
+          backup: entry.backup ? named(entry.backup) : null,
         })),
       }));
   }
@@ -169,8 +182,15 @@ export class OnCallService {
         );
       }
       keys.add(key);
+      if (entry.backupEmployeeId && entry.backupEmployeeId === entry.employeeId) {
+        throw new BadRequestException('The backup has to be somebody other than the provider.');
+      }
     }
-    await this.assertProviders(dto.entries.map((entry) => entry.employeeId));
+    await this.assertProviders(
+      dto.entries.flatMap((entry) =>
+        entry.backupEmployeeId ? [entry.employeeId, entry.backupEmployeeId] : [entry.employeeId],
+      ),
+    );
 
     const startsOn = toUtcDate(dto.startsOn);
     await this.prisma.$transaction(async (tx) => {
@@ -180,7 +200,14 @@ export class OnCallService {
           startsOn,
           changesAt: dto.changesAt,
           createdById: actor.id,
-          entries: { create: dto.entries },
+          entries: {
+            create: dto.entries.map((entry) => ({
+              weekday: entry.weekday,
+              weekOfMonth: entry.weekOfMonth,
+              employeeId: entry.employeeId,
+              backupEmployeeId: entry.backupEmployeeId ?? null,
+            })),
+          },
         },
       });
     });
@@ -227,17 +254,23 @@ export class OnCallService {
     const before = onCallOn(date, rotas, changed.map).employeeId;
 
     if (dto.employeeId) {
-      await this.assertProviders([dto.employeeId]);
+      const backupId = dto.backupEmployeeId || null;
+      if (backupId && backupId === dto.employeeId) {
+        throw new BadRequestException('The backup has to be somebody other than the provider.');
+      }
+      await this.assertProviders(backupId ? [dto.employeeId, backupId] : [dto.employeeId]);
       await this.prisma.onCallDay.upsert({
         where: { date: toUtcDate(date) },
         create: {
           date: toUtcDate(date),
           employeeId: dto.employeeId,
+          backupEmployeeId: backupId,
           note: dto.note?.trim() || null,
           setById: actor.id,
         },
         update: {
           employeeId: dto.employeeId,
+          backupEmployeeId: backupId,
           note: dto.note?.trim() || null,
           setById: actor.id,
           swapId: null,
@@ -358,6 +391,9 @@ export class OnCallService {
       throw new ConflictException('That has already been answered.');
     const giveDate = isoDate(swap.giveDate);
     const takeDate = swap.takeDate ? isoDate(swap.takeDate) : null;
+    /// Each day keeps the backup it had (its own, else the pattern's), unless
+    /// that is the provider now taking it.
+    const backupFor = new Map<string, string | null>();
 
     if (accept) {
       const today = localDateIn(now, PRACTICE_ZONE);
@@ -373,6 +409,12 @@ export class OnCallService {
         throw new ConflictException(
           'The schedule has changed since this was asked, so it cannot go ahead.',
         );
+      }
+      const swapped: [string, string, string][] = [[giveDate, swap.requesterId, swap.partnerId]];
+      if (takeDate) swapped.push([takeDate, swap.partnerId, swap.requesterId]);
+      for (const [date, was, becomes] of swapped) {
+        const backup = this.backupOf({ date, employeeId: was }, rotas, changed.backups);
+        backupFor.set(date, backup && backup !== becomes ? backup : null);
       }
     }
 
@@ -391,8 +433,20 @@ export class OnCallService {
         for (const [date, employeeId] of days) {
           await tx.onCallDay.upsert({
             where: { date: toUtcDate(date) },
-            create: { date: toUtcDate(date), employeeId, swapId: id, setById: actor.id },
-            update: { employeeId, swapId: id, setById: actor.id, note: null },
+            create: {
+              date: toUtcDate(date),
+              employeeId,
+              backupEmployeeId: backupFor.get(date) ?? null,
+              swapId: id,
+              setById: actor.id,
+            },
+            update: {
+              employeeId,
+              backupEmployeeId: backupFor.get(date) ?? null,
+              swapId: id,
+              setById: actor.id,
+              note: null,
+            },
           });
         }
       }
@@ -493,15 +547,17 @@ export class OnCallService {
         select: {
           startsOn: true,
           changesAt: true,
-          entries: { select: { weekday: true, weekOfMonth: true, employeeId: true } },
+          entries: {
+            select: { weekday: true, weekOfMonth: true, employeeId: true, backupEmployeeId: true },
+          },
         },
       }),
       this.prisma.onCallDay.findMany({
         where: { date: { gte: toUtcDate(from), lte: toUtcDate(to) } },
-        select: { date: true, employeeId: true, swapId: true, note: true },
+        select: { date: true, employeeId: true, backupEmployeeId: true, swapId: true, note: true },
       }),
     ]);
-    const rules: RotaRule[] = rotas.map((rota) => ({
+    const rules: BackupRota[] = rotas.map((rota) => ({
       startsOn: isoDate(rota.startsOn),
       changesAt: rota.changesAt,
       entries: rota.entries,
@@ -515,11 +571,28 @@ export class OnCallService {
             { employeeId: day.employeeId, swapped: !!day.swapId },
           ]),
         ),
+        backups: new Map(days.map((day) => [isoDate(day.date), day.backupEmployeeId])),
         notes: new Map(
           days.filter((day) => day.note).map((day) => [isoDate(day.date), day.note as string]),
         ),
       },
     };
+  }
+
+  /// The backup for a day: a changed day's own, else the pattern's.
+  private backupOf(
+    day: { date: string; employeeId: string | null },
+    rotas: BackupRota[],
+    backups: Map<string, string | null>,
+  ): string | null {
+    if (!day.employeeId) return null;
+    if (backups.has(day.date)) return backups.get(day.date) ?? null;
+    const rota = rotaOnDay(day.date, rotas);
+    if (!rota) return null;
+    const indexed = rota.entries.map((entry, index) => ({ ...entry, employeeId: String(index) }));
+    const pick = usualOn(day.date, { ...rota, entries: indexed });
+    const found = pick === null ? null : rota.entries[Number(pick)];
+    return found && found.backupEmployeeId !== day.employeeId ? found.backupEmployeeId : null;
   }
 
   private async people(ids: (string | null)[]) {
@@ -550,6 +623,18 @@ export function named(person: Person) {
     photoUpdatedAt: person.photoUpdatedAt,
     name: `${doctor ? 'Dr. ' : ''}${first} ${person.lastName}`,
   };
+}
+
+type BackupRota = RotaRule & {
+  entries: (RotaRule['entries'][number] & { backupEmployeeId: string | null })[];
+};
+
+function rotaOnDay(date: string, rotas: BackupRota[]): BackupRota | null {
+  let found: BackupRota | null = null;
+  for (const rota of rotas) {
+    if (rota.startsOn <= date && (!found || rota.startsOn > found.startsOn)) found = rota;
+  }
+  return found;
 }
 
 /// "Sat, Oct 24".

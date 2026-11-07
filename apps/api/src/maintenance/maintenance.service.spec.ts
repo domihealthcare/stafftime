@@ -8,6 +8,7 @@ describe('MaintenanceService', () => {
         findMany: jest.fn().mockResolvedValue(options.exports ?? []),
       },
       storedFile: { deleteMany: jest.fn().mockResolvedValue({ count: 1 }) },
+      callLog: { deleteMany: jest.fn().mockResolvedValue({ count: 9 }) },
       timeEntry: { updateMany: jest.fn().mockResolvedValue({ count: 5 }) },
     };
     const sessions = { purgeExpired: jest.fn().mockResolvedValue(7) };
@@ -66,6 +67,7 @@ describe('MaintenanceService', () => {
       orphanedFiles: 1,
       clearedLocations: 5,
       oldNotifications: 6,
+      oldCalls: 9,
       standingShifts: 8,
       digestSentTo: 2,
       eventReminders: 1,
@@ -75,6 +77,14 @@ describe('MaintenanceService', () => {
       onboardingReminders: 3,
       requiredReminders: 0,
     });
+  });
+
+  it('deletes after-hours calls older than 90 days', async () => {
+    const { service, prisma } = build();
+    await service.purge();
+    const cutoff = prisma.callLog.deleteMany.mock.calls[0][0].where.startedAt.lt as Date;
+    expect(Date.now() - cutoff.getTime()).toBeGreaterThanOrEqual(90 * 86_400_000 - 1000);
+    expect(Date.now() - cutoff.getTime()).toBeLessThan(90 * 86_400_000 + 60_000);
   });
 
   it('still tidies up when forgotten punches cannot be clocked out', async () => {

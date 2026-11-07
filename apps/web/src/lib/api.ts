@@ -37,7 +37,13 @@ import type {
   Review360Reports,
   Review360Summary,
   ReviewMeeting,
+  CallLogEntry,
+  CallRoutingSettings,
+  CallRoutingSettingsInput,
+  OnCallCover,
+  OnCallCoverInput,
   OnCallRota,
+  OnCallRoutingView,
   OnCallSchedule,
   OnCallSwap,
   EveryonesSchedule,
@@ -1724,11 +1730,35 @@ export const api = {
   saveOnCallRota: (body: {
     startsOn: string;
     changesAt: string;
-    entries: { weekday: number; weekOfMonth: number; employeeId: string }[];
+    entries: {
+      weekday: number;
+      weekOfMonth: number;
+      employeeId: string;
+      backupEmployeeId?: string | null;
+    }[];
   }) => request<OnCallRota[]>('/on-call/rotas', { method: 'PUT', body: JSON.stringify(body) }),
+  /// After-hours call routing (November 2026): managers and admins.
+  onCallRouting: (from: string, days: number) =>
+    request<OnCallRoutingView>(`/on-call/routing${toQuery({ from, days: String(days) })}`),
+  createOnCallCover: (body: OnCallCoverInput) =>
+    request<OnCallCover>('/on-call/covers', { method: 'POST', body: JSON.stringify(body) }),
+  updateOnCallCover: (id: string, body: OnCallCoverInput) =>
+    request<OnCallCover>(`/on-call/covers/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deleteOnCallCover: (id: string) => request<void>(`/on-call/covers/${id}`, { method: 'DELETE' }),
+  callRoutingSettings: () => request<CallRoutingSettings>('/on-call/routing/settings'),
+  saveCallRoutingSettings: (body: CallRoutingSettingsInput) =>
+    request<CallRoutingSettings>('/on-call/routing/settings', {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  /// The after-hours call log, last 30 days: managers, admins and providers.
+  callLog: () => request<CallLogEntry[]>('/call-routing/calls'),
   removeOnCallRota: (startsOn: string) =>
     request<OnCallRota[]>(`/on-call/rotas/${startsOn}`, { method: 'DELETE' }),
-  setOnCallDay: (date: string, body: { employeeId: string | null; note?: string }) =>
+  setOnCallDay: (
+    date: string,
+    body: { employeeId: string | null; backupEmployeeId?: string | null; note?: string },
+  ) =>
     request<{ date: string; employeeId: string | null }>(`/on-call/days/${date}`, {
       method: 'PUT',
       body: JSON.stringify(body),

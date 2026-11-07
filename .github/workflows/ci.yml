@@ -80,6 +80,13 @@ jobs:
       # The punch reminders route refuses everything without its secret;
       # punch-reminders.mjs calls it the way the outside timer does.
       PUNCH_REMINDER_SECRET: ci-punch-reminder-secret
+      # The after-hours line's webhooks are signed with Twilio's auth token;
+      # call-routing.mjs signs its own test calls with this one. The API is
+      # reached directly on :3000, so that is the address that is signed.
+      TWILIO_AUTH_TOKEN: ci-twilio-auth-token-0001
+      TWILIO_PHONE_NUMBER: '+12015550199'
+      TWILIO_WEBHOOK_BASE_URL: http://localhost:3000
+      ONCALL_FALLBACK_PHONE: '+12015550100'
       # run-all.sh resets the database between suites.
       PGHOST_LOCAL: 127.0.0.1
       PGPORT_LOCAL: '5432'

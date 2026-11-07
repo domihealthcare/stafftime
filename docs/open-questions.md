@@ -36,6 +36,31 @@ taken off this list, and the answer is written into `CLAUDE.md` or
       only, but live releases build fine: Help showed `6c44f19`, the latest,
       live on 29 September 2026. Worth a look while in there all the same.)
 
+## The after-hours phone line (built November 2026, not live yet)
+
+Set-up and the test plan: `docs/call-routing-setup.md`. Only a real call can
+settle these:
+
+- [ ] **Buy the Twilio number and set it up** (Parts 1 to 3 of the guide),
+      then the staff-phone tests in Part 4 before Weave is switched over.
+- [ ] **Does Weave pass the caller's number on when it forwards?** The first
+      call through Weave (Part 5) shows it in the Call log. If it shows the
+      office's number, ask Weave support about passing caller ID through.
+- [ ] **A provider who answers and does not press 1**: the app reads
+      Twilio's `DialBridged=false` as "declined" and moves on. Check in test 5
+      that the backup is then rung.
+- [ ] **The first test call shows the request reaches the app intact on
+      Vercel**: the Call log fills in (language, attempts). If every call
+      instead goes to the fallback cell, the signature or the form body is
+      not getting through: see "If something goes wrong" in the guide.
+- [ ] **Each provider's Directory phone is their cell**, and their phone
+      rings longer than 20 seconds before voicemail.
+- [ ] **The hold and closing words** ("Please continue to hold ...", "We
+      could not reach ...") and their Spanish are Claude's: read them, and
+      have a native speaker read the Spanish.
+- Decided: no BAA with Twilio (Dominguez, November 2026); the caller's full
+  number kept 90 days; the providers' phones show the Twilio number.
+
 ## ADP TotalSource import (built September 2026 — needs setting up)
 
 Built from ADP's own instructions, *Importing Payroll into ADP TotalSource*:

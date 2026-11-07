@@ -210,3 +210,42 @@ describe('refuseForgedRequest', () => {
     ).toBe(403);
   });
 });
+
+describe('the after-hours line webhook', () => {
+  const twilio = {
+    host: 'staff.domihealthcare.com',
+    'content-type': 'application/x-www-form-urlencoded',
+    'content-length': '300',
+    'x-twilio-signature': 'abc=',
+  };
+
+  it('lets Twilio post a form to the voice webhooks', () => {
+    expect(refuseForgedRequest('POST', twilio, '/api/call-routing/voice/incoming')).toBeNull();
+  });
+
+  it('still refuses a form anywhere else, or without the signature header', () => {
+    expect(refuseForgedRequest('POST', twilio, '/api/on-call/covers')?.statusCode).toBe(415);
+    const unsigned: Record<string, string> = { ...twilio };
+    delete unsigned['x-twilio-signature'];
+    expect(
+      refuseForgedRequest('POST', unsigned, '/api/call-routing/voice/incoming')?.statusCode,
+    ).toBe(415);
+  });
+
+  it('still refuses a form a browser page sends there', () => {
+    expect(
+      refuseForgedRequest(
+        'POST',
+        { ...twilio, 'sec-fetch-site': 'same-site' },
+        '/api/call-routing/voice/incoming',
+      )?.statusCode,
+    ).toBe(403);
+    expect(
+      refuseForgedRequest(
+        'POST',
+        { ...twilio, origin: 'https://www.domihealthcare.com' },
+        '/api/call-routing/voice/incoming',
+      )?.statusCode,
+    ).toBe(403);
+  });
+});

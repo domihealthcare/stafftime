@@ -1320,6 +1320,31 @@ const PROVIDERS: Section[] = [
           </>
         ),
       },
+      {
+        question: 'An after-hours call is ringing my phone',
+        answer: (
+          <>
+            <p>
+              After hours, calls to the office go to the practice&rsquo;s own line, which rings the
+              provider on call. Your phone shows the line&rsquo;s number, not the patient&rsquo;s.
+              When you answer you hear{' '}
+              <strong>
+                &ldquo;Domi Healthcare after-hours call, English-speaking caller. Press 1 to
+                accept.&rdquo;
+              </strong>{' '}
+              (or Spanish-speaking). Press <strong>1</strong> to be put through. If you do not, the
+              line tries your backup, then rings you once more with no message, so the caller can
+              leave a voicemail on your phone.
+            </p>
+            <p>
+              The caller&rsquo;s number, when to call back, is in <Screen>Schedule</Screen> →{' '}
+              <strong>On call</strong> → <strong>Call log</strong> for 30 days. If nobody could be
+              reached you are also told under the bell, by email and on your phone, with the number.
+              Nothing is recorded. Make sure the phone number on your profile is your cell.
+            </p>
+          </>
+        ),
+      },
     ],
   },
   {
@@ -2634,6 +2659,34 @@ const MANAGERS: Section[] = [
             providers agree between themselves happen on their own, and you are told. On call is
             never hours or pay.
           </p>
+        ),
+      },
+      {
+        question: 'The after-hours phone line: covers, backups and what callers hear',
+        answer: (
+          <>
+            <p>
+              <Screen>Schedule</Screen> → <strong>On call</strong> →{' '}
+              <strong>After-hours calls</strong>. The line rings whoever is on call: a{' '}
+              <strong>cover</strong> first, then the day&rsquo;s change or swap, then the usual
+              pattern, then the <strong>default provider</strong>. Each pattern entry and changed
+              day can have a <strong>Backup</strong>, rung if the provider does not press 1.
+            </p>
+            <p>
+              For part of a night, a vacation evening or any odd hours, press a day under{' '}
+              <strong>Next 60 days</strong> and add a cover: from when, until when, who and their
+              backup. Nothing else changes, and the providers are told. The grid shows who the line
+              will ring at every hour.
+            </p>
+            <p>
+              <strong>What callers hear</strong> holds every message in English and Spanish, the
+              voices, how long each phone rings and the default provider. To use your own recording,
+              put the MP3 on Twilio Assets and paste its https link beside the message.{' '}
+              <strong>Providers&rsquo; phones</strong> shows whose number cannot be dialled: fix it
+              under <Screen>Manage → Staff</Screen> → Edit. Setting the line up in Twilio, Vercel
+              and Weave is in <code>docs/call-routing-setup.md</code>.
+            </p>
+          </>
         ),
       },
       {

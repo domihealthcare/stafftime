@@ -31,6 +31,11 @@ export class OnCallEntryInput {
 
   @IsUUID()
   employeeId!: string;
+
+  /// Rung by the after-hours line if they do not accept.
+  @IsOptional()
+  @IsUUID()
+  backupEmployeeId?: string | null;
 }
 
 /// The usual pattern, from a day on.
@@ -53,6 +58,10 @@ export class OnCallDayInput {
   @IsOptional()
   @IsUUID()
   employeeId?: string | null;
+
+  @IsOptional()
+  @IsUUID()
+  backupEmployeeId?: string | null;
 
   @IsOptional()
   @IsString()

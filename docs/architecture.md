@@ -6343,3 +6343,70 @@ as a single link is checked (`safeLink`), refuses the lot if one is not a web
 address (saying which), and skips and names one already in its section or
 twice in the list. Only names and addresses are sent: never the file, its
 icons or folders. `tests/browser/import-links.mjs`.
+
+## The after-hours phone line (November 2026)
+
+Dominguez: replaces Talkroute, whose schedule could not change one date
+without changing the weekly pattern. Weave's **Closed** routing forwards every
+call to one Twilio number; Twilio asks the app what to do at each step and the
+app answers with TwiML. Set-up and the test plan with staff phones are in
+`docs/call-routing-setup.md`.
+
+**Who is on call** stays the On call schedule's job, so Home, the calendar
+links and the phone never disagree. `on-call/call-routing-lookup.ts` (pure)
+adds two layers to it: a **cover** (`OnCallCover`, an instant range; the
+latest made wins an overlap) above the day's change or swap, and the
+**default provider** (`CallRoutingSettings.defaultProviderId`) below the
+pattern. Each layer carries its own **backup** (`backupEmployeeId` on pattern
+entries, changed days and covers); a backup equal to the provider is dropped.
+The running turn is the latest date whose hand-over **instant** is at or
+before the moment. `turnDateAt` compares "HH:MM" strings, which goes backwards
+in the hour repeated when the clocks go back (a 01:30 hand-over is passed
+twice); comparing instants gives exactly one answer, and turns of 23 and 25
+hours on those nights. `segmentsBetween` cuts at hand-overs and cover edges
+for the 60-day grid.
+
+**What is rung** (`OnCallRoutingService.planAt`): the provider, their backup
+and the default provider, each only if still working, not a shared account,
+and their Directory phone reads as a US number (`common/util/phone.ts`);
+anybody skipped is named in `problems` and on the admin page.
+
+**The call** (`call-routing/voice.service.ts`), each step a signed POST:
+
+1. `incoming`: the log row, then the language menu in a `<Gather>`; with no
+   key Twilio falls through to a `<Redirect>`.
+2. `language?try=`: 1 English, 2 Spanish; otherwise the menu once more, then
+   English. The greeting in that language, then the plan is worked out
+   **once**, raced against 3 seconds. Failure or timeout: the fail-safe plan,
+   `ONCALL_FALLBACK_PHONE`, and `usedFallback` on the log.
+3. Each step is a `<Dial answerOnBridge="true" record="do-not-record">` with
+   the line's own number as caller ID. A whisper step's `<Number url>` plays
+   "Press 1 to accept" to the provider; only `1` returns an empty response,
+   which connects. The steps go into the action URL's query string (base64
+   JSON), so later steps need no schedule lookup, and Twilio's signature over
+   the whole URL stops anybody changing them.
+4. `dial`: `DialBridged=true` ends it (accepted, or rang through on the
+   no-whisper step); anything else is logged and the next step follows, after
+   "Please continue to hold". Out of steps: the closing message, a hang-up and
+   a missed-call alert (once per call, claimed on `alertSentAt`).
+5. `status` (the number's status callback): a call still in progress with
+   nobody accepted becomes "caller hung up", with the alert if a provider had
+   been tried.
+
+Any exception still returns TwiML: the next step, else the fallback cell with
+no whisper, else the closing message. If the app does not answer at all,
+Twilio's "Primary handler fails" TwiML Bin rings the same cell.
+
+**Signatures** (`twilio-signature.ts`): Base64 HMAC-SHA1 of the address
+Twilio called plus each POST field, sorted by name, under
+`TWILIO_AUTH_TOKEN`; compared in constant time. The address is
+`TWILIO_WEBHOOK_BASE_URL` (else `APP_URL`) plus the request's path and
+query, never the Host header. No token: every voice route answers 503. The
+forged-request rule (`common/request-origin.ts`) lets a form body through only
+for a POST under `/api/call-routing/voice/` carrying the signature header and
+no browser marks; there is no session on those routes either way.
+
+**Privacy**: never `<Record>`, no speech input, no voicemail on Twilio. The
+log keeps the caller's number for 90 days (the nightly job deletes the row),
+for providers, managers and admins (Dominguez's choice, so providers can call
+back as their phone shows the Twilio number). Pinned by the schema guard.
