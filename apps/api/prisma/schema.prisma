@@ -449,12 +449,20 @@ model Employee {
   quizAttempts        QuizAttempt[]
 
   /// The provider on-call schedule (October 2026).
-  onCallRotaEntries  OnCallRotaEntry[]
-  createdOnCallRotas OnCallRota[]      @relation("OnCallRotaCreatedBy")
-  onCallDays         OnCallDay[]       @relation("OnCallDayProvider")
-  setOnCallDays      OnCallDay[]       @relation("OnCallDaySetBy")
-  onCallSwapsAsked   OnCallSwap[]      @relation("OnCallSwapRequester")
-  onCallSwapsToMe    OnCallSwap[]      @relation("OnCallSwapPartner")
+  onCallRotaEntries  OnCallRotaEntry[]     @relation("OnCallRotaEntryProvider")
+  createdOnCallRotas OnCallRota[]          @relation("OnCallRotaCreatedBy")
+  onCallDays         OnCallDay[]           @relation("OnCallDayProvider")
+  setOnCallDays      OnCallDay[]           @relation("OnCallDaySetBy")
+  onCallSwapsAsked   OnCallSwap[]          @relation("OnCallSwapRequester")
+  onCallSwapsToMe    OnCallSwap[]          @relation("OnCallSwapPartner")
+  /// After-hours call routing (November 2026): backups, covers, the line.
+  onCallRotaBackups  OnCallRotaEntry[]     @relation("OnCallRotaEntryBackup")
+  onCallDayBackups   OnCallDay[]           @relation("OnCallDayBackup")
+  onCallCovers       OnCallCover[]         @relation("OnCallCoverProvider")
+  onCallCoverBackups OnCallCover[]         @relation("OnCallCoverBackup")
+  setOnCallCovers    OnCallCover[]         @relation("OnCallCoverSetBy")
+  defaultForCalls    CallRoutingSettings[] @relation("CallRoutingDefault")
+  callsAccepted      CallLog[]             @relation("CallLogAcceptedBy")
 
   /// Who reviews which provider's patient schedule (October 2026).
   scheduleReviewsOfMine    ScheduleReviewer[]   @relation("ScheduleReviewerProvider")
@@ -3515,16 +3523,20 @@ model OnCallRota {
 /// every week. Weekends are counted by their Saturday, so the 4th weekend is
 /// the 4th Saturday and the Sunday after it (see `on-call/on-call.ts`).
 model OnCallRotaEntry {
-  id          String @id @default(uuid()) @db.Uuid
-  rotaId      String @db.Uuid
+  id               String  @id @default(uuid()) @db.Uuid
+  rotaId           String  @db.Uuid
   /// 1 = Monday … 7 = Sunday.
-  weekday     Int
+  weekday          Int
   /// 0 every week; 1–4 the first to fourth; -1 the last.
-  weekOfMonth Int    @default(0)
-  employeeId  String @db.Uuid
+  weekOfMonth      Int     @default(0)
+  employeeId       String  @db.Uuid
+  /// Rung after them by the after-hours line if they do not accept a call
+  /// (November 2026). Optional.
+  backupEmployeeId String? @db.Uuid
 
   rota     OnCallRota @relation(fields: [rotaId], references: [id], onDelete: Cascade)
-  employee Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee Employee   @relation("OnCallRotaEntryProvider", fields: [employeeId], references: [id], onDelete: Cascade)
+  backup   Employee?  @relation("OnCallRotaEntryBackup", fields: [backupEmployeeId], references: [id], onDelete: SetNull)
 
   @@unique([rotaId, weekday, weekOfMonth])
   @@map("on_call_rota_entries")
@@ -3532,16 +3544,19 @@ model OnCallRotaEntry {
 
 /// One day not as the pattern has it: changed by a manager, or swapped.
 model OnCallDay {
-  date       DateTime @id @db.Date
-  employeeId String   @db.Uuid
+  date             DateTime @id @db.Date
+  employeeId       String   @db.Uuid
+  /// Rung after them by the after-hours line (November 2026). Optional.
+  backupEmployeeId String?  @db.Uuid
   /// Short, optional: "covering for Dr. D's vacation".
-  note       String?
+  note             String?
   /// The swap that put it here, if one did.
-  swapId     String?  @db.Uuid
-  setById    String?  @db.Uuid
-  updatedAt  DateTime @updatedAt
+  swapId           String?  @db.Uuid
+  setById          String?  @db.Uuid
+  updatedAt        DateTime @updatedAt
 
   employee Employee    @relation("OnCallDayProvider", fields: [employeeId], references: [id], onDelete: Cascade)
+  backup   Employee?   @relation("OnCallDayBackup", fields: [backupEmployeeId], references: [id], onDelete: SetNull)
   setBy    Employee?   @relation("OnCallDaySetBy", fields: [setById], references: [id], onDelete: SetNull)
   swap     OnCallSwap? @relation(fields: [swapId], references: [id], onDelete: SetNull)
 
@@ -3577,6 +3592,122 @@ model OnCallSwap {
   @@index([partnerId, status])
   @@index([requesterId, status])
   @@map("on_call_swaps")
+}
+
+// ---------------------------------------------------------------------------
+// After-hours call routing (November 2026, Dominguez: replaces Talkroute).
+// Weave's "Closed" routing forwards every call to one Twilio number; Twilio
+// asks this app who is on call and rings their cell. Nothing is recorded,
+// transcribed or kept as voicemail: the caller leaves a message on the
+// provider's own phone. See docs/call-routing-setup.md.
+// ---------------------------------------------------------------------------
+
+/// Who is on call between two moments, beating the day's turn and the
+/// pattern: a night split between two providers, an evening of vacation
+/// cover. Entered as New Jersey wall-clock times, stored as instants. Where
+/// two overlap, the one made last wins.
+model OnCallCover {
+  id               String   @id @default(uuid()) @db.Uuid
+  startsAt         DateTime
+  endsAt           DateTime
+  employeeId       String   @db.Uuid
+  backupEmployeeId String?  @db.Uuid
+  /// Short, optional: "Dr. D at the hospital until 11".
+  note             String?
+  setById          String?  @db.Uuid
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  employee Employee  @relation("OnCallCoverProvider", fields: [employeeId], references: [id], onDelete: Cascade)
+  backup   Employee? @relation("OnCallCoverBackup", fields: [backupEmployeeId], references: [id], onDelete: SetNull)
+  setBy    Employee? @relation("OnCallCoverSetBy", fields: [setById], references: [id], onDelete: SetNull)
+
+  @@index([startsAt, endsAt])
+  @@map("on_call_covers")
+}
+
+/// The after-hours line's settings: one row (id 1).
+model CallRoutingSettings {
+  id                Int      @id @default(1)
+  /// Rung when nobody is on call, when the schedule cannot be read, and last
+  /// when nobody else accepted (Dr. Jonathan Dominguez, November 2026).
+  defaultProviderId String?  @db.Uuid
+  /// Twilio <Say> voices: neural, United States English and Spanish.
+  voiceEn           String   @default("Polly.Joanna-Neural")
+  voiceEs           String   @default("Polly.Lupe-Neural")
+  /// How long a provider's cell rings, with the whisper, before the next try.
+  ringSeconds       Int      @default(20)
+  updatedById       String?  @db.Uuid
+  updatedAt         DateTime @updatedAt
+
+  defaultProvider Employee? @relation("CallRoutingDefault", fields: [defaultProviderId], references: [id], onDelete: SetNull)
+
+  @@map("call_routing_settings")
+}
+
+enum CallMessageKey {
+  OPENING_EN
+  OPENING_ES
+  GREETING_EN
+  GREETING_ES
+  HOLD_EN
+  HOLD_ES
+  CLOSING_EN
+  CLOSING_ES
+}
+
+/// What the caller hears, editable by managers. Spoken by the voice for its
+/// language, or, when `audioUrl` is set, that recording played instead (a
+/// link to a file kept on Twilio Assets: nothing is uploaded to this app).
+model CallMessage {
+  key         CallMessageKey @id
+  text        String
+  audioUrl    String?
+  updatedById String?        @db.Uuid
+  updatedAt   DateTime       @updatedAt
+
+  @@map("call_messages")
+}
+
+enum CallOutcome {
+  /// Still going, or Twilio never said how it ended.
+  IN_PROGRESS
+  /// A provider pressed 1 and was connected.
+  ACCEPTED
+  /// The last try rang through with no whisper: answered, or their voicemail.
+  RANG_THROUGH
+  /// Nobody could be reached at all.
+  NOT_REACHED
+  /// The caller hung up first.
+  CALLER_HUNG_UP
+}
+
+/// One after-hours call (November 2026). Who was tried and who took it; the
+/// caller's number in full (Dominguez's choice: providers see it in the app
+/// to call back, as their phone shows the Twilio number). No name, no audio,
+/// nothing said. Deleted by the nightly job after 90 days.
+model CallLog {
+  id           String      @id @default(uuid()) @db.Uuid
+  /// Twilio's id for the call, to tie its steps together.
+  callSid      String      @unique
+  startedAt    DateTime    @default(now())
+  endedAt      DateTime?
+  /// "en" or "es", once chosen (or defaulted).
+  language     String?
+  callerNumber String?
+  /// [{ step, role, employeeId, name, result, at }], in order.
+  attempts     Json        @default("[]")
+  acceptedById String?     @db.Uuid
+  outcome      CallOutcome @default(IN_PROGRESS)
+  /// The schedule could not be read, so the fallback was rung.
+  usedFallback Boolean     @default(false)
+  /// When the missed-call alert went to the providers, if one did.
+  alertSentAt  DateTime?
+
+  acceptedBy Employee? @relation("CallLogAcceptedBy", fields: [acceptedById], references: [id], onDelete: SetNull)
+
+  @@index([startedAt])
+  @@map("call_logs")
 }
 
 // ---------------------------------------------------------------------------

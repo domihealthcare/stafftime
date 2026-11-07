@@ -142,6 +142,68 @@ describe('what this app deliberately does not store', () => {
     );
   });
 
+  /// The after-hours phone line (November 2026, Dominguez): who was tried
+  /// and who took the call, and the caller's number (his choice, so providers
+  /// can call back). Never a name, a recording, a transcript or a voicemail:
+  /// the caller leaves a message on the provider's own phone.
+  it('keeps the after-hours call log to the number, who was tried and how it ended', () => {
+    const fieldsOf = (name: string) =>
+      model(name)
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('//') && !line.startsWith('@@'))
+        .map((line) => line.split(/\s+/)[0])
+        .sort();
+    expect(fieldsOf('CallLog')).toEqual(
+      [
+        'acceptedBy',
+        'acceptedById',
+        'alertSentAt',
+        'attempts',
+        'callSid',
+        'callerNumber',
+        'endedAt',
+        'id',
+        'language',
+        'outcome',
+        'startedAt',
+        'usedFallback',
+      ].sort(),
+    );
+    expect(fieldsOf('CallMessage')).toEqual(
+      ['audioUrl', 'key', 'text', 'updatedAt', 'updatedById'].sort(),
+    );
+    expect(fieldsOf('OnCallCover')).toEqual(
+      [
+        'backup',
+        'backupEmployeeId',
+        'createdAt',
+        'employee',
+        'employeeId',
+        'endsAt',
+        'id',
+        'note',
+        'setBy',
+        'setById',
+        'startsAt',
+        'updatedAt',
+      ].sort(),
+    );
+    expect(fieldsOf('CallRoutingSettings')).toEqual(
+      [
+        'defaultProvider',
+        'defaultProviderId',
+        'id',
+        'ringSeconds',
+        'updatedAt',
+        'updatedById',
+        'voiceEn',
+        'voiceEs',
+      ].sort(),
+    );
+    expect(schema).not.toMatch(/model Call\w*\s*\{[^}]*(recording|transcript|voicemail|audioData)/i);
+  });
+
   /// Who is the admin in each office (October 2026): who and where, nothing
   /// more. CME requests (October 2026): an activity, its dates and costs, and
   /// the decision - no receipts, certificates or licence numbers.

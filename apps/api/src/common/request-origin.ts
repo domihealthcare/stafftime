@@ -49,8 +49,10 @@ export const NOT_JSON = 'Domi Staff only accepts JSON here, so this request was 
 export function refuseForgedRequest(
   method: string,
   headers: RequestHeaders,
+  path = '',
 ): RequestRefusal | null {
   if (!CHANGES.has(method.toUpperCase())) return null;
+  if (isTwilioWebhook(method, headers, path)) return null;
 
   if (!fromOwnOrigin(headers)) {
     return { statusCode: 403, error: 'Forbidden', message: NOT_FROM_DOMI_STAFF };
@@ -61,6 +63,27 @@ export function refuseForgedRequest(
   }
 
   return null;
+}
+
+/**
+ * The after-hours phone line's webhooks (November 2026). Twilio posts a form
+ * body (urlencoded), never JSON, from its own servers, so rule 2 would refuse
+ * it. Let through only a POST to that one path that carries Twilio's
+ * signature header and no browser marks at all; the controller then checks
+ * the signature against the auth token and refuses anything that does not
+ * match (`call-routing/twilio-signature.ts`). No session goes with it, so
+ * nothing a page could forge is reachable this way.
+ */
+export const TWILIO_WEBHOOK_PREFIX = '/api/call-routing/voice/';
+
+function isTwilioWebhook(method: string, headers: RequestHeaders, path: string): boolean {
+  if (method.toUpperCase() !== 'POST') return false;
+  if (!path.startsWith(TWILIO_WEBHOOK_PREFIX)) return false;
+  if (!first(headers['x-twilio-signature'])) return false;
+  // A browser page always sends one of these; Twilio sends neither.
+  if (first(headers['sec-fetch-site']) || first(headers['origin'])) return false;
+  const type = first(headers['content-type'])?.split(';')[0].trim().toLowerCase();
+  return type === 'application/x-www-form-urlencoded';
 }
 
 function fromOwnOrigin(headers: RequestHeaders): boolean {
