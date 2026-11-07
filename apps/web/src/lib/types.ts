@@ -2115,6 +2115,8 @@ export interface OnCallDay {
   date: string;
   employeeId: string | null;
   employee: OnCallPerson | null;
+  /// Rung by the after-hours line if they do not accept (November 2026).
+  backup?: OnCallPerson | null;
   /// The usual pattern, a manager's change, a swap - or nobody set.
   source: 'USUAL' | 'CHANGED' | 'SWAPPED' | 'NONE';
   /// "HH:MM": the turn runs from this on its date to this the next day.
@@ -2178,7 +2180,139 @@ export interface OnCallRota {
   startsOn: string;
   changesAt: string;
   inForce: boolean;
-  entries: { weekday: number; weekOfMonth: number; employee: OnCallPerson }[];
+  entries: {
+    weekday: number;
+    weekOfMonth: number;
+    employee: OnCallPerson;
+    backup?: OnCallPerson | null;
+  }[];
+}
+
+// ------------------------------------------------- after-hours call routing
+
+/// Which layer of the schedule decided who is on call.
+export type OnCallLayer = 'COVER' | 'CHANGED' | 'SWAPPED' | 'USUAL' | 'DEFAULT' | 'NONE';
+
+/// A time-range cover: who is on call between two moments.
+export interface OnCallCover {
+  id: string;
+  /// Instants (ISO).
+  startsAt: string;
+  endsAt: string;
+  /// The same, as New Jersey wall-clock "YYYY-MM-DDTHH:MM", for a form.
+  startsLocal: string;
+  endsLocal: string;
+  employee: OnCallPerson;
+  backup: OnCallPerson | null;
+  note: string | null;
+  setBy: string | null;
+}
+
+export interface OnCallCoverInput {
+  /// New Jersey wall-clock "YYYY-MM-DDTHH:MM".
+  startsAt: string;
+  endsAt: string;
+  employeeId: string;
+  backupEmployeeId?: string | null;
+  note?: string;
+}
+
+/// One stretch of time with the same answer, for the 60-day view.
+export interface OnCallSegment {
+  startsAt: string;
+  endsAt: string;
+  employeeId: string | null;
+  backupEmployeeId: string | null;
+  source: OnCallLayer;
+  coverId: string | null;
+  turnDate: string;
+}
+
+export interface OnCallRoutingView {
+  from: string;
+  days: number;
+  segments: OnCallSegment[];
+  covers: OnCallCover[];
+  /// Everybody named in the segments and covers, and every provider.
+  people: OnCallPerson[];
+  providers: OnCallPerson[];
+  defaultProviderId: string | null;
+}
+
+export type CallMessageKey =
+  | 'OPENING_EN'
+  | 'OPENING_ES'
+  | 'GREETING_EN'
+  | 'GREETING_ES'
+  | 'HOLD_EN'
+  | 'HOLD_ES'
+  | 'CLOSING_EN'
+  | 'CLOSING_ES';
+
+export interface CallMessage {
+  key: CallMessageKey;
+  text: string;
+  /// An https link to a recording kept on Twilio Assets; played instead.
+  audioUrl: string | null;
+}
+
+export interface CallRoutingSettings {
+  defaultProviderId: string | null;
+  voiceEn: string;
+  voiceEs: string;
+  ringSeconds: number;
+  messages: CallMessage[];
+  /// Every provider, with the Directory phone that is rung.
+  providers: {
+    id: string;
+    name: string;
+    phone: string | null;
+    /// Whether that phone can be dialled (a ten-digit US number).
+    dialable: boolean;
+  }[];
+  line: {
+    /// Twilio's auth token is set, so calls are answered.
+    switchedOn: boolean;
+    /// The line's number, as set in Vercel.
+    number: string | null;
+    /// The emergency fallback cell is set in Vercel.
+    fallbackSet: boolean;
+  };
+}
+
+export interface CallRoutingSettingsInput {
+  defaultProviderId: string | null;
+  voiceEn: string;
+  voiceEs: string;
+  ringSeconds: number;
+  messages: CallMessage[];
+}
+
+export type CallOutcome =
+  'IN_PROGRESS' | 'ACCEPTED' | 'RANG_THROUGH' | 'NOT_REACHED' | 'CALLER_HUNG_UP';
+
+export interface CallAttempt {
+  step: number;
+  role: 'ON_CALL' | 'BACKUP' | 'FINAL' | 'DEFAULT' | 'FALLBACK';
+  employeeId: string | null;
+  name: string;
+  /// "accepted", "no answer", "declined", "rang through", "busy", "failed".
+  result: string | null;
+  at: string;
+}
+
+export interface CallLogEntry {
+  id: string;
+  startedAt: string;
+  endedAt: string | null;
+  language: 'en' | 'es' | null;
+  /// The caller's number in full, "+12015550142", or null when withheld.
+  callerNumber: string | null;
+  outcome: CallOutcome;
+  usedFallback: boolean;
+  acceptedBy: { id: string; name: string } | null;
+  attempts: CallAttempt[];
+  alertSentAt: string | null;
 }
 
 export interface OnCallSwap {

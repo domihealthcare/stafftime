@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router';
 import { Avatar } from '../components/Avatar';
 import { useConfirm } from '../components/ConfirmDialog';
 import { Modal } from '../components/Modal';
@@ -78,6 +79,16 @@ export function OnCallPage() {
         subtitle="Which provider takes the after-hours calls. Each day’s turn runs from noon to noon the next day."
       />
       <ScheduleTabs />
+      <p className="mb-3 flex flex-wrap gap-4 text-sm">
+        {isManager && (
+          <Link to="/on-call/routing" className="font-medium text-brand-700 underline">
+            After-hours calls
+          </Link>
+        )}
+        <Link to="/on-call/calls" className="font-medium text-brand-700 underline">
+          Call log
+        </Link>
+      </p>
       <div className="space-y-5">
         {error && <Alert>{error}</Alert>}
         {notice && (
@@ -296,6 +307,9 @@ function MonthView({
         <span className="text-sm font-medium text-slate-900">
           {entry.employee ? shortName(entry.employee) : '-'}
         </span>
+        {entry.backup && (
+          <span className="text-xs text-slate-600">Backup: {shortName(entry.backup)}</span>
+        )}
         {entry.source === 'SWAPPED' && <span className="text-xs text-amber-700">↔ swapped</span>}
         {entry.source === 'CHANGED' && <span className="text-xs text-amber-700">✎ changed</span>}
       </button>
@@ -379,6 +393,7 @@ function DayDialog({
   const mine = entry.employee?.id === me;
   const future = entry.date >= practiceDate();
   const [who, setWho] = useState(entry.employee?.id ?? '');
+  const [backup, setBackup] = useState(entry.backup?.id ?? '');
   const [note, setNote] = useState(entry.note ?? '');
   const [swapNote, setSwapNote] = useState('');
   const [partner, setPartner] = useState('');
@@ -422,6 +437,7 @@ function DayDialog({
         {entry.source === 'SWAPPED' && ' Swapped between providers.'}
         {entry.source === 'CHANGED' && ' Changed by a manager.'}
       </p>
+      {entry.backup && <p className="mt-1 text-sm text-slate-700">Backup: {entry.backup.name}</p>}
       {entry.note && <p className="mt-1 text-sm text-slate-600">“{entry.note}”</p>}
 
       {mine && future && (
@@ -517,6 +533,7 @@ function DayDialog({
               () =>
                 api.setOnCallDay(entry.date, {
                   employeeId: who || null,
+                  backupEmployeeId: who && backup && backup !== who ? backup : null,
                   note: note.trim() || undefined,
                 }),
               `Saved. ${day(entry.date)} is changed.`,
@@ -537,6 +554,25 @@ function DayDialog({
                     {p.name}
                   </option>
                 ))}
+              </select>
+            )}
+          </Field>
+          <Field label="Backup" hint="Optional. Rung if the provider on call does not accept.">
+            {(props) => (
+              <select
+                {...props}
+                value={backup}
+                onChange={(event) => setBackup(event.target.value)}
+                className={inputClass}
+              >
+                <option value="">No backup</option>
+                {providers
+                  .filter((p) => p.id !== who)
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
               </select>
             )}
           </Field>
@@ -591,6 +627,7 @@ interface DraftEntry {
   weekday: number;
   weekOfMonth: number;
   employeeId: string;
+  backupEmployeeId: string;
 }
 
 function PatternCard({
@@ -698,6 +735,9 @@ function PatternWords({ rota }: { rota: OnCallRota }) {
             <li key={weekday}>
               <span className="inline-block w-24 text-slate-500">{WEEKDAYS[weekday]}</span>
               {entry ? entry.employee.name : '-'}
+              {entry?.backup && (
+                <span className="text-slate-500"> (Backup: {entry.backup.name})</span>
+              )}
             </li>
           );
         })}
@@ -708,7 +748,9 @@ function PatternWords({ rota }: { rota: OnCallRota }) {
           {except
             .map(
               (entry) =>
-                `${entry.employee.name} on ${entryWords(entry.weekday, entry.weekOfMonth)}`,
+                `${entry.employee.name} on ${entryWords(entry.weekday, entry.weekOfMonth)}${
+                  entry.backup ? ` (Backup: ${entry.backup.name})` : ''
+                }`,
             )
             .join('; ')}
           .
@@ -743,6 +785,14 @@ function PatternEditor({
       ]),
     ),
   );
+  const [weeklyBackup, setWeeklyBackup] = useState<Record<number, string>>(() =>
+    Object.fromEntries(
+      [1, 2, 3, 4, 5, 6, 7].map((weekday) => [
+        weekday,
+        from?.entries.find((e) => e.weekday === weekday && e.weekOfMonth === 0)?.backup?.id ?? '',
+      ]),
+    ),
+  );
   const [exceptions, setExceptions] = useState<DraftEntry[]>(
     () =>
       from?.entries
@@ -751,6 +801,7 @@ function PatternEditor({
           weekday: e.weekday,
           weekOfMonth: e.weekOfMonth,
           employeeId: e.employee.id,
+          backupEmployeeId: e.backup?.id ?? '',
         })) ?? [],
   );
   const [busy, setBusy] = useState(false);
@@ -759,11 +810,18 @@ function PatternEditor({
   async function save(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
-    const entries: DraftEntry[] = [
+    const entries = [
       ...Object.entries(weekly)
         .filter(([, employeeId]) => employeeId)
-        .map(([weekday, employeeId]) => ({ weekday: Number(weekday), weekOfMonth: 0, employeeId })),
-      ...exceptions.filter((e) => e.employeeId),
+        .map(([weekday, employeeId]) => ({
+          weekday: Number(weekday),
+          weekOfMonth: 0,
+          employeeId,
+          backupEmployeeId: weeklyBackup[Number(weekday)] || null,
+        })),
+      ...exceptions
+        .filter((e) => e.employeeId)
+        .map((e) => ({ ...e, backupEmployeeId: e.backupEmployeeId || null })),
     ];
     setBusy(true);
     try {
@@ -774,19 +832,27 @@ function PatternEditor({
     }
   }
 
-  const providerSelect = (value: string, onChange: (value: string) => void, label: string) => (
+  const providerSelect = (
+    value: string,
+    onChange: (value: string) => void,
+    label: string,
+    none = 'Nobody',
+    except = '',
+  ) => (
     <select
       aria-label={label}
       value={value}
       onChange={(event) => onChange(event.target.value)}
       className={inputClass}
     >
-      <option value="">Nobody</option>
-      {providers.map((p) => (
-        <option key={p.id} value={p.id}>
-          {p.name}
-        </option>
-      ))}
+      <option value="">{none}</option>
+      {providers
+        .filter((p) => p.id !== except)
+        .map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.name}
+          </option>
+        ))}
     </select>
   );
 
@@ -798,14 +864,28 @@ function PatternEditor({
     >
       <div className="grid gap-2 sm:grid-cols-2">
         {[1, 2, 3, 4, 5, 6, 7].map((weekday) => (
-          <label key={weekday} className="flex items-center gap-2 text-sm">
-            <span className="w-24 shrink-0 text-slate-700">{WEEKDAYS[weekday]}s</span>
-            {providerSelect(
-              weekly[weekday] ?? '',
-              (value) => setWeekly((current) => ({ ...current, [weekday]: value })),
-              `${WEEKDAYS[weekday]}s`,
+          <div key={weekday} className="flex flex-wrap items-center gap-2 text-sm">
+            <label className="flex items-center gap-2">
+              <span className="w-24 shrink-0 text-slate-700">{WEEKDAYS[weekday]}s</span>
+              {providerSelect(
+                weekly[weekday] ?? '',
+                (value) => setWeekly((current) => ({ ...current, [weekday]: value })),
+                `${WEEKDAYS[weekday]}s`,
+              )}
+            </label>
+            {weekly[weekday] && (
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500">Backup</span>
+                {providerSelect(
+                  weeklyBackup[weekday] ?? '',
+                  (value) => setWeeklyBackup((current) => ({ ...current, [weekday]: value })),
+                  `Backup for ${WEEKDAYS[weekday]}s`,
+                  'No backup',
+                  weekly[weekday],
+                )}
+              </div>
             )}
-          </label>
+          </div>
         ))}
       </div>
 
@@ -869,6 +949,21 @@ function PatternEditor({
                   'Who',
                 )}
               </div>
+              {entry.employeeId && (
+                <div className="flex min-w-[12rem] items-center gap-2">
+                  <span className="text-sm text-slate-500">Backup</span>
+                  {providerSelect(
+                    entry.backupEmployeeId,
+                    (value) =>
+                      setExceptions((all) =>
+                        all.map((e, i) => (i === index ? { ...e, backupEmployeeId: value } : e)),
+                      ),
+                    'Backup for this exception',
+                    'No backup',
+                    entry.employeeId,
+                  )}
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => setExceptions((all) => all.filter((_, i) => i !== index))}
@@ -882,7 +977,10 @@ function PatternEditor({
         <button
           type="button"
           onClick={() =>
-            setExceptions((all) => [...all, { weekday: 6, weekOfMonth: 4, employeeId: '' }])
+            setExceptions((all) => [
+              ...all,
+              { weekday: 6, weekOfMonth: 4, employeeId: '', backupEmployeeId: '' },
+            ])
           }
           className={`mt-2 ${buttonClass('secondary', 'sm')}`}
         >
