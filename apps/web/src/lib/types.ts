@@ -78,6 +78,8 @@ export interface Employee extends EmployeeSummary {
   /// Signed-in person only: the app's language for them.
   language?: 'en' | 'es';
   phone?: string | null;
+  /// Providers: the number the after-hours line rings (E.164), else null.
+  onCallPhone?: string | null;
   payType?: 'HOURLY' | 'SALARY';
   /// False for somebody who does not clock in (providers, to start with):
   /// Home shows their shift instead of a Clock in button, and the Directory
@@ -1635,6 +1637,7 @@ export interface Profile {
   pronouns: string | null;
   email: string;
   phone: string | null;
+  onCallPhone?: string | null;
   about: string | null;
   photoUpdatedAt: string | null;
   birthdayMonth: number | null;
@@ -2245,6 +2248,11 @@ export interface CallRoutingSettings {
     id: string;
     name: string;
     phone: string | null;
+    /// Their own on-call number, when they set one.
+    onCallPhone: string | null;
+    /// The number dialled (E.164), and where it came from.
+    rings: string | null;
+    ringsFrom: 'ON_CALL_NUMBER' | 'DIRECTORY' | null;
     /// Whether that phone can be dialled (a ten-digit US number).
     dialable: boolean;
   }[];

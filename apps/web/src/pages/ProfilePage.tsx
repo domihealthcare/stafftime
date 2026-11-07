@@ -1,3 +1,4 @@
+import { formatCaller } from '../lib/call-routing';
 import { PhoneNotificationsCard } from '../components/PhoneNotificationsCard';
 import { useEffect, useRef, useState } from 'react';
 import { formatBirthday } from '../lib/birthday';
@@ -25,9 +26,15 @@ const ROLE_LABELS: Record<string, string> = {
 /// reach you.
 export function ProfilePage() {
   const t = useT();
-  const { refresh } = useSession();
+  const { refresh, employee } = useSession();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [form, setForm] = useState({ preferredName: '', pronouns: '', phone: '', about: '' });
+  const [form, setForm] = useState({
+    preferredName: '',
+    pronouns: '',
+    phone: '',
+    onCallPhone: '',
+    about: '',
+  });
   const [busy, setBusy] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
   const confirm = useConfirm();
@@ -43,6 +50,7 @@ export function ProfilePage() {
       preferredName: next.preferredName ?? '',
       pronouns: next.pronouns ?? '',
       phone: next.phone ?? '',
+      onCallPhone: next.onCallPhone ? formatCaller(next.onCallPhone) : '',
       about: next.about ?? '',
     });
   }
@@ -64,6 +72,7 @@ export function ProfilePage() {
     form.preferredName !== (profile.preferredName ?? '') ||
     form.pronouns !== (profile.pronouns ?? '') ||
     form.phone !== (profile.phone ?? '') ||
+    form.onCallPhone !== (profile.onCallPhone ? formatCaller(profile.onCallPhone) : '') ||
     form.about !== (profile.about ?? '');
 
   async function save(event: React.FormEvent) {
@@ -72,7 +81,18 @@ export function ProfilePage() {
     setError(null);
     setNotice(null);
     try {
-      show(await api.updateProfile(form));
+      show(
+        await api.updateProfile(
+          employee?.usesClinicalForms === true
+            ? form
+            : {
+                preferredName: form.preferredName,
+                pronouns: form.pronouns,
+                phone: form.phone,
+                about: form.about,
+              },
+        ),
+      );
       await refresh();
       setNotice(t('Profile saved.'));
     } catch (err) {
@@ -268,6 +288,27 @@ export function ProfilePage() {
               {t('Colleagues see it in the Directory.')}
             </span>
           </label>
+          {employee?.usesClinicalForms === true && (
+            <label className="text-sm" htmlFor="onCallPhone">
+              <span className="block font-medium text-slate-800">{t('On-call number')}</span>
+              <input
+                id="onCallPhone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="off"
+                value={form.onCallPhone}
+                maxLength={25}
+                placeholder="(201) 555-0142"
+                onChange={(event) => setForm({ ...form, onCallPhone: event.target.value })}
+                className={field}
+              />
+              <span className="mt-1 block text-xs text-slate-500">
+                {t(
+                  'The after-hours phone line rings this number when you are on call. Leave empty to use your phone number above. Not shown in the Directory.',
+                )}
+              </span>
+            </label>
+          )}
           <label className="text-sm sm:col-span-2" htmlFor="about">
             <span className="block font-medium text-slate-800">
               {t('About you')}{' '}

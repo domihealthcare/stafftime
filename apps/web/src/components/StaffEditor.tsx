@@ -1,3 +1,4 @@
+import { formatCaller } from '../lib/call-routing';
 import { useEffect, useRef, useState } from 'react';
 import { browserToday } from '../lib/dates';
 import { formatCalendarDate } from '../lib/format';
@@ -65,6 +66,7 @@ export function StaffEditor({
     postNominals: person.postNominals ?? '',
     email: person.email,
     phone: person.phone ?? '',
+    onCallPhone: person.onCallPhone ? formatCaller(person.onCallPhone) : '',
     role: person.role,
     payType: person.payType ?? 'HOURLY',
     clocksIn: person.clocksIn ?? true,
@@ -159,6 +161,7 @@ export function StaffEditor({
         postNominals: form.postNominals.trim() || null,
         email: form.email.trim().toLowerCase(),
         phone: form.phone.trim() || null,
+        onCallPhone: form.onCallPhone.trim() || null,
         role: form.role,
         payType: form.payType,
         clocksIn: form.isSharedAccount ? false : form.clocksIn,
@@ -309,6 +312,23 @@ export function StaffEditor({
                     placeholder="(201) 555-0142"
                     value={form.phone}
                     onChange={(event) => set('phone', event.target.value)}
+                    className={FIELD}
+                  />
+                </Field>
+                <Field
+                  id="edit-on-call-phone"
+                  label="On-call number"
+                  hint="Providers: the number the after-hours line rings. Empty uses the phone number. Not shown in the Directory."
+                >
+                  <input
+                    id="edit-on-call-phone"
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="off"
+                    maxLength={25}
+                    placeholder="(201) 555-0142"
+                    value={form.onCallPhone}
+                    onChange={(event) => set('onCallPhone', event.target.value)}
                     className={FIELD}
                   />
                 </Field>

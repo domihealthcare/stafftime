@@ -30,9 +30,9 @@ const step = async (name, fn) => {
 
 /**
  * The after-hours phone line (Dominguez, November 2026): Twilio's webhook
- * (signed, called directly on the API), the managers' After-hours calls
- * screen (covers, what callers hear), the call log, and the backup on the
- * On call page. Nothing is recorded: no <Record> in any answer.
+ * (signed, called directly on the API), the On call page's Phone line
+ * settings (what callers hear) and Recent calls, a provider's own on-call
+ * number in Your profile, and the backup on the On call page. Nothing is recorded: no <Record> in any answer.
  *
  * Frankie (front desk) and Max (MA) are made providers part-way through, with
  * the Directory phones the seed gives them; the seed puts their job roles
@@ -185,9 +185,9 @@ await step('before being providers, the call log and the line screen are not for
     must(routing.status === 403, `${name}: the routing view answered ${routing.status}`);
   }
   await max.goto(`${BASE}/on-call/routing`, { waitUntil: 'networkidle' });
-  await max.getByText('Only managers and admins can change the after-hours line.').waitFor();
+  await max.getByText('The on-call schedule is for providers and managers.').waitFor();
   await max.goto(`${BASE}/on-call/calls`, { waitUntil: 'networkidle' });
-  await max.getByText('The call log is for providers and managers.').waitFor();
+  await max.getByText('The on-call schedule is for providers and managers.').waitFor();
 });
 
 await step('set-up: Frankie and Max become providers with phones in the Directory', async () => {
@@ -350,17 +350,18 @@ await step('nothing the webhook said records, listens or takes a voicemail', asy
 
 // --------------------------------------------------------------- 2. the page
 
-await step('the manager reaches After-hours calls from Schedule, On call', async () => {
+await step('the manager opens Phone line settings at the bottom of the On call page', async () => {
   await manager.goto(`${BASE}/schedule`, { waitUntil: 'networkidle' });
   await manager.getByRole('link', { name: 'On call' }).click();
   await manager.getByRole('heading', { name: 'On call', exact: true }).waitFor();
-  await manager.getByRole('link', { name: 'After-hours calls' }).click();
-  await manager.getByRole('heading', { name: 'After-hours calls', exact: true }).waitFor();
+  must((await manager.getByRole('link', { name: 'After-hours calls' }).count()) === 0, 'an After-hours calls link is still there');
+  must((await manager.getByRole('link', { name: 'Call log' }).count()) === 0, 'a Call log link is still there');
+  must(!(await manager.locator('#phone-line').evaluate((el) => el.open)), 'Phone line settings does not start closed');
+  await manager.locator('#phone-line summary').click();
   for (const heading of ['The line', 'What callers hear']) {
     await manager.getByRole('heading', { name: heading, exact: true }).waitFor();
   }
   await manager.getByRole('heading', { name: /^Providers.? phones$/ }).waitFor();
-  await manager.getByText('Who the line rings comes from the').waitFor();
   must((await manager.getByRole('heading', { name: 'Next 60 days' }).count()) === 0, 'the 60-day grid is still there');
   must((await manager.getByRole('heading', { name: 'Covers', exact: true }).count()) === 0, 'the Covers list is still there');
 });
@@ -382,7 +383,7 @@ await step('Providers phones lists who can be dialled and who cannot', async () 
   const cleared = await call(admin, `/employees/${maxId}`, { method: 'PATCH', body: JSON.stringify({ phone: null }) });
   must(cleared.status < 300, `clearing the phone answered ${cleared.status}`);
   try {
-    await manager.reload({ waitUntil: 'networkidle' });
+    await openPhoneLine(manager);
     const row = manager.getByTestId('provider-phones').locator('div', { hasText: 'Max Assistant' }).filter({ hasText: 'Missing or not a US number' }).first();
     await row.waitFor();
     await manager.getByTestId('routing-status').getByText(/cannot be rung/).waitFor();
@@ -462,6 +463,13 @@ await step('removing it asks first, and the earlier cover takes over again', asy
 // --------------------------------------------------------------- 4. words
 
 /// Presses Save and waits for the save itself, then for "Saved".
+/// Opens the On call page's Phone line settings by its address.
+async function openPhoneLine(page) {
+  await page.goto(`${BASE}/on-call/routing`, { waitUntil: 'networkidle' });
+  await page.waitForURL(/\/on-call#phone-line$/);
+  await page.getByRole('heading', { name: 'What callers hear' }).waitFor();
+}
+
 async function saveWords(page) {
   const saved = page.waitForResponse((r) => r.url().includes('/on-call/routing/settings') && r.request().method() === 'PUT');
   await page.getByRole('button', { name: 'Save what callers hear' }).click();
@@ -469,7 +477,7 @@ async function saveWords(page) {
 }
 
 await step('changed hold words are saved, shown as saved, kept on reload and heard', async () => {
-  await manager.goto(`${BASE}/on-call/routing`, { waitUntil: 'networkidle' });
+  await openPhoneLine(manager);
   const box = manager.getByLabel('While on hold, English words', { exact: true });
   originalHold = await box.inputValue();
   must(originalHold.length > 0, 'the hold words are empty');
@@ -477,7 +485,7 @@ await step('changed hold words are saved, shown as saved, kept on reload and hea
   const response = await saveWords(manager);
   must(response.status() < 300, `saving answered ${response.status()}`);
   await manager.getByText('Saved', { exact: true }).waitFor();
-  await manager.reload({ waitUntil: 'networkidle' });
+  await openPhoneLine(manager);
   const kept = await manager.getByLabel('While on hold, English words', { exact: true }).inputValue();
   must(kept === 'Hold on please, suite words.', `kept "${kept}"`);
   const { chosen, base, path } = await callIn(1);
@@ -513,10 +521,9 @@ await step('the words are put back and the link cleared', async () => {
 // --------------------------------------------------------------- 5. call log
 
 await step('the Call log shows the calls with the full number and an outcome badge', async () => {
-  await manager.goto(`${BASE}/schedule`, { waitUntil: 'networkidle' });
-  await manager.getByRole('link', { name: 'On call' }).click();
-  await manager.getByRole('link', { name: 'Call log' }).click();
-  await manager.getByRole('heading', { name: 'Call log', exact: true }).waitFor();
+  await manager.goto(`${BASE}/on-call/calls`, { waitUntil: 'networkidle' });
+  await manager.waitForURL(/\/on-call#calls$/);
+  await manager.getByText('After-hours calls in the last 30 days, newest first.').waitFor();
   const table = manager.getByTestId('call-log-table');
   await table.waitFor();
   await table.getByText('(201) 555-0142').first().waitFor();
@@ -525,12 +532,14 @@ await step('the Call log shows the calls with the full number and an outcome bad
   await row.getByText('Spanish').waitFor();
   await row.getByText('Frankie Front-Desk').first().waitFor();
   await table.locator('tr', { hasText: '(201) 555-0142' }).filter({ hasText: /Accepted/ }).first().waitFor();
-  await manager.getByRole('link', { name: 'After-hours calls' }).waitFor();
+  must((await manager.getByRole('link', { name: 'Call log' }).count()) === 0, 'the old Call log link is still there');
+  must((await manager.getByRole('link', { name: 'After-hours calls' }).count()) === 0, 'the old After-hours calls link is still there');
 });
 
-await step('a provider can open the Call log, but not the line screen', async () => {
+await step('a provider can open Recent calls, but not the phone line settings', async () => {
   await frankie.goto(`${BASE}/on-call/calls`, { waitUntil: 'networkidle' });
   await frankie.getByTestId('call-log-table').waitFor();
+  must((await frankie.locator('#phone-line').count()) === 0, 'a provider sees the phone line settings');
   must((await call(frankie, '/call-routing/calls')).status === 200, 'the API refused a provider');
   must((await call(frankie, `/on-call/routing?from=${today}`)).status === 403, 'the line screen API let a provider in');
 });
@@ -544,12 +553,51 @@ await step('a plain employee is refused the Call log by the API and the screens 
     const answer = await call(max, '/call-routing/calls');
     must(answer.status === 403, `the call log answered ${answer.status}`);
     await max.goto(`${BASE}/on-call/calls`, { waitUntil: 'networkidle' });
-    await max.getByText('The call log is for providers and managers.').waitFor();
+    await max.getByText('The on-call schedule is for providers and managers.').waitFor();
     await max.goto(`${BASE}/on-call/routing`, { waitUntil: 'networkidle' });
-    await max.getByText('Only managers and admins can change the after-hours line.').waitFor();
+    await max.getByText('The on-call schedule is for providers and managers.').waitFor();
   } finally {
     await call(admin, `/job-roles/${provider.id}/members`, { method: 'POST', body: JSON.stringify({ employeeId: maxId }) });
   }
+});
+
+// --------------------------------------------------------------- on-call number
+
+await step('a provider sets an on-call number in Your profile and the line dials it', async () => {
+  // Frankie became a provider after her page loaded: reload so the session knows.
+  await frankie.goto(`${BASE}/profile`, { waitUntil: 'networkidle' });
+  const box = frankie.locator('#onCallPhone');
+  await box.waitFor();
+  await frankie.getByText('The after-hours phone line rings this number when you are on call.').waitFor();
+  await box.fill('(201) 555-0188');
+  await frankie.getByRole('button', { name: 'Save profile' }).click();
+  await frankie.getByText('Profile saved.').waitFor();
+  const stored = (await call(frankie, '/profile')).body.onCallPhone;
+  must(stored === '+12015550188', `stored ${stored}`);
+  await frankie.reload({ waitUntil: 'networkidle' });
+  must((await frankie.locator('#onCallPhone').inputValue()) === '(201) 555-0188', 'not shown formatted');
+  const { chosen } = await callIn(1);
+  must(dialOf(chosen.text)?.number === '+12015550188', `dialled ${dialOf(chosen.text)?.number}`);
+  await openPhoneLine(manager);
+  const row = manager.getByTestId('provider-phones').locator('div', { hasText: 'Frankie Front-Desk' }).last();
+  await row.getByText('(201) 555-0188 (their on-call number)').waitFor();
+});
+
+await step('a number that is not a US number shows the server\'s message and is not kept', async () => {
+  await frankie.locator('#onCallPhone').fill('12345');
+  await frankie.getByRole('button', { name: 'Save profile' }).click();
+  await frankie.getByRole('alert').waitFor();
+  const stored = (await call(frankie, '/profile')).body.onCallPhone;
+  must(stored === '+12015550188', `stored ${stored} after a bad number`);
+});
+
+await step('clearing the on-call number goes back to the Directory phone', async () => {
+  await frankie.locator('#onCallPhone').fill('');
+  await frankie.getByRole('button', { name: 'Save profile' }).click();
+  await frankie.getByText('Profile saved.').waitFor();
+  must((await call(frankie, '/profile')).body.onCallPhone == null, 'still set');
+  const { chosen } = await callIn(1);
+  must(dialOf(chosen.text)?.number === '+12015550103', `dialled ${dialOf(chosen.text)?.number}`);
 });
 
 // --------------------------------------------------------------- 6. backups
@@ -575,32 +623,27 @@ await step('the On call page has a Backup choice in the pattern and in a one-day
 
 // --------------------------------------------------------------- shots, fit
 
-const settleOn = async (page, path, heading) => {
-  await page.goto(`${BASE}${path}`, { waitUntil: 'networkidle' });
-  await page.getByRole('heading', { name: heading, exact: true }).waitFor();
-};
-
 await step('screenshots at 1280 and 390, with no sideways scroll on a phone', async () => {
   const fits = (page) => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
-  await settleOn(manager, '/on-call/routing', 'After-hours calls');
+  await openPhoneLine(manager);
   await manager.getByTestId('provider-phones').waitFor();
   await manager.screenshot({ path: `${OUT}/call-routing-1280.png`, fullPage: true });
-  await settleOn(manager, '/on-call/calls', 'Call log');
+  await manager.goto(`${BASE}/on-call#calls`, { waitUntil: 'networkidle' });
   await manager.getByTestId('call-log-table').waitFor();
   await manager.screenshot({ path: `${OUT}/call-log-1280.png`, fullPage: true });
 
   await manager.setViewportSize({ width: 390, height: 900 });
   try {
-    await settleOn(manager, '/on-call/routing', 'After-hours calls');
+    await openPhoneLine(manager);
     await manager.getByTestId('provider-phones').waitFor();
     await manager.screenshot({ path: `${OUT}/call-routing-390.png`, fullPage: true });
     const routingFits = await fits(manager);
-    await settleOn(manager, '/on-call/calls', 'Call log');
+    await manager.goto(`${BASE}/on-call#calls`, { waitUntil: 'networkidle' });
     await manager.locator('ul [data-testid^="call-"]').first().waitFor();
     await manager.screenshot({ path: `${OUT}/call-log-390.png`, fullPage: true });
     const logFits = await fits(manager);
-    must(routingFits, 'After-hours calls scrolls sideways at 390 px');
-    must(logFits, 'the Call log scrolls sideways at 390 px');
+    must(routingFits, 'The On call page scrolls sideways at 390 px with the phone line open');
+    must(logFits, 'The On call page scrolls sideways at 390 px with Recent calls open');
   } finally {
     await manager.setViewportSize({ width: 1280, height: 1000 });
   }

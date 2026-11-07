@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import { useLocation } from 'react-router';
 import { Avatar } from '../components/Avatar';
 import { useConfirm } from '../components/ConfirmDialog';
 import { CoverDialog, OverrideForm } from '../components/call-routing/CoverDialog';
+import { PhoneLineSettings } from '../components/call-routing/PhoneLineSettings';
+import { RecentCalls } from '../components/call-routing/RecentCalls';
 import { Modal } from '../components/Modal';
 import { ScheduleTabs } from '../components/ScheduleTabs';
 import {
@@ -95,16 +97,6 @@ export function OnCallPage() {
         subtitle="Which provider takes the after-hours calls. Each day’s turn runs from the hand-over time (6 AM) to the same time the next day."
       />
       <ScheduleTabs />
-      <p className="mb-3 flex flex-wrap gap-4 text-sm">
-        {isManager && (
-          <Link to="/on-call/routing" className="font-medium text-brand-700 underline">
-            After-hours calls
-          </Link>
-        )}
-        <Link to="/on-call/calls" className="font-medium text-brand-700 underline">
-          Call log
-        </Link>
-      </p>
       <div className="space-y-5">
         {error && <Alert>{error}</Alert>}
         {notice && (
@@ -160,6 +152,14 @@ export function OnCallPage() {
             </p>
           </>
         )}
+        <FoldedSection id="calls" title="Recent calls">
+          <RecentCalls />
+        </FoldedSection>
+        {isManager && (
+          <FoldedSection id="phone-line" title="Phone line settings">
+            <PhoneLineSettings />
+          </FoldedSection>
+        )}
         {editing && schedule && (
           <CoverDialog
             date={editing.startsLocal.slice(0, 10)}
@@ -189,6 +189,39 @@ export function OnCallPage() {
         )}
       </div>
     </div>
+  );
+}
+
+// ------------------------------------------------------- folded sections
+
+/** A section that starts closed and opens when the address ends in its #id. */
+function FoldedSection({
+  id,
+  title,
+  children,
+}: {
+  id: string;
+  title: string;
+  children: React.ReactNode;
+}) {
+  const { hash } = useLocation();
+  const wanted = hash === `#${id}`;
+  const [open, setOpen] = useState(wanted);
+  useEffect(() => {
+    if (!wanted) return;
+    setOpen(true);
+    document.getElementById(id)?.scrollIntoView?.();
+  }, [wanted, id]);
+  return (
+    <details
+      id={id}
+      open={open}
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+      className="rounded-lg border border-slate-200 bg-white p-4"
+    >
+      <summary className="cursor-pointer text-lg font-semibold text-slate-900">{title}</summary>
+      {open && children}
+    </details>
   );
 }
 
