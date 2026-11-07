@@ -128,3 +128,36 @@ describe('OnCallService swaps', () => {
     expect(prisma.onCallDay.upsert).not.toHaveBeenCalled();
   });
 });
+
+describe('OnCallService backups', () => {
+  it('refuses a backup who is the provider', async () => {
+    const { service } = build();
+    await expect(
+      service.saveRota(
+        {
+          startsOn: '2026-10-20',
+          changesAt: '12:00',
+          entries: [
+            { weekday: 1, weekOfMonth: 0, employeeId: 'frankie', backupEmployeeId: 'frankie' },
+          ],
+        },
+        manager,
+        NOW,
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(
+      service.setDay('2026-10-20', { employeeId: 'max', backupEmployeeId: 'max' }, manager, NOW),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('stores a day backup', async () => {
+    const { service, prisma } = build();
+    await service.setDay(
+      '2026-10-20',
+      { employeeId: 'max', backupEmployeeId: 'frankie' },
+      manager,
+      NOW,
+    );
+    expect(prisma.onCallDay.upsert.mock.calls[0][0].create.backupEmployeeId).toBe('frankie');
+  });
+});
