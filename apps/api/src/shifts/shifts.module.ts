@@ -31,6 +31,12 @@ import { ShiftsService } from './shifts.service';
     PublishCheckService,
     EveryonesScheduleService,
   ],
-  exports: [ShiftsService, ShiftPlanningService, OvertimeService],
+  exports: [
+    ShiftsService,
+    ShiftPlanningService,
+    OvertimeService,
+    CoverOptionsService,
+    CoverRequestsService,
+  ],
 })
 export class ShiftsModule {}

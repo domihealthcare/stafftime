@@ -755,12 +755,13 @@ model PtoRequest {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  employee   Employee     @relation("PtoRequester", fields: [employeeId], references: [id], onDelete: Cascade)
-  reviewedBy Employee?    @relation("PtoReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
-  recordedBy Employee?    @relation("PtoRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
-  splitFrom  PtoRequest?  @relation("PtoSplit", fields: [splitFromId], references: [id], onDelete: SetNull)
-  splitParts PtoRequest[] @relation("PtoSplit")
-  changes    PtoChange[]
+  employee      Employee       @relation("PtoRequester", fields: [employeeId], references: [id], onDelete: Cascade)
+  reviewedBy    Employee?      @relation("PtoReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  recordedBy    Employee?      @relation("PtoRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+  splitFrom     PtoRequest?    @relation("PtoSplit", fields: [splitFromId], references: [id], onDelete: SetNull)
+  splitParts    PtoRequest[]   @relation("PtoSplit")
+  changes       PtoChange[]
+  coverRequests CoverRequest[]
 
   @@index([employeeId, startDate])
   @@index([status, startDate])
@@ -3272,21 +3273,29 @@ model AssistantUsage {
 /// see open shifts: only the people asked hear about this one. One request per
 /// round of asking; asking more people adds them to the open one.
 model CoverRequest {
-  id        String    @id @default(uuid()) @db.Uuid
-  shiftId   String    @db.Uuid
+  id               String    @id @default(uuid()) @db.Uuid
+  shiftId          String    @db.Uuid
   /// The manager who asked - told the answers. Kept if they leave.
-  askedById String?   @db.Uuid
-  createdAt DateTime  @default(now())
+  askedById        String?   @db.Uuid
+  createdAt        DateTime  @default(now())
   /// Set when it is over: somebody said yes, the manager stopped asking, or
   /// the shift was filled another way.
-  closedAt  DateTime?
+  closedAt         DateTime?
   /// Who said yes and got it.
-  takenById String?   @db.Uuid
+  takenById        String?   @db.Uuid
+  /// Set when it was asked because a provider's time off was approved
+  /// (November 2026, "Provider day off"): the taker may then be somebody on a
+  /// work-from-home shift then, whose shift is released when they say yes.
+  ptoRequestId     String?   @db.Uuid
+  /// The taker's own work-from-home shifts released by saying yes.
+  releasedShiftIds String[]  @default([]) @db.Uuid
 
-  shift Shift      @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-  asks  CoverAsk[]
+  shift      Shift       @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  ptoRequest PtoRequest? @relation(fields: [ptoRequestId], references: [id], onDelete: SetNull)
+  asks       CoverAsk[]
 
   @@index([shiftId])
+  @@index([ptoRequestId])
   @@map("cover_requests")
 }
 

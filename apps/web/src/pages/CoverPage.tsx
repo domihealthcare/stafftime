@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { Alert, Card, PageHeading, Spinner, buttonClass } from '../components/ui';
 import { ApiError, api } from '../lib/api';
+import { releasesLine } from '../lib/provider-day-off';
 import type { CoverView } from '../lib/types';
 
 /**
@@ -60,6 +61,14 @@ export function CoverPage() {
 
         {view.state === 'open' && view.asked && (
           <>
+            {releasesLine(view.willRelease) && (
+              <p
+                className="mt-3 rounded-md bg-amber-50 p-2 text-sm text-amber-900 ring-1 ring-inset ring-amber-200"
+                data-testid="cover-releases"
+              >
+                {releasesLine(view.willRelease)}
+              </p>
+            )}
             <p className="mt-3 text-sm text-slate-700">
               {view.myAnswer === false
                 ? 'You said you can’t. Changed your mind? It is still open.'

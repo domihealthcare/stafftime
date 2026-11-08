@@ -54,6 +54,32 @@ export function takenWords(shift: CoverShift, who: string): Words {
   };
 }
 
+/// "9:00 AM–5:00 PM" on the practice's clock.
+export function coverHours(shift: Pick<CoverShift, 'startsAt' | 'endsAt'>): string {
+  const time = (at: Date) =>
+    at.toLocaleTimeString('en-US', { timeZone: PRACTICE_ZONE, hour: 'numeric', minute: '2-digit' });
+  return `${time(shift.startsAt)}–${time(shift.endsAt)}`;
+}
+
+/// To the manager who asked, when the taker was on telemedicine then and that
+/// is now open ("Provider day off").
+export function takenSwapWords(
+  shift: CoverShift,
+  who: string,
+  released: Pick<CoverShift, 'startsAt' | 'endsAt'>[],
+): Words {
+  const open = released.map((one) => coverHours(one)).join(' and ');
+  return {
+    title: `${who} will cover ${coverWhen(shift)}`,
+    body: `${who} now has the shift ${coverWhere(shift)}, and their telemedicine ${open} is open. Ask somebody to cover it, or leave it.`,
+  };
+}
+
+/// What the person asked is told they will give up by saying yes.
+export function releaseWords(released: Pick<CoverShift, 'startsAt' | 'endsAt'>[]): string[] {
+  return released.map((one) => `Your telemedicine ${coverWhen(one)} will be left open.`);
+}
+
 /// To the others asked who had not said no, once it is taken.
 export function coveredWords(shift: CoverShift): Words {
   return {

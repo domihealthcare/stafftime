@@ -1,6 +1,6 @@
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { AdjustPtoBalanceDto, CreatePtoRequestDto } from './pto.dto';
+import { AdjustPtoBalanceDto, CreatePtoRequestDto, ReviewPtoRequestDto } from './pto.dto';
 
 const problems = async <T extends object>(type: new () => T, body: object) =>
   (await validate(plainToInstance(type, body))).flatMap((error) =>
@@ -46,5 +46,34 @@ describe('CreatePtoRequestDto', () => {
     expect(await problems(CreatePtoRequestDto, { ...dates, type: 'PERSONAL' })).toEqual([
       'Time off is Sick, PTO or Unpaid.',
     ]);
+  });
+});
+
+describe('ReviewPtoRequestDto per-shift choices', () => {
+  const ID = '3f1c3b9e-5a0e-4c5e-9c1e-1d6f6f2d9a11';
+  const nested = async (body: object) => {
+    const errors = await validate(plainToInstance(ReviewPtoRequestDto, body));
+    return errors.length;
+  };
+
+  it('takes a list of shift choices', async () => {
+    expect(
+      await nested({
+        decision: 'APPROVED',
+        perShift: [
+          { shiftId: ID, action: 'ASK', employeeIds: [ID] },
+          { shiftId: ID, action: 'KEEP' },
+        ],
+      }),
+    ).toBe(0);
+  });
+
+  it('refuses a bad action or a shift id that is not an id', async () => {
+    expect(
+      await nested({ decision: 'APPROVED', perShift: [{ shiftId: ID, action: 'DROP' }] }),
+    ).toBe(1);
+    expect(
+      await nested({ decision: 'APPROVED', perShift: [{ shiftId: 'x', action: 'OPEN' }] }),
+    ).toBe(1);
   });
 });

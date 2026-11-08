@@ -2,8 +2,14 @@ import { useState } from 'react';
 import { api } from '../lib/api';
 import { formatClock } from '../lib/format';
 import { practiceClockOf } from '../lib/practice-time';
-import type { ConflictingShift, PtoRequest } from '../lib/types';
+import type {
+  ConflictingShift,
+  PerShiftDecision,
+  PtoRequest,
+  ProviderDayOffShift,
+} from '../lib/types';
 import { Modal } from './Modal';
+import { ProviderDayOffDialog } from './ProviderDayOff';
 import { buttonClass } from './ui';
 
 /**
@@ -17,15 +23,51 @@ import { buttonClass } from './ui';
  */
 type Choice = 'KEEP' | 'REMOVE' | 'OPEN';
 
+/// A provider's day off (November 2026): per shift, with cover asked for.
 export function useApproveTimeOff() {
   const [pending, setPending] = useState<{
     request: PtoRequest;
     shifts: ConflictingShift[];
     resolve: (choice: Choice | null) => void;
   } | null>(null);
+  const [providerPending, setProviderPending] = useState<{
+    request: PtoRequest;
+    shifts: ProviderDayOffShift[];
+    onCallDates: string[];
+    resolve: (decisions: PerShiftDecision[] | null) => void;
+  } | null>(null);
 
   /// Approves, asking first about the shifts it lands on. False if cancelled.
-  async function approve(request: PtoRequest): Promise<boolean> {
+  /// `providerOnly`: only when it is a provider's day off with shifts to
+  /// decide (a manager has just filed it for them); otherwise nothing is
+  /// done and it is false.
+  async function approve(
+    request: PtoRequest,
+    options: { providerOnly?: boolean } = {},
+  ): Promise<boolean> {
+    // A provider's shifts are decided one by one (managers only; others get
+    // a refusal here and carry on with the simple question).
+    const provider = await api.providerDayOff(request.id).catch(() => null);
+    if (provider?.isProvider) {
+      const upcoming = provider.shifts.filter(
+        (shift) => shift.status !== 'CANCELLED' && new Date(shift.startsAt).getTime() > Date.now(),
+      );
+      if (upcoming.length > 0) {
+        const decisions = await new Promise<PerShiftDecision[] | null>((resolve) =>
+          setProviderPending({
+            request,
+            shifts: upcoming,
+            onCallDates: provider.onCallDates,
+            resolve,
+          }),
+        );
+        setProviderPending(null);
+        if (!decisions) return false;
+        await api.reviewPto(request.id, 'APPROVED', undefined, undefined, decisions);
+        return true;
+      }
+    }
+    if (options.providerOnly) return false;
     const found = request.isHalfDay
       ? []
       : await api.ptoConflicts(request.id).catch(() => [] as ConflictingShift[]);
@@ -46,7 +88,18 @@ export function useApproveTimeOff() {
   const who = pending?.request.employee
     ? `${pending.request.employee.preferredName ?? pending.request.employee.firstName}`
     : 'They';
-  const dialog = pending ? (
+  const providerWho = providerPending?.request.employee
+    ? `${providerPending.request.employee.preferredName ?? providerPending.request.employee.firstName}`
+    : 'They';
+  const dialog = providerPending ? (
+    <ProviderDayOffDialog
+      who={providerWho}
+      shifts={providerPending.shifts}
+      onCallDates={providerPending.onCallDates}
+      onApprove={(decisions) => providerPending.resolve(decisions)}
+      onCancel={() => providerPending.resolve(null)}
+    />
+  ) : pending ? (
     <Modal
       title="Approve, and their shifts?"
       testId="approve-time-off"

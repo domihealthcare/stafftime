@@ -207,8 +207,10 @@ export class ShiftsController {
   /// an open shift or replacing whoever is on it.
   @Get(':id/cover-options')
   @Roles(Role.MANAGER)
-  coverOptions(@Param('id', ParseUUIDPipe) id: string) {
-    return this.cover.forShift(id);
+  coverOptions(@Param('id', ParseUUIDPipe) id: string, @Query('swapRemote') swapRemote?: string) {
+    // `?swapRemote=1`: for a provider's day off, somebody on telemedicine
+    // then can be asked, and whoever holds the shift now is left out.
+    return this.cover.forShift(id, { swapRemote: swapRemote === '1' });
   }
 
   @Patch(':id')

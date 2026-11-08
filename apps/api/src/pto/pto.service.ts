@@ -13,6 +13,8 @@ import { NotificationsService } from '../email/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { describeDates, describeSplit, TIME_OFF_KIND } from './describe-time-off';
 import { loadTimeOffClashes } from './time-off-clashes';
+import { applyShiftChoice } from './apply-shift-choice';
+import { ProviderDayOffService } from './provider-day-off.service';
 import { TimeOffDaysService } from './time-off-days.service';
 import {
   CreatePtoRequestDto,
@@ -79,6 +81,7 @@ export class PtoService {
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
     private readonly days: TimeOffDaysService,
+    private readonly providerDayOff: ProviderDayOffService,
   ) {}
 
   async create(dto: CreatePtoRequestDto, actor: AuthUser) {
@@ -441,9 +444,18 @@ export class PtoService {
       throw new BadRequestException('Give a reason when denying a request.');
     }
 
+    const approving = dto.decision === PtoStatus.APPROVED;
+
+    // "Provider day off": a choice per shift, checked before anything is
+    // decided so a mistake is a refusal and not a half-done approval. A half
+    // day keeps its shifts, and a refusal ignores the choices.
+    const perShift =
+      approving && !request.isHalfDay && dto.perShift && dto.perShift.length > 0
+        ? await this.providerDayOff.plan(request, dto.perShift)
+        : null;
+
     // Past the balance, the days not covered become a separate Unpaid part
     // (November 2026, Dominguez), so "Approved" never hides unpaid days.
-    const approving = dto.decision === PtoStatus.APPROVED;
     const [split] = approving ? await this.days.approvalSplits([request]) : [null];
     const reviewedAt = new Date();
     const decided = {
@@ -524,14 +536,32 @@ export class PtoService {
     // Their shifts inside the dates, when the manager chose to deal with them
     // in the same step (October 2026, Dominguez - making the app smarter).
     // Every day of it, paid or not: the person is off either way.
-    const shiftsHandled =
-      approving && dto.shifts && dto.shifts !== 'KEEP'
-        ? await this.handleShifts(request, dto.shifts)
-        : 0;
+    let shiftResults: Awaited<ReturnType<ProviderDayOffService['apply']>> = [];
+    let shiftsHandled = 0;
+    if (perShift) {
+      // The per-shift choices supersede the all-or-nothing one.
+      shiftResults = await this.providerDayOff.apply(request, perShift, actor);
+      shiftsHandled = shiftResults.length;
+    } else if (approving && dto.shifts && dto.shifts !== 'KEEP') {
+      shiftsHandled = await this.handleShifts(request, dto.shifts);
+    }
 
     await this.notifyQuietly(() => this.notifications.ptoDecided(updated.id, shiftsHandled));
 
-    return (await this.decorateAll([updated]))[0];
+    const decorated = (await this.decorateAll([updated]))[0];
+    if (!approving) return decorated;
+
+    // A provider on call inside the days is asked to swap (bell), and the
+    // manager is told which days they are.
+    let onCallDates: string[] = [];
+    try {
+      onCallDates = await this.providerDayOff.tellAboutOnCall(request);
+    } catch (error: unknown) {
+      this.logger.error(
+        `Could not look up on-call days: ${error instanceof Error ? error.message : error}`,
+      );
+    }
+    return { ...decorated, onCallDates, shiftResults };
   }
 
   /**
@@ -557,22 +587,7 @@ export class PtoService {
       select: { id: true, status: true },
     });
     if (shifts.length === 0) return 0;
-    const ids = shifts.map((shift) => shift.id);
-    if (choice === 'OPEN') {
-      await this.prisma.shift.updateMany({
-        where: { id: { in: ids } },
-        data: { employeeId: null, seriesId: null },
-      });
-    } else {
-      const drafts = shifts.filter((shift) => shift.status === ShiftStatus.DRAFT);
-      await this.prisma.$transaction([
-        this.prisma.shift.deleteMany({ where: { id: { in: drafts.map((shift) => shift.id) } } }),
-        this.prisma.shift.updateMany({
-          where: { id: { in: ids }, status: { not: ShiftStatus.DRAFT } },
-          data: { status: ShiftStatus.CANCELLED },
-        }),
-      ]);
-    }
+    await applyShiftChoice(this.prisma, shifts, choice);
     this.logger.log(
       `${shifts.length} shift(s) ${choice === 'OPEN' ? 'left open' : 'taken off'} for approved time off`,
     );

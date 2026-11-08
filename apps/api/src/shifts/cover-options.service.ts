@@ -35,7 +35,7 @@ export class CoverOptionsService {
     private readonly settings: PracticeSettingsService,
   ) {}
 
-  async forShift(shiftId: string): Promise<CoverOptions> {
+  async forShift(shiftId: string, mode: { swapRemote?: boolean } = {}): Promise<CoverOptions> {
     const shift = await this.prisma.shift.findUnique({
       where: { id: shiftId },
       select: {
@@ -138,6 +138,7 @@ export class CoverOptionsService {
           startTime: localTimeIn(other.startsAt, other.location.timezone),
           endTime: localTimeIn(other.endsAt, other.location.timezone),
           place: other.isRemote ? 'from home' : other.location.name,
+          isRemote: other.isRemote,
         })),
       timeOff: timeOff.filter((request) => request.employeeId === person.id),
       rules: unavailability.filter((row) => row.employeeId === person.id).map(toRule),
@@ -155,6 +156,7 @@ export class CoverOptionsService {
       },
       candidates,
       overtimeThresholdHours,
+      mode,
     );
     return { weekStart, thresholdHours: overtimeThresholdHours, options };
   }

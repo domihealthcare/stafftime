@@ -51,7 +51,12 @@ function build() {
   const controller = new BadgesController(
     new InboxService(prisma as never, {} as never),
     new DowntimeService(prisma as never, {} as never),
-    new PtoService(prisma as never, {} as never, {} as never),
+    new PtoService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      { tellAboutOnCall: async () => [], plan: async () => [], apply: async () => [] } as never,
+    ),
   );
   return { controller, prisma };
 }
