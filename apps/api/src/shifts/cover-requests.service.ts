@@ -17,7 +17,9 @@ import {
   coverWhen,
   coverWhere,
   nobodyWords,
+  releaseWords,
   stoppedWords,
+  takenSwapWords,
   takenWords,
 } from './cover-requests';
 
@@ -61,7 +63,17 @@ export class CoverRequestsService {
 
   /// Asks these people. More can be asked later; somebody already asked is
   /// not asked twice.
-  async ask(shiftId: string, employeeIds: string[], actor: AuthUser, now = new Date()) {
+  ///
+  /// `ptoRequestId`: the shift is open because a provider's time off was
+  /// approved ("Provider day off"). Then somebody on telemedicine at that time
+  /// can be asked, and saying yes releases that telemedicine.
+  async ask(
+    shiftId: string,
+    employeeIds: string[],
+    actor: AuthUser,
+    now = new Date(),
+    ptoRequestId: string | null = null,
+  ) {
     const shift = await this.prisma.shift.findUnique({
       where: { id: shiftId },
       select: SHIFT_SELECT,
@@ -73,8 +85,26 @@ export class CoverRequestsService {
     }
     if (shift.startsAt <= now) throw new BadRequestException('This shift has already started.');
 
+    const current = await this.prisma.coverRequest.findFirst({
+      where: { shiftId, closedAt: null },
+      select: { id: true, ptoRequestId: true, asks: { select: { employeeId: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+    // Asked again after an earlier round for the same time off: same rules.
+    const linkedTo =
+      ptoRequestId ??
+      current?.ptoRequestId ??
+      (
+        await this.prisma.coverRequest.findFirst({
+          where: { shiftId, ptoRequestId: { not: null } },
+          select: { ptoRequestId: true },
+          orderBy: { createdAt: 'desc' },
+        })
+      )?.ptoRequestId ??
+      null;
+
     // Only people who could do it: not already working then, not on leave.
-    const cover = await this.coverOptions.forShift(shiftId);
+    const cover = await this.coverOptions.forShift(shiftId, { swapRemote: linkedTo !== null });
     const free = new Set(
       cover.options.filter((option) => option.fit !== 'cannot').map((option) => option.employeeId),
     );
@@ -84,13 +114,9 @@ export class CoverRequestsService {
     }
 
     const open =
-      (await this.prisma.coverRequest.findFirst({
-        where: { shiftId, closedAt: null },
-        select: { id: true, asks: { select: { employeeId: true } } },
-        orderBy: { createdAt: 'desc' },
-      })) ??
+      current ??
       (await this.prisma.coverRequest.create({
-        data: { shiftId, askedById: actor.id },
+        data: { shiftId, askedById: actor.id, ...(linkedTo ? { ptoRequestId: linkedTo } : {}) },
         select: { id: true, asks: { select: { employeeId: true } } },
       }));
     const already = new Set(open.asks.map((ask) => ask.employeeId));
@@ -176,6 +202,7 @@ export class CoverRequestsService {
         id: true,
         closedAt: true,
         takenById: true,
+        ptoRequestId: true,
         shift: { select: SHIFT_SELECT },
         asks: { where: { employeeId: viewer.id }, select: { answer: true } },
       },
@@ -186,15 +213,23 @@ export class CoverRequestsService {
       throw new NotFoundException('That request does not exist.');
     }
     const { shift } = request;
+    const state = coverState(request, shift, viewer.id, now);
+    // "Provider day off": what saying yes would leave open.
+    const willRelease =
+      request.ptoRequestId && state === 'open'
+        ? await this.remoteInTheWay(viewer.id, shift, now)
+        : { releasable: [], blocking: [] };
     return {
       id: request.id,
       when: coverWhen(shift),
       where: coverWhere(shift),
       startsAt: shift.startsAt,
       endsAt: shift.endsAt,
-      state: coverState(request, shift, viewer.id, now),
+      state,
       myAnswer: request.asks[0]?.answer ?? null,
       asked: request.asks.length > 0,
+      swap: Boolean(request.ptoRequestId),
+      willRelease: releaseWords(willRelease.releasable),
     };
   }
 
@@ -209,6 +244,7 @@ export class CoverRequestsService {
             askedById: true,
             closedAt: true,
             takenById: true,
+            ptoRequestId: true,
             shift: { select: SHIFT_SELECT },
           },
         },
@@ -251,16 +287,12 @@ export class CoverRequestsService {
     if (state === 'stopped') throw new BadRequestException('This shift no longer needs covering.');
     if (state === 'started') throw new BadRequestException('This shift has already started.');
 
-    const clash = await this.prisma.shift.findFirst({
-      where: {
-        employeeId: actor.id,
-        status: { not: ShiftStatus.CANCELLED },
-        startsAt: { lt: shift.endsAt },
-        endsAt: { gt: shift.startsAt },
-      },
-      select: { id: true },
-    });
-    if (clash) {
+    // Working then is a clash - except, for a provider's day off, their own
+    // work-from-home shifts, which are let go when they say yes.
+    const { releasable, blocking } = request.ptoRequestId
+      ? await this.remoteInTheWay(actor.id, shift, now)
+      : { releasable: [], blocking: await this.anyShiftInTheWay(actor.id, shift) };
+    if (blocking.length > 0) {
       throw new BadRequestException('You already have a shift then, so you cannot take this one.');
     }
 
@@ -277,13 +309,23 @@ export class CoverRequestsService {
         data: { employeeId: actor.id, status: ShiftStatus.PUBLISHED },
       });
       if (claimed.count === 0) return false;
+      if (releasable.length > 0) {
+        await tx.shift.updateMany({
+          where: { id: { in: releasable.map((one) => one.id) }, employeeId: actor.id },
+          data: { employeeId: null, seriesId: null },
+        });
+      }
       await tx.coverAsk.update({
         where: { requestId_employeeId: { requestId, employeeId: actor.id } },
         data: { answer: true, answeredAt: now },
       });
       await tx.coverRequest.update({
         where: { id: requestId },
-        data: { closedAt: now, takenById: actor.id },
+        data: {
+          closedAt: now,
+          takenById: actor.id,
+          ...(releasable.length > 0 ? { releasedShiftIds: releasable.map((one) => one.id) } : {}),
+        },
       });
       return true;
     });
@@ -298,8 +340,11 @@ export class CoverRequestsService {
       }),
     ]);
     if (request.askedById) {
+      const who = person ? nameOf(person) : 'Somebody';
       await this.notifications.cover([request.askedById], {
-        ...takenWords(shift, person ? nameOf(person) : 'Somebody'),
+        ...(releasable.length > 0
+          ? takenSwapWords(shift, who, releasable)
+          : takenWords(shift, who)),
         link: '/schedule',
       });
     }
@@ -308,5 +353,47 @@ export class CoverRequestsService {
       { ...coveredWords(shift), link: `/cover/${requestId}` },
     );
     return this.view(requestId, actor, now);
+  }
+
+  /// Whether anything of theirs overlaps the shift (not cancelled).
+  private async anyShiftInTheWay(employeeId: string, shift: { startsAt: Date; endsAt: Date }) {
+    const clash = await this.prisma.shift.findFirst({
+      where: {
+        employeeId,
+        status: { not: ShiftStatus.CANCELLED },
+        startsAt: { lt: shift.endsAt },
+        endsAt: { gt: shift.startsAt },
+      },
+      select: { id: true },
+    });
+    return clash ? [clash] : [];
+  }
+
+  /// Anything of theirs overlapping the shift (not cancelled).
+  private shiftsInTheWay(employeeId: string, shift: { startsAt: Date; endsAt: Date }) {
+    return this.prisma.shift.findMany({
+      where: {
+        employeeId,
+        status: { not: ShiftStatus.CANCELLED },
+        startsAt: { lt: shift.endsAt },
+        endsAt: { gt: shift.startsAt },
+      },
+      select: { id: true, startsAt: true, endsAt: true, isRemote: true },
+    });
+  }
+
+  /// For a provider's day off: what overlaps for this person, split into
+  /// work-from-home shifts that can be let go (still to come) and anything
+  /// else, which still blocks.
+  private async remoteInTheWay(
+    employeeId: string,
+    shift: { startsAt: Date; endsAt: Date },
+    now: Date,
+  ) {
+    const overlapping = await this.shiftsInTheWay(employeeId, shift);
+    return {
+      releasable: overlapping.filter((one) => one.isRemote && one.startsAt > now),
+      blocking: overlapping.filter((one) => !one.isRemote || one.startsAt <= now),
+    };
   }
 }

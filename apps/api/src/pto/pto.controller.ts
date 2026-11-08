@@ -30,6 +30,7 @@ import {
 } from './dto/pto.dto';
 import { PtoPolicyService } from './pto-policy.service';
 import { PtoService } from './pto.service';
+import { ProviderDayOffService } from './provider-day-off.service';
 import { CleanTimeOffService } from './clean-time-off.service';
 import { PastBalanceRepairService } from './past-balance-repair.service';
 import { ArrayMaxSize, IsArray, IsUUID } from 'class-validator';
@@ -56,6 +57,7 @@ export class PtoController {
     private readonly policy: PtoPolicyService,
     private readonly cleanTimeOff: CleanTimeOffService,
     private readonly pastBalanceRepair: PastBalanceRepairService,
+    private readonly providerDayOff: ProviderDayOffService,
   ) {}
 
   /// The rules. Readable by everyone - staff should be able to see what they
@@ -203,6 +205,14 @@ export class PtoController {
   @Roles(Role.MANAGER)
   clashes(@Param('id', ParseUUIDPipe) id: string) {
     return this.pto.clashes(id);
+  }
+
+  /// "Provider day off": the provider's shifts in the days, how each stands
+  /// (kept, open, asked, covered) and their on-call dates. Managers and
+  /// admins; anybody else is told it does not exist.
+  @Get(':id/provider-day-off')
+  providerDay(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    return this.providerDayOff.get(id, user);
   }
 
   // Approving can take shifts off the rota, which can change calendar invites.

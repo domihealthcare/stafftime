@@ -23,6 +23,7 @@ import { PtoPolicyEditor } from '../components/PtoPolicyEditor';
 import { useConfirm } from '../components/ConfirmDialog';
 import { atPracticeTime, practiceClockOf } from '../lib/practice-time';
 import { useApproveTimeOff } from '../components/ApproveTimeOff';
+import { ProviderCoverage } from '../components/ProviderDayOff';
 import { TopicAssignees } from '../components/TopicAssignees';
 import { ApproveCleanTimeOff } from '../components/ApproveCleanTimeOff';
 import { ScheduleTabs } from '../components/ScheduleTabs';
@@ -452,6 +453,10 @@ function RequestCard({
 
       {canDecide && <ClashNote requestId={request.id} employeeId={request.employeeId} />}
 
+      {isManager && !isMine && request.status === 'APPROVED' && (
+        <ProviderCoverage requestId={request.id} />
+      )}
+
       {conflicts && conflicts.length > 0 && request.status === 'PENDING' && (
         <div className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-inset ring-amber-200">
           <p className="font-medium">
@@ -510,6 +515,8 @@ function RequestForm({
   onCreated: () => void;
 }) {
   const t = useT();
+  // A manager filing a provider's time off decides their shifts straight away.
+  const approveTimeOff = useApproveTimeOff();
   // Sick first, unless the person's own sick days are known to be used up:
   // then PTO (Dominguez, September 2026). Once they pick, it is theirs.
   const [chosenType, setType] = useState<PtoType | null>(null);
@@ -627,7 +634,7 @@ function RequestForm({
     setBusy(true);
     setProblem(null);
     try {
-      await api.createPto({
+      const created = await api.createPto({
         type,
         startDate,
         endDate: effectiveEnd,
@@ -636,6 +643,20 @@ function RequestForm({
         employeeId: employeeId || undefined,
         acknowledgedUnpaid: overBalance ? acknowledged : undefined,
       });
+      // For somebody else, and they are a provider with shifts then: choose
+      // what happens to each, in one go. Pressing Approve is still theirs.
+      if (employeeId && employeeId !== me?.id && staff.length > 0) {
+        // If it fails the request is still there, waiting, to approve from the list.
+        await approveTimeOff
+          .approve(
+            {
+              ...created,
+              employee: created.employee ?? staff.find((person) => person.id === employeeId),
+            },
+            { providerOnly: true },
+          )
+          .catch(() => false);
+      }
       onCreated();
     } catch (err) {
       setProblem(err instanceof ApiError ? err.message : t('Could not send that request.'));
@@ -895,6 +916,7 @@ function RequestForm({
           {busy ? t('Sending…') : t('Send request')}
         </button>
       </form>
+      {approveTimeOff.dialog}
     </Card>
   );
 }

@@ -319,3 +319,45 @@ describe('planCover', () => {
     expect(proposal).toEqual({ shiftId: 'a', employeeId: null, name: null, hoursAfter: null });
   });
 });
+
+describe("rankCoverOptions for a provider's day off (swapRemote)", () => {
+  const tele = { ...shiftOn('2026-10-13', 8), place: 'from home', isRemote: true };
+  const office = { ...shiftOn('2026-10-13', 8), place: 'West New York', isRemote: false };
+
+  it('lets somebody on telemedicine then be asked, with the catch said', () => {
+    const [option] = rankCoverOptions(target, [person('Tele', { shifts: [tele] })], 40, {
+      swapRemote: true,
+    });
+    expect(option.fit).toBe('catch');
+    expect(texts(option)[0]).toContain('On telemedicine then');
+    expect(texts(option)[0]).toContain('taking this leaves that open');
+    // The telemedicine is let go, so it does not count toward overtime.
+    expect(option).toMatchObject({ hoursBefore: 0, hoursAfter: 8 });
+  });
+
+  it('still blocks somebody at an office, or at an office and from home', () => {
+    const [one] = rankCoverOptions(target, [person('Office', { shifts: [office] })], 40, {
+      swapRemote: true,
+    });
+    expect(one.fit).toBe('cannot');
+    const [both] = rankCoverOptions(target, [person('Both', { shifts: [office, tele] })], 40, {
+      swapRemote: true,
+    });
+    expect(both.fit).toBe('cannot');
+  });
+
+  it('is a block as before without the option', () => {
+    const [option] = rankCoverOptions(target, [person('Tele', { shifts: [tele] })], 40);
+    expect(option.fit).toBe('cannot');
+  });
+
+  it('leaves out whoever holds the shift now (the provider who is off)', () => {
+    const options = rankCoverOptions(
+      { ...target, employeeId: 'holder' },
+      [person('Holder', { id: 'holder' }), person('Other')],
+      40,
+      { swapRemote: true },
+    );
+    expect(names(options)).toEqual(['Other D']);
+  });
+});

@@ -2453,6 +2453,36 @@ Beyond the phases, the parts worth knowing about before picking up work:
   after-hours call, English-speaking caller" and connects with no key
   (whisper `a=1`); a voicemail that answers records that line first.
   `call-routing/voice.service.ts`; `tests/browser/call-routing.mjs`.
+- **A provider's day off: who covers** (8 November 2026, Dominguez, version
+  1.48.0: "it should involve multiple people as this will affect staffing and
+  possibly another provider would like to take over"; his choices: **the
+  manager or admin decides first and picks who is notified**, colleagues are
+  asked **after approval**, an **on-call swap is prompted**, and a manager can
+  **start it for a provider** now). **Approving** a provider's time off that
+  lands on shifts still to come (a provider is a job role with *uses clinical
+  forms*) opens a **per-shift** pop-up: **Ask for cover / Leave open / Remove
+  / Keep** for each shift, and for Ask for cover a people picker from "Who can
+  cover this?" (good fits ticked, catches unticked with the reason); nothing
+  is sent until Approve. Asking makes the shift open and uses the existing
+  **Ask people to cover** flow (first yes gets it), the `CoverRequest` now
+  linked to the time off (`ptoRequestId`, `releasedShiftIds`). **A telemedicine
+  provider can come in**: for these asks only, someone whose only clash is
+  their own work-from-home shift is a "check" fit ("On telemedicine then;
+  taking this leaves that open"), their yes **releases that telemedicine
+  shift as an open shift**, and the manager who asked is told on the bell;
+  a clash with an office shift is still refused. **On call**: if the
+  provider's on-call turn falls inside the dates their bell links to On call
+  to ask a colleague to swap (`ON_CALL`), and the manager sees the dates. The
+  request shows **Coverage** per shift (`GET /pto/:id/provider-day-off`,
+  managers). A manager filing time off **for** a provider is taken straight
+  to the per-shift pop-up (never for their own). Non-providers keep the three
+  buttons. `ReviewPtoRequestDto.perShift`, `pto/provider-day-off.ts` (rules,
+  pure) and `provider-day-off.service.ts`, `pto/apply-shift-choice.ts`,
+  `shifts/cover-options.ts` (`swapRemote`), migration
+  `20261108010000_provider_day_off`; `components/ProviderDayOff.tsx`,
+  `ApproveTimeOff.tsx`; Help has both guides' topics;
+  `tests/browser/provider-day-off.mjs`. Worth carrying to the EMR module with
+  *Who can cover this?* and *Someone called out*.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

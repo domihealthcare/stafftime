@@ -60,6 +60,8 @@ export interface CoverCandidate {
     startTime: string;
     endTime: string;
     place: string;
+    /// A work-from-home (telemedicine) shift. Left out means not.
+    isRemote?: boolean;
   }[];
   /// Time off covering the shift's day, approved or waiting on a manager.
   timeOff: { type: string; status: PtoStatus; isHalfDay: boolean }[];
@@ -97,6 +99,7 @@ export function rankCoverOptions(
   target: CoverTarget,
   candidates: CoverCandidate[],
   thresholdHours: number,
+  mode: { swapRemote?: boolean } = {},
 ): CoverOption[] {
   const length = hoursBetween(target.startsAt, target.endsAt);
 
@@ -107,12 +110,27 @@ export function rankCoverOptions(
     const clashing = person.shifts.filter(
       (other) => other.startsAt < target.endsAt && other.endsAt > target.startsAt,
     );
+    // "Provider day off": somebody on telemedicine then can come in, which
+    // leaves that telemedicine open. Only when every shift in the way is from
+    // home; a shift at an office still blocks.
+    const swapping =
+      mode.swapRemote === true && clashing.length > 0 && clashing.every((other) => other.isRemote);
     for (const other of clashing) {
-      blockers.push({
-        kind: 'shift',
-        text: `Already on ${twelveHour(other.startTime)}–${twelveHour(other.endTime)} (${other.place})`,
-      });
+      const text = `${twelveHour(other.startTime)}–${twelveHour(other.endTime)} (${other.place})`;
+      if (swapping) {
+        worries.push({
+          kind: 'shift',
+          text: `On telemedicine then (${text}); taking this leaves that open`,
+          weight: 2,
+        });
+      } else {
+        blockers.push({ kind: 'shift', text: `Already on ${text}` });
+      }
     }
+    // What stays on their week once the telemedicine is let go.
+    const kept = swapping
+      ? person.shifts.filter((other) => !clashing.includes(other))
+      : person.shifts;
 
     for (const off of person.timeOff) {
       const what = off.type === 'VACATION' ? 'PTO' : sentenceCase(off.type);
@@ -133,7 +151,7 @@ export function rankCoverOptions(
     if (clash) worries.push({ kind: 'availability', text: clash, weight: 2 });
 
     const hoursBefore = round2(
-      person.shifts.reduce((sum, other) => sum + hoursBetween(other.startsAt, other.endsAt), 0),
+      kept.reduce((sum, other) => sum + hoursBetween(other.startsAt, other.endsAt), 0),
     );
     const hoursAfter = round2(hoursBefore + length);
     const hourly = person.payType === PayType.HOURLY;
@@ -183,6 +201,7 @@ export function rankCoverOptions(
   });
 
   return options
+    .filter((entry) => !(mode.swapRemote && entry.option.current))
     .sort(
       (a, b) =>
         FIT_ORDER[a.option.fit] - FIT_ORDER[b.option.fit] ||

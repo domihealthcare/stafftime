@@ -708,6 +708,28 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'Asking for a day off as a provider',
+        answer: (
+          <>
+            <p>
+              Ask as usual (<strong>Request time off</strong>). A manager decides it first, and then
+              decides what happens to each of your shifts: it stays, it is taken off the rota, it is
+              left as an open shift, or colleagues are asked to cover it. You are told when it is
+              decided.
+            </p>
+            <p>
+              If you are on call that day you are asked to swap it. The message links to{' '}
+              <Screen>On call</Screen>, where you pick a colleague to swap with.
+            </p>
+            <p>
+              If you are asked to cover a colleague and it would release one of your own
+              telemedicine shifts, the page says so before you answer, and that shift would be left
+              open.
+            </p>
+          </>
+        ),
+      },
+      {
         question: 'Which days does time off use up?',
         answer: (
           <>
@@ -2405,6 +2427,30 @@ const MANAGERS: Section[] = [
             (one they made by phone), press <strong>+ Request time off</strong> and choose them
             under <strong>For</strong>.
           </p>
+        ),
+      },
+      {
+        question: 'Deciding a provider’s day off: who covers',
+        answer: (
+          <>
+            <p>
+              When a provider asks for time off, <strong>Approve</strong> becomes a choice for each
+              of their shifts: <strong>Keep</strong>, <strong>Remove</strong>,{' '}
+              <strong>Leave open</strong> or <strong>Ask for cover</strong>. For cover you tick who
+              is asked: people who are free start ticked, and those with a catch are not, with the
+              catch beside them. A colleague whose only clash is a telemedicine shift is offered,
+              and taking the shift leaves their telemedicine open. Nobody is told until you press{' '}
+              <strong>Approve</strong>.
+            </p>
+            <p>
+              If you file the time off for a provider yourself (<strong>+ Request time off</strong>,{' '}
+              <strong>For</strong>), the same choices open straight away. After it is approved, the
+              request on <Screen>Time off</Screen> shows a <strong>Coverage</strong> line for each
+              shift: who is covering it, how many were asked and are still to answer, nobody yet,
+              left open or removed. If the provider is on call that day it says so, and they were
+              asked to swap it.
+            </p>
+          </>
         ),
       },
       {

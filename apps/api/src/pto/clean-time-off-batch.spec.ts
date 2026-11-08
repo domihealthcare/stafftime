@@ -303,7 +303,12 @@ function fakeDatabase() {
 function services() {
   const { prisma, calls } = fakeDatabase();
   const policy = new PtoPolicyService(prisma as never);
-  const pto = new PtoService(prisma as never, {} as never, {} as never);
+  const pto = new PtoService(
+    prisma as never,
+    {} as never,
+    {} as never,
+    { tellAboutOnCall: async () => [], plan: async () => [], apply: async () => [] } as never,
+  );
   return {
     prisma,
     calls,

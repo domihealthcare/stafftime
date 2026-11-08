@@ -121,9 +121,21 @@ describe('PtoService', () => {
         };
       }),
     };
+    const providerDayOff = {
+      plan: jest.fn(async (_request: unknown, choices: unknown[]) => choices),
+      apply: jest.fn(async (_request: unknown, choices: { shiftId: string; action: string }[]) =>
+        choices.map((choice) => ({ ...choice, ok: true })),
+      ),
+      tellAboutOnCall: jest.fn(async () => [] as string[]),
+    };
     return {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      service: new PtoService(prisma as any, notifications as any, days as any),
+      service: new PtoService(
+        prisma as never,
+        notifications as never,
+        days as never,
+        providerDayOff as never,
+      ),
+      providerDayOff,
       days,
       prisma,
       notifications,
@@ -350,6 +362,63 @@ describe('PtoService', () => {
           data: { employeeId: null, seriesId: null },
         });
         expect(prisma.shift.deleteMany).not.toHaveBeenCalled();
+      });
+
+      it('per shift: the choices are checked first, supersede the single choice, and are told to the person', async () => {
+        const { service, providerDayOff, notifications } = build({ request: pending });
+        const perShift = [
+          { shiftId: 'a', action: 'ASK' as const, employeeIds: ['x'] },
+          { shiftId: 'b', action: 'REMOVE' as const },
+        ];
+        const result = await service.review(
+          'pto-1',
+          { decision: PtoStatus.APPROVED, shifts: 'REMOVE', perShift },
+          manager,
+        );
+        expect(providerDayOff.plan).toHaveBeenCalledWith(pending, perShift);
+        expect(providerDayOff.apply).toHaveBeenCalledWith(pending, perShift, manager);
+        expect(notifications.ptoDecided).toHaveBeenCalledWith('pto-1', 2);
+        expect(result).toMatchObject({
+          onCallDates: [],
+          shiftResults: [{ shiftId: 'a' }, { shiftId: 'b' }],
+        });
+      });
+
+      it('per shift: a bad choice refuses the approval before anything is decided', async () => {
+        const { service, providerDayOff, prisma } = build({ request: pending });
+        providerDayOff.plan.mockRejectedValue(new BadRequestException('not theirs'));
+        await expect(
+          service.review(
+            'pto-1',
+            { decision: PtoStatus.APPROVED, perShift: [{ shiftId: 'a', action: 'OPEN' }] },
+            manager,
+          ),
+        ).rejects.toThrow('not theirs');
+        expect(prisma.ptoRequest.update).not.toHaveBeenCalled();
+      });
+
+      it('per shift: ignored for a half day and for a refusal', async () => {
+        const perShift = [{ shiftId: 'a', action: 'OPEN' as const }];
+        const half = build({
+          request: { ...pending, endDate: pending.startDate, isHalfDay: true },
+        });
+        await half.service.review('pto-1', { decision: PtoStatus.APPROVED, perShift }, manager);
+        expect(half.providerDayOff.plan).not.toHaveBeenCalled();
+        const denied = build({ request: pending });
+        await denied.service.review(
+          'pto-1',
+          { decision: PtoStatus.DENIED, reviewNote: 'Short that week', perShift },
+          manager,
+        );
+        expect(denied.providerDayOff.plan).not.toHaveBeenCalled();
+        expect(denied.providerDayOff.tellAboutOnCall).not.toHaveBeenCalled();
+      });
+
+      it('rings a provider about on-call days after approving, and tells the manager the dates', async () => {
+        const { service, providerDayOff } = build({ request: pending });
+        providerDayOff.tellAboutOnCall.mockResolvedValue(['2026-11-04']);
+        const result = await service.review('pto-1', { decision: PtoStatus.APPROVED }, manager);
+        expect(result).toMatchObject({ onCallDates: ['2026-11-04'] });
       });
 
       it('stay for a half day, and are never touched by a refusal', async () => {

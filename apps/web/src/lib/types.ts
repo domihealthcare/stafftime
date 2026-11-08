@@ -1886,8 +1886,57 @@ export interface CoverRequestStatus {
   }[];
 }
 
+/// A provider's day off (November 2026): who a shift on a provider's request
+/// has gone to, for managers (`GET /pto/:id/provider-day-off`).
+export interface ProviderDayOffPerson {
+  id: string;
+  firstName: string;
+  preferredName: string | null;
+  lastName: string;
+}
+
+export interface ProviderDayOffShift {
+  id: string;
+  startsAt: string;
+  endsAt: string;
+  isRemote: boolean;
+  locationName: string;
+  jobRoleName: string | null;
+  status: string;
+  /// Not in the first server contract: who holds it. Null means it was left
+  /// open. Absent means the server did not say.
+  employeeId?: string | null;
+  cover: null | {
+    requestId: string;
+    state: CoverState;
+    takenBy: ProviderDayOffPerson | null;
+    asks: { employee: ProviderDayOffPerson; answer: boolean | null }[];
+  };
+  /// Their own telemedicine hours that taking this shift would release.
+  releasedRemote?: { startsAt: string; endsAt: string }[];
+}
+
+export interface ProviderDayOff {
+  isProvider: boolean;
+  shifts: ProviderDayOffShift[];
+  /// Calendar dates ("2026-11-17") they are on call in the request's days.
+  onCallDates: string[];
+}
+
+/// What to do with one shift on approving a provider's time off.
+export type PerShiftAction = 'KEEP' | 'REMOVE' | 'OPEN' | 'ASK';
+
+export interface PerShiftDecision {
+  shiftId: string;
+  action: PerShiftAction;
+  employeeIds?: string[];
+}
+
 /// The shift as somebody asked to cover it sees it.
 export interface CoverView {
+  /// Their own telemedicine shifts that taking this one will release.
+  willRelease?: string[];
+  swap?: boolean;
   id: string;
   when: string;
   where: string;

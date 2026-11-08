@@ -87,6 +87,8 @@ import type {
   ChecklistTaskStatus,
   ChecklistTemplate,
   ConflictingShift,
+  PerShiftDecision,
+  ProviderDayOff,
   Coverage,
   Dashboard,
   DigestPreferences,
@@ -808,11 +810,15 @@ export const api = {
     reviewNote?: string,
     /// On approving: what happens to their shifts in those days.
     shifts?: 'KEEP' | 'REMOVE' | 'OPEN',
+    /// A provider's day off: a choice for each shift (supersedes `shifts`).
+    perShift?: PerShiftDecision[],
   ) =>
     request<PtoRequest>(`/pto/${id}/review`, {
       method: 'PATCH',
-      body: JSON.stringify({ decision, reviewNote, shifts }),
+      body: JSON.stringify({ decision, reviewNote, shifts, perShift }),
     }).then(timeOffChanged),
+  /// Where a provider's shifts stand on their time off (managers, November 2026).
+  providerDayOff: (id: string) => request<ProviderDayOff>(`/pto/${id}/provider-day-off`),
   cancelPto: (id: string) =>
     request<PtoRequest>(`/pto/${id}/cancel`, { method: 'PATCH' }).then(timeOffChanged),
   /// A manager or admin changing someone else's time off: the kind, the
@@ -1431,7 +1437,12 @@ export const api = {
     shiftId?: string;
   }) => request<OvertimeCheck>(`/shifts/overtime-check${toQuery(params)}`),
   /// Who could work a shift, best first, and why.
-  coverOptions: (shiftId: string) => request<CoverOptions>(`/shifts/${shiftId}/cover-options`),
+  /// `swapRemote`: for a provider's day off, a colleague whose only clash is
+  /// a telemedicine shift is offered with that as the catch.
+  coverOptions: (shiftId: string, opts: { swapRemote?: boolean } = {}) =>
+    request<CoverOptions>(
+      `/shifts/${shiftId}/cover-options${opts.swapRemote ? '?swapRemote=1' : ''}`,
+    ),
   /// A first draft for these open shifts: somebody free for each, or nobody.
   suggestCover: (ids: string[]) =>
     request<CoverProposal[]>('/shifts/suggest-cover', {

@@ -1,6 +1,9 @@
+import 'reflect-metadata';
 import { PtoStatus, PtoType } from '@prisma/client';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  IsArray,
   IsBoolean,
   IsDateString,
   IsEnum,
@@ -16,6 +19,7 @@ import {
   Matches,
   ValidateBy,
   ValidateIf,
+  ValidateNested,
 } from 'class-validator';
 
 /// A new request is sick, PTO (VACATION) or unpaid, nothing else (Dominguez,
@@ -131,6 +135,21 @@ export class EditPtoRequestDto {
   note?: string;
 }
 
+export class ShiftChoiceDto {
+  @IsUUID('all')
+  shiftId!: string;
+
+  @IsIn(['KEEP', 'REMOVE', 'OPEN', 'ASK'])
+  action!: 'KEEP' | 'REMOVE' | 'OPEN' | 'ASK';
+
+  /// Who to ask, for ASK.
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(30)
+  @IsUUID('all', { each: true })
+  employeeIds?: string[];
+}
+
 export class ReviewPtoRequestDto {
   @IsEnum(PtoStatus, { message: 'A decision must be APPROVED or DENIED.' })
   @Transform(({ value }) => (typeof value === 'string' ? value.toUpperCase() : value))
@@ -148,6 +167,16 @@ export class ReviewPtoRequestDto {
   @IsOptional()
   @IsIn(['KEEP', 'REMOVE', 'OPEN'])
   shifts?: 'KEEP' | 'REMOVE' | 'OPEN';
+
+  /// "Provider day off": a choice for each shift inside the dates. When given
+  /// on an approval it takes the place of `shifts`. ASK opens the shift and
+  /// asks `employeeIds` to cover it.
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100)
+  @ValidateNested({ each: true })
+  @Type(() => ShiftChoiceDto)
+  perShift?: ShiftChoiceDto[];
 }
 
 export class QueryPtoRequestsDto {

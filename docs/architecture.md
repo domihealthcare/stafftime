@@ -6417,3 +6417,33 @@ no browser marks; there is no session on those routes either way.
 log keeps the caller's number for 90 days (the nightly job deletes the row),
 for providers, managers and admins (Dominguez's choice, so providers can call
 back as their phone shows the Twilio number). Pinned by the schema guard.
+
+## A provider's day off, shift by shift (web)
+
+Dominguez, 8 November 2026. A manager decides the request first. If the person
+is a provider with shifts still to come, **Approve** does not use the three
+simple buttons: `useApproveTimeOff` (`components/ApproveTimeOff.tsx`) first asks
+`GET /pto/:id/provider-day-off` (managers only; anyone else's 403 falls back to
+the old question) and, when `isProvider` and there are upcoming shifts, opens
+`ProviderDayOffDialog` (`components/ProviderDayOff.tsx`).
+
+- Each shift gets **Keep / Remove / Leave open / Ask for cover**. The dialog
+  loads `GET /shifts/:id/cover-options?swapRemote=1` for every shift when it
+  opens; the default is Ask for cover if anybody can be asked, else Leave open.
+  Good fits are ticked, ones with a catch (a telemedicine overlap says so) are
+  not. Nothing is sent until Approve, which makes one
+  `PATCH /pto/:id/review` with `perShift` (`lib/provider-day-off.ts`,
+  `buildPerShift`). Approve waits while an Ask has nobody ticked.
+- A manager filing time off **for** a provider (the For picker) gets the same
+  dialog straight after the request is made (`approve(request, { providerOnly:
+  true })`), still needing Approve; never for their own request, and a cancelled
+  dialog leaves the request waiting.
+- After approval, `ProviderCoverage` on the Time off request card lists a
+  **Coverage** line per shift (`coverageLine`: Covered by X, Asked N waiting,
+  Nobody yet, Left open, Removed) and, if the provider is on call, "They were
+  asked to swap it". The Schedule's list holds waiting requests only, so it
+  shows no coverage.
+- `/cover/:id` shows `releases` (the asked person's own telemedicine hours that
+  saying yes would release) as a plain amber line before the buttons.
+
+Checks: `lib/provider-day-off.test.ts`, `tests/browser/provider-day-off.mjs`.
