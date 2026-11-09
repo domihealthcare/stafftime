@@ -304,7 +304,7 @@ export function ProfilePage() {
               />
               <span className="mt-1 block text-xs text-slate-500">
                 {t(
-                  'The after-hours phone line rings this number when you are on call. Leave empty to use your phone number above. Not shown in the Directory.',
+                  'The on-call phone line rings this number when you are on call. Leave empty to use your phone number above. Not shown in the Directory.',
                 )}
               </span>
             </label>

@@ -2290,7 +2290,6 @@ export interface CallRoutingSettings {
   defaultProviderId: string | null;
   voiceEn: string;
   voiceEs: string;
-  ringSeconds: number;
   messages: CallMessage[];
   /// Every provider, with the Directory phone that is rung.
   providers: {
@@ -2319,7 +2318,6 @@ export interface CallRoutingSettingsInput {
   defaultProviderId: string | null;
   voiceEn: string;
   voiceEs: string;
-  ringSeconds: number;
   messages: CallMessage[];
 }
 

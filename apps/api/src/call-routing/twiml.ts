@@ -63,11 +63,20 @@ export function dial(opts: {
   timeout: number;
   callerId?: string;
   number: string;
-  whisperUrl?: string;
+  /// Told when the dialled phone answers (a person or its voicemail). Nothing
+  /// is played to that phone, so a caller sent to voicemail hears the whole
+  /// greeting.
+  answeredUrl?: string;
 }): string {
   const number = tag(
     'Number',
-    { url: opts.whisperUrl, method: opts.whisperUrl ? 'POST' : undefined },
+    opts.answeredUrl
+      ? {
+          statusCallbackEvent: 'answered',
+          statusCallback: opts.answeredUrl,
+          statusCallbackMethod: 'POST',
+        }
+      : {},
     escapeXml(opts.number),
   );
   return tag(

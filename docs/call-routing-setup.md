@@ -6,41 +6,38 @@ is on call right now and rings that provider's cell (their **Directory
 phone**). Nothing is recorded, transcribed or kept as voicemail on Twilio: an
 unanswered call ends in the provider's own cell voicemail.
 
-How a call goes, with the times on the admin page's defaults:
+How a call goes (since 9 November 2026, Dominguez):
 
 1. "Thank you for calling Domi Healthcare. For English, press 1." then
    "Para español, oprima 2." (about 7 seconds). No key, or a wrong one: the
    menu once more, then English.
 2. The greeting in the chosen language only (about 25 seconds).
-3. **Try 1**: the on-call provider's cell rings for 20 seconds. When they
-   answer they hear "Domi Healthcare after-hours call, English-speaking
-   caller. Press 1 to accept, or 2 to send the caller to your voicemail."
-   Only pressing 1 connects the caller. Pressing 2 skips the backup and goes
-   straight to try 3, so the provider declines (or lets ring) that last ring
-   and the caller leaves a message on their voicemail.
-4. "Please continue to hold while we connect you." **Try 2**: the backup, the
-   same way (skipped when there is none).
-5. **Try 3**: the on-call provider again, ringing up to 45 seconds, so an
-   unanswered call falls into their own voicemail. No key to press: answered,
-   it only says "Domi Healthcare after-hours call, English-speaking caller"
-   and connects (since 7 November 2026, Dominguez); a voicemail that answers
-   records that line first.
-6. Only if even that is not answered at all (the phone is off, busy, or has
-   no voicemail and just rings out): **Try 4**, the default provider (Dr.
-   Jonathan Dominguez) with the whisper; then "We could not reach the
-   on-call provider ..." and the call ends, and the on-call provider and
-   backup get a **missed-call alert** (bell, email, phone) with the caller's
-   number. A **full** voicemail box usually still answers with the
-   carrier's own message, and the line cannot tell that from a person, so
-   try 4 does not happen then: keep voicemail boxes from filling up.
-   If the caller hangs up while a provider's phone is ringing, the providers
-   rung get an alert too ("ended before anybody pressed 1. If they left no
-   voicemail, please call back").
+3. **One ring** to the on-call provider's cell, for up to 45 seconds.
+   **Nothing is said to the provider first**: the caller is put through the
+   moment the phone answers.
+   - **Answered**: the provider is talking to the caller.
+   - **Declined, or left to ring**: the provider's own voicemail answers, so
+     the caller hears the whole voicemail greeting and leaves a message.
+4. Only if that phone does not answer at all (switched off, or no voicemail):
+   "Please continue to hold while we connect you", then the **default
+   provider** (Dr. Jonathan Dominguez), the same way. If even that is not
+   answered: "We could not reach the on-call provider ..." and the call ends,
+   and the providers rung get a **missed-call alert** (bell, email, phone)
+   with the caller's number.
+   If the caller hangs up while a provider's phone is still ringing, they get
+   an alert too ("ended before anybody answered").
 
-Worst case, English, with a backup: about 2 minutes from pickup to the
-provider's voicemail (the greeting is about 25 seconds since 7 November
-2026). The caller hears ringing, never silence, while a
-cell rings.
+The **backup** on the On call page is rung only in the on-call's place, when
+the on-call provider has no number that can be dialled. It is no longer rung
+after a missed call.
+
+Why: with the old "press 1" question, declining sent the call to voicemail,
+the voicemail "answered", and the question was recorded there instead of the
+patient. The line cannot tell a voicemail from a person, so it now asks
+nothing.
+
+Each provider should **save the Twilio number in their contacts** (say,
+"Domi On Call"), so they know a call is a patient.
 
 The provider's phone shows the **Twilio number**, not the patient's. The
 caller's number is under **Recent calls** at the bottom of **Schedule -> On
@@ -61,11 +58,10 @@ dead end.
   Staff -> Edit), or their Directory phone when they have not set one. Schedule
   -> On call -> Phone line settings -> Providers' phones shows which number
   is rung for each, and whether it can be dialled.
-- **How long each provider's phone rings before its voicemail answers.** It
-  must be longer than the 20 seconds the line rings, or their voicemail picks
-  up during try 1 and records the whisper as a short junk message. Most
-  phones ring about 25 to 30 seconds. If one is shorter, either ask the
-  carrier to lengthen it or lower "Ring each provider for" under Phone line settings.
+- **How long each provider's phone rings before its voicemail answers.**
+  Most phones ring about 25 to 30 seconds. The line waits up to 45, so an
+  unanswered call reaches the voicemail; nothing needs changing unless a
+  phone rings longer than 45 seconds before its voicemail picks up.
 - **No BAA** (Dominguez, November 2026): Twilio only signs one on its paid
   Security or Enterprise Editions; you chose to go ahead without one.
 
@@ -149,28 +145,24 @@ After each, look at **Recent calls** at the bottom of **Schedule -> On call**.
    the day**: an override for the next hour with provider A and backup B (so
    the test does not depend on the usual pattern).
 2. **English**: call, press 1. You hear the English greeting. A's phone shows
-   the Twilio number; A answers, hears "English-speaking caller", presses 1:
-   you are connected. Log: *Accepted by A*.
-3. **Spanish**: call, press 2. Spanish greeting only; A hears
-   "Spanish-speaking caller". Log language: Spanish.
+   the Twilio number and says nothing when answered: you are connected
+   straight away. Log: *Rang through to A's phone*.
+3. **Spanish**: call, press 2. Spanish greeting only, then the same. Log
+   language: Spanish.
 4. **No key**: call and press nothing. The menu plays twice, then the English
    greeting. Also try pressing 7: the menu plays again.
-5. **Provider declines**: A answers but does not press 1 (or hangs up). You
-   hear "please continue to hold", then B's phone rings. B presses 1. Log:
-   A *declined*, *Accepted by B*.
-6. **Nobody answers**: neither presses 1. After B, A's phone rings again with
-   only the announcement; let it go to A's voicemail and leave a test message.
-   Then **press 2**: call again, A presses 2 at the whisper; A's phone rings
-   again at once (not B's); A declines it and the caller reaches A's
-   voicemail. Log:
-   *Rang through to A's phone*. Check the message is in A's own voicemail.
+5. **Provider declines**: A declines the call. You hear A's whole voicemail
+   greeting; leave a test message and check it is in A's voicemail, with
+   nothing before it. Log: *Rang through to A's phone*.
+6. **Provider lets it ring**: A does nothing. After A's usual ring time A's
+   voicemail answers, the same as step 5. B (the backup) is not rung.
 7. **Override day**: remove the override. Under On call, press today and
    choose **Change who is on call** with provider B, and call: B rings first. Put it back
    to the usual afterwards.
 8. **Split night**: add a part-of-the-day override for the next 15 minutes
    for B, then one from 15 minutes on for A. Call during each.
 9. **Caller hangs up**: call, press 1, and hang up while A's phone rings. Log:
-   *Caller hung up*, and A and B get a missed-call alert with your number.
+   *Caller hung up*, and A gets a missed-call alert with your number.
 10. **Fallback** (optional, with Dominguez watching): in Twilio, change "A
     call comes in" to a wrong address for a minute and call: the TwiML Bin
     rings the fallback cell. Change it back.

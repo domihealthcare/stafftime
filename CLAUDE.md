@@ -2504,8 +2504,41 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `on-call.service.ts`). `pages/OnCallPage.tsx`; `tests/browser/on-call.mjs`,
   `call-routing.mjs`; Help's two on-call topics. Worth carrying to the EMR
   module with on call.
+- **The whisper no longer says "after-hours"** (9 November 2026, Dominguez:
+  "the whisper is saying after hours caller - but it isn't only for after
+  hours"; released in 1.50.0): the provider now hears "Domi Healthcare call,
+  English-speaking caller. Press 1 to accept, or 2 to send the caller to
+  your voicemail", and the last ring "Domi Healthcare call, English-speaking
+  caller". The missed-call alert is "Missed call" ("Call from ... ended
+  before anybody pressed 1"). Help's topic is *The on-call line is ringing
+  my phone*. Words only; the screens' "after-hours" labels are unchanged.
+- **One ring, put straight through** (9 November 2026, Dominguez: "if i
+  decline the call on my phone, the whisper leaves an voicemail, not the
+  patient and then when it rings again, i can't send it to voicemail ... i
+  think im going to have to take the whisper out"; then "the caller is not
+  hearing a voicemail from my phone"; his choices: **only ring the on-call
+  provider once**, **nothing said to the phone**, **keep 45 seconds**;
+  version 1.50.0): the line rings the provider on call **once, for up to 45
+  seconds**, and puts the caller through the moment the phone answers, so
+  declining or not answering is their own voicemail with its whole greeting.
+  The **default provider** follows only if that phone does not answer at all;
+  the **backup** is rung only in the on-call's place when they cannot be
+  dialled. The whisper, press 1 / press 2 and the announcement are gone
+  (`whisper` is kept only for a call ringing during the release, and
+  connects at once); the phone answering is reported by Twilio's
+  `statusCallbackEvent="answered"` on the `<Number>` (`answered` route,
+  `recordAnswer`), so a caller hanging up mid-call is "rang through", not
+  missed. The log reads "Rang through to X's phone" (a person or the
+  voicemail, which the line cannot tell apart). **Ring each provider for** is
+  gone from Phone line settings (the column stays, unread; the DTO still
+  accepts it from an old tab). Providers should save the Twilio number as a
+  contact. `call-routing/voice.service.ts`, `twiml.ts`; see *The after-hours
+  phone line* in `docs/architecture.md`; `docs/call-routing-setup.md` (the
+  test plan); `tests/browser/call-routing.mjs`. Same release: the On call
+  page, override form, on-call number hints and Help say "the on-call line"
+  instead of "after-hours".
 - **Every day under the Timesheet's Day** (9 November 2026, Dominguez:
-  "Timesheet - where is Tuesday?", version 1.49.1): the Day filter listed
+  "Timesheet - where is Tuesday?", version 1.50.1): the Day filter listed
   only days with a punch or time off, so a day still to come (Tuesday, on a
   Monday) or one nobody worked was missing while later days with somebody's
   time off showed. It now lists every day of the period (up to 62 days; a

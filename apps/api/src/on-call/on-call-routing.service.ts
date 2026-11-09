@@ -178,12 +178,10 @@ export class OnCallRoutingService {
     const onCall = chosen ?? backupContact ?? defaultContact;
     const backup =
       backupContact && backupContact.employeeId !== onCall?.employeeId ? backupContact : null;
+    // The backup is not rung after the on-call (only one ring since 9
+    // November 2026), so the default provider follows even when they are it.
     const fallback =
-      defaultContact &&
-      defaultContact.employeeId !== onCall?.employeeId &&
-      defaultContact.employeeId !== backup?.employeeId
-        ? defaultContact
-        : null;
+      defaultContact && defaultContact.employeeId !== onCall?.employeeId ? defaultContact : null;
     return { onCall, backup, fallback, source: answer.source, problems };
   }
 
@@ -316,7 +314,6 @@ export class OnCallRoutingService {
       defaultProviderId: row?.defaultProviderId ?? null,
       voiceEn: row?.voiceEn ?? 'Polly.Joanna-Neural',
       voiceEs: row?.voiceEs ?? 'Polly.Lupe-Neural',
-      ringSeconds: row?.ringSeconds ?? 20,
       messages: Object.values(CallMessageKey).map((key) => ({
         key,
         text: saved.get(key)?.text ?? '',
@@ -347,9 +344,6 @@ export class OnCallRoutingService {
       throw new BadRequestException('Choose an English voice from the list.');
     if (!isSpanishVoice(dto.voiceEs))
       throw new BadRequestException('Choose a Spanish voice from the list.');
-    if (!Number.isInteger(dto.ringSeconds) || dto.ringSeconds < 10 || dto.ringSeconds > 60) {
-      throw new BadRequestException('Ring for 10 to 60 seconds.');
-    }
     const defaultProviderId = dto.defaultProviderId || null;
     if (defaultProviderId) await this.assertProviders([defaultProviderId]);
 
@@ -372,14 +366,12 @@ export class OnCallRoutingService {
           defaultProviderId,
           voiceEn: dto.voiceEn,
           voiceEs: dto.voiceEs,
-          ringSeconds: dto.ringSeconds,
           updatedById: actor.id,
         },
         update: {
           defaultProviderId,
           voiceEn: dto.voiceEn,
           voiceEs: dto.voiceEs,
-          ringSeconds: dto.ringSeconds,
           updatedById: actor.id,
         },
       });
