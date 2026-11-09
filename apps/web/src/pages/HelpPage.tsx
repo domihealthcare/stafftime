@@ -1326,9 +1326,10 @@ const PROVIDERS: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Schedule</Screen> → <strong>On call</strong>: who takes the after-hours calls
-              each day, a turn running from the hand-over time (6 AM) to the same time the next day.{' '}
-              <strong>On call now</strong> is on <Screen>Home</Screen> too. Your days are shaded.
+              <Screen>Schedule</Screen> → <strong>On call</strong>: who takes the on-call line's
+              calls each day, a turn running from the hand-over time (6 AM) to the same time the
+              next day. <strong>On call now</strong> is on <Screen>Home</Screen> too. Your days are
+              shaded.
             </p>
             <p>
               To swap, press one of your days, choose who should take it and - if you like - one of
@@ -2714,7 +2715,7 @@ const MANAGERS: Section[] = [
         ),
       },
       {
-        question: 'The after-hours phone line: overrides, backups and what callers hear',
+        question: 'The on-call phone line: overrides, backups and what callers hear',
         answer: (
           <>
             <p>

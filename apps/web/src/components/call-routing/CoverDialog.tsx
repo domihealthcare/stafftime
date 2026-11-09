@@ -75,7 +75,7 @@ export function OverrideForm({
   return (
     <form onSubmit={(event) => void save(event)} className="space-y-3" aria-label="Override">
       <p className="text-sm text-slate-600">
-        Who takes the after-hours calls between two moments, on New Jersey time. It wins over the
+        Who takes the on-call line's calls between two moments, on New Jersey time. It wins over the
         usual pattern, a changed day and a swap.
       </p>
       <div className="grid gap-3 sm:grid-cols-2">

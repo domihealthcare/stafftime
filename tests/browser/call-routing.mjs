@@ -551,7 +551,7 @@ await step('the words are put back and the link cleared', async () => {
 await step('the Call log shows the calls with the full number and an outcome badge', async () => {
   await manager.goto(`${BASE}/on-call/calls`, { waitUntil: 'networkidle' });
   await manager.waitForURL(/\/on-call#calls$/);
-  await manager.getByText('After-hours calls in the last 30 days, newest first.').waitFor();
+  await manager.getByText('Calls to the on-call line in the last 30 days, newest first.').waitFor();
   const table = manager.getByTestId('call-log-table');
   await table.waitFor();
   await table.getByText('(201) 555-0142').first().waitFor();
@@ -596,7 +596,7 @@ await step('a provider sets an on-call number in Your profile and the line dials
   await frankie.goto(`${BASE}/profile`, { waitUntil: 'networkidle' });
   const box = frankie.locator('#onCallPhone');
   await box.waitFor();
-  await frankie.getByText('The after-hours phone line rings this number when you are on call.').waitFor();
+  await frankie.getByText('The on-call phone line rings this number when you are on call.').waitFor();
   await box.fill('(201) 555-0188');
   await frankie.getByRole('button', { name: 'Save profile' }).click();
   await frankie.getByText('Profile saved.').waitFor();
