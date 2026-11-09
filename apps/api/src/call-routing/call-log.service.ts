@@ -198,12 +198,12 @@ export class CallLogService {
     const when = clockTime(row.startedAt);
     const body =
       reason === 'HUNG_UP'
-        ? `After-hours call from ${who} at ${when} ended before anybody pressed 1. If they left no voicemail, please call back.`
+        ? `Call from ${who} at ${when} ended before anybody pressed 1. If they left no voicemail, please call back.`
         : reason === 'NOBODY_TO_RING'
-          ? `After-hours call from ${who} at ${when}: nobody on call could be rung. Please call back, and check the on-call schedule and phones.`
-          : `Missed after-hours call from ${who} at ${when}. Nobody could take it. Please call back.`;
+          ? `Call from ${who} at ${when}: nobody on call could be rung. Please call back, and check the on-call schedule and phones.`
+          : `Missed call from ${who} at ${when}. Nobody could take it. Please call back.`;
     await this.notifications.personal(ids, NotificationKind.ON_CALL, {
-      title: 'Missed after-hours call',
+      title: 'Missed call',
       body,
       link: '/on-call#calls',
     });

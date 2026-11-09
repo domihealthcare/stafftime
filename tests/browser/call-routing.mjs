@@ -353,7 +353,7 @@ await step('2 on the whisper sends the caller to the provider\'s voicemail, skip
   must(again.number === dial.number, `rang ${again.number}, not the same provider ${dial.number}`);
   must(again.whisper && again.whisper.includes('a=1'), `the last ring has no announcement: ${again.whisper}`);
   const announce = await post(resolve(again.whisper, path), { CallSid: sid() });
-  must(announce.text.includes('Domi Healthcare after-hours call'), 'the announcement does not say what the call is');
+  must(announce.text.includes('Domi Healthcare call,'), 'the announcement does not say what the call is');
   must(!announce.text.includes('<Gather') && !announce.text.includes('<Hangup'), 'the announcement asks for a key or hangs up');
 });
 

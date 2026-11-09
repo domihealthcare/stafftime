@@ -171,14 +171,14 @@ export class VoiceService {
     if (this.stale(query)) return response(hangup());
     const who = query.lang === 'es' ? 'Spanish-speaking caller' : 'English-speaking caller';
     if (query.a === '1') {
-      return response(say(`Domi Healthcare after-hours call, ${who}.`, DEFAULT_VOICE_EN));
+      return response(say(`Domi Healthcare call, ${who}.`, DEFAULT_VOICE_EN));
     }
     const answer = `whisper-answer?${new URLSearchParams(this.carry(query)).toString()}`;
     return response(
       gather(
         { action: answer, timeout: 8, numDigits: 1 },
         say(
-          `Domi Healthcare after-hours call, ${who}. Press 1 to accept, or 2 to send the caller to your voicemail.`,
+          `Domi Healthcare call, ${who}. Press 1 to accept, or 2 to send the caller to your voicemail.`,
           DEFAULT_VOICE_EN,
         ),
       ),

@@ -2483,6 +2483,14 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `ApproveTimeOff.tsx`; Help has both guides' topics;
   `tests/browser/provider-day-off.mjs`. Worth carrying to the EMR module with
   *Who can cover this?* and *Someone called out*.
+- **The whisper no longer says "after-hours"** (9 November 2026, Dominguez:
+  "the whisper is saying after hours caller - but it isn't only for after
+  hours"; version 1.48.1): the provider now hears "Domi Healthcare call,
+  English-speaking caller. Press 1 to accept, or 2 to send the caller to
+  your voicemail", and the last ring "Domi Healthcare call, English-speaking
+  caller". The missed-call alert is "Missed call" ("Call from ... ended
+  before anybody pressed 1"). Help's topic is *The on-call line is ringing
+  my phone*. Words only; the screens' "after-hours" labels are unchanged.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

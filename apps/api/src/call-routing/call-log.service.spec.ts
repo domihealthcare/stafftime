@@ -55,7 +55,7 @@ describe('CallLogService', () => {
     expect(ids).toEqual(['e1', 'e2']);
     expect(kind).toBe('ON_CALL');
     expect(words.body).toBe(
-      'Missed after-hours call from (201) 555-0142 at 9:14 PM. Nobody could take it. Please call back.',
+      'Missed call from (201) 555-0142 at 9:14 PM. Nobody could take it. Please call back.',
     );
     expect(words.link).toBe('/on-call#calls');
   });

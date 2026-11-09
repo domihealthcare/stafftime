@@ -274,7 +274,7 @@ describe('VoiceService', () => {
     it('the last ring announces the call and connects by itself', () => {
       const { service } = build();
       const xml = service.whisper({ lang: 'es', a: '1', t: NOW() });
-      expect(xml).toContain('Domi Healthcare after-hours call, Spanish-speaking caller.');
+      expect(xml).toContain('Domi Healthcare call, Spanish-speaking caller.');
       expect(xml).not.toContain('<Gather');
       expect(xml).not.toContain('<Hangup');
     });

@@ -1343,23 +1343,23 @@ const PROVIDERS: Section[] = [
         ),
       },
       {
-        question: 'An after-hours call is ringing my phone',
+        question: 'The on-call line is ringing my phone',
         answer: (
           <>
             <p>
-              After hours, calls to the office go to the practice&rsquo;s own line, which rings the
-              provider on call. Your phone shows the line&rsquo;s number, not the patient&rsquo;s.
-              When you answer you hear{' '}
+              Calls the office sends to the on-call line (after hours, and whenever else the phones
+              send them there) ring the provider on call. Your phone shows the line&rsquo;s number,
+              not the patient&rsquo;s. When you answer you hear{' '}
               <strong>
-                &ldquo;Domi Healthcare after-hours call, English-speaking caller. Press 1 to accept,
-                or 2 to send the caller to your voicemail.&rdquo;
+                &ldquo;Domi Healthcare call, English-speaking caller. Press 1 to accept, or 2 to
+                send the caller to your voicemail.&rdquo;
               </strong>{' '}
               (or Spanish-speaking). Press <strong>1</strong> to be put through. Press{' '}
               <strong>2</strong> and your phone rings once more straight away: decline it, or let it
               ring, and the caller leaves a message on your own voicemail. If you press nothing, the
               line tries your backup, then rings you once more. That last ring only says &ldquo;Domi
-              Healthcare after-hours call&rdquo; and puts the caller through when you answer; if
-              your voicemail answers, the message starts with that line.
+              Healthcare call&rdquo; and puts the caller through when you answer; if your voicemail
+              answers, the message starts with that line.
             </p>
             <p>
               The caller&rsquo;s number, when to call back, is under <strong>Recent calls</strong>{' '}
