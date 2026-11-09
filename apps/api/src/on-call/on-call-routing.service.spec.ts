@@ -114,11 +114,20 @@ describe('OnCallRoutingService.planAt', () => {
     expect((await service.planAt(NOW)).backup).toBeNull();
   });
 
-  it('does not repeat the default as fallback when it is the backup', async () => {
+  it('still rings the default after the on-call when they are also the backup', async () => {
+    // The backup is not rung after the on-call any more, so the default follows.
     answer({ backupEmployeeId: C });
     const { service } = build([person(A), person(C)]);
     const plan = await service.planAt(NOW);
     expect(plan.backup?.employeeId).toBe(C);
+    expect(plan.fallback?.employeeId).toBe(C);
+  });
+
+  it('does not repeat the default when they are the one on call', async () => {
+    answer({ employeeId: C });
+    const { service } = build([person(C)]);
+    const plan = await service.planAt(NOW);
+    expect(plan.onCall?.employeeId).toBe(C);
     expect(plan.fallback).toBeNull();
   });
 
@@ -243,19 +252,13 @@ describe('OnCallRoutingService settings', () => {
     expect(prisma.callRoutingSettings.upsert).toHaveBeenCalled();
   });
 
-  it('refuses a bad voice, bad ring time and bad links', async () => {
+  it('refuses a bad voice and bad links', async () => {
     const { service } = build([]);
     await expect(
       service.saveSettings({ ...ok, voiceEn: 'Polly.Lupe-Neural' }, manager),
     ).rejects.toThrow('English');
     await expect(service.saveSettings({ ...ok, voiceEs: 'nope' }, manager)).rejects.toThrow(
       'Spanish',
-    );
-    await expect(service.saveSettings({ ...ok, ringSeconds: 5 }, manager)).rejects.toThrow(
-      '10 to 60',
-    );
-    await expect(service.saveSettings({ ...ok, ringSeconds: 61 }, manager)).rejects.toThrow(
-      '10 to 60',
     );
     for (const audioUrl of ['http://x.com/a.mp3', 'not a url']) {
       await expect(

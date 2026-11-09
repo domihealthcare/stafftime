@@ -26,7 +26,7 @@ export function RecentCalls() {
   return (
     <div className="pt-3">
       <p className="mb-3 text-sm text-slate-600">
-        After-hours calls in the last 30 days, newest first.
+        Calls to the on-call line in the last 30 days, newest first.
       </p>
       {error && <Alert>{error}</Alert>}
       {!calls ? (
@@ -34,7 +34,7 @@ export function RecentCalls() {
           <Spinner />
         )
       ) : calls.length === 0 ? (
-        <EmptyState>No after-hours calls in the last 30 days.</EmptyState>
+        <EmptyState>No calls to the on-call line in the last 30 days.</EmptyState>
       ) : (
         <>
           <div className="hidden lg:block">

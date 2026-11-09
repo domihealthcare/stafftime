@@ -1,13 +1,7 @@
 import { useState } from 'react';
 import { Alert, Card, Field, buttonClass, inputClass } from '../ui';
 import { ApiError, api } from '../../lib/api';
-import {
-  MAX_RING_SECONDS,
-  MIN_RING_SECONDS,
-  VOICES_EN,
-  VOICES_ES,
-  isHttpsLink,
-} from '../../lib/call-routing';
+import { VOICES_EN, VOICES_ES, isHttpsLink } from '../../lib/call-routing';
 import type { CallMessage, CallMessageKey, CallRoutingSettings } from '../../lib/types';
 
 const GROUPS: { title: string; hint: string; en: CallMessageKey; es: CallMessageKey }[] = [
@@ -37,7 +31,7 @@ const GROUPS: { title: string; hint: string; en: CallMessageKey; es: CallMessage
   },
 ];
 
-/// What callers hear, the voices, how long each phone rings and the default.
+/// What callers hear, the voices and the default provider.
 export function CallerMessages({
   settings,
   onSaved,
@@ -50,7 +44,6 @@ export function CallerMessages({
   );
   const [voiceEn, setVoiceEn] = useState(settings.voiceEn);
   const [voiceEs, setVoiceEs] = useState(settings.voiceEs);
-  const [ring, setRing] = useState(String(settings.ringSeconds));
   const [defaultId, setDefaultId] = useState(settings.defaultProviderId ?? '');
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -67,13 +60,6 @@ export function CallerMessages({
     event.preventDefault();
     setError(null);
     setSaved(false);
-    const seconds = Number(ring);
-    if (!Number.isInteger(seconds) || seconds < MIN_RING_SECONDS || seconds > MAX_RING_SECONDS) {
-      setError(
-        `Ring each provider for a whole number of seconds from ${MIN_RING_SECONDS} to ${MAX_RING_SECONDS}.`,
-      );
-      return;
-    }
     const all = GROUPS.flatMap((g) => [get(g.en), get(g.es)]).map((m) => ({
       key: m.key,
       text: m.text.trim(),
@@ -90,7 +76,6 @@ export function CallerMessages({
         defaultProviderId: defaultId || null,
         voiceEn,
         voiceEs,
-        ringSeconds: seconds,
         messages: all,
       });
       onSaved(result);
@@ -201,27 +186,9 @@ export function CallerMessages({
               )}
             </Field>
             <Field
-              label="Ring each provider for (seconds)"
-              hint={`From ${MIN_RING_SECONDS} to ${MAX_RING_SECONDS}.`}
+              label="Default provider"
+              hint="Rung when the on-call provider's phone does not answer at all, or nobody is on call."
             >
-              {(props) => (
-                <input
-                  {...props}
-                  type="number"
-                  min={MIN_RING_SECONDS}
-                  max={MAX_RING_SECONDS}
-                  step={1}
-                  required
-                  value={ring}
-                  onChange={(event) => {
-                    setRing(event.target.value);
-                    setSaved(false);
-                  }}
-                  className={inputClass}
-                />
-              )}
-            </Field>
-            <Field label="Default provider" hint="Rung last when nobody else is set or reached.">
               {(props) => (
                 <select
                   {...props}

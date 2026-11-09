@@ -94,7 +94,7 @@ export function OnCallPage() {
     <div className="mx-auto max-w-6xl">
       <PageHeading
         title="On call"
-        subtitle="Which provider takes the after-hours calls. Each day’s turn runs from the hand-over time (6 AM) to the same time the next day."
+        subtitle="Which provider takes the on-call line's calls. Each day’s turn runs from the hand-over time (6 AM) to the same time the next day."
       />
       <ScheduleTabs />
       <div className="space-y-5">
@@ -842,7 +842,10 @@ function ChangeDaysForm({
           </select>
         )}
       </Field>
-      <Field label="Backup" hint="Optional. Rung if the provider on call does not accept.">
+      <Field
+        label="Backup"
+        hint="Optional. Rung instead when the provider on call has no number that can be dialled."
+      >
         {(props) => (
           <select
             {...props}

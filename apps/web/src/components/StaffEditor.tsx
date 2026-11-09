@@ -318,7 +318,7 @@ export function StaffEditor({
                 <Field
                   id="edit-on-call-phone"
                   label="On-call number"
-                  hint="Providers: the number the after-hours line rings. Empty uses the phone number. Not shown in the Directory."
+                  hint="Providers: the number the on-call line rings. Empty uses the phone number. Not shown in the Directory."
                 >
                   <input
                     id="edit-on-call-phone"

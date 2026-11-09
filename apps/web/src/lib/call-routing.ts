@@ -20,9 +20,6 @@ export const VOICES_ES = [
   { value: 'Polly.Mia-Neural', label: 'Mia (Mexico)' },
 ];
 
-export const MIN_RING_SECONDS = 10;
-export const MAX_RING_SECONDS = 60;
-
 /// "+12015550142" -> "(201) 555-0142"; null -> "Withheld".
 export function formatCaller(number: string | null): string {
   if (!number) return 'Withheld';
