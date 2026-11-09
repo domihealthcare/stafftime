@@ -98,6 +98,20 @@ await step('the timesheet narrows to one day and to a name typed in', async () =
   if ((await rows()) !== all) throw new Error('clearing the filters did not bring every row back');
 });
 
+// Every day of the period under Day, worked or not (November 2026,
+// Dominguez: "where is Tuesday?" - a day still to come was left out).
+await step('the Day filter lists every day of the week, worked or not', async () => {
+  const values = await page
+    .getByLabel('Day')
+    .locator('option')
+    .evaluateAll((options) => options.map((o) => o.value).filter(Boolean));
+  if (values.length !== 7) throw new Error(`the Day filter offers ${values.length} days: ${values}`);
+  for (let i = 1; i < 7; i += 1) {
+    const gap = (Date.parse(values[i]) - Date.parse(values[i - 1])) / 86400000;
+    if (gap !== 1) throw new Error(`a day is missing between ${values[i - 1]} and ${values[i]}`);
+  }
+});
+
 // No sideways scroll anywhere on the Timesheet (Dominguez, October 2026):
 // the table's long cells wrap, and below a laptop's width it is cards.
 await step('the timesheet never scrolls sideways, phone to laptop', async () => {
