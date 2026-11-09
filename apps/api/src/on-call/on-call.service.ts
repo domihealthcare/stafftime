@@ -24,6 +24,9 @@ import { clockWords, onCallOn, RotaRule, usualOn } from './on-call';
 
 /// The most a screen asks for at once.
 const MAX_DAYS = 93;
+/// The most days a manager changes in one go, and a swap gives or takes.
+const MAX_CHANGED_DAYS = 62;
+const MAX_SWAP_DAYS = 31;
 
 export const WORKING = [EmploymentStatus.ACTIVE, EmploymentStatus.ON_LEAVE];
 
@@ -257,59 +260,85 @@ export class OnCallService {
     return this.rotas(actor, now);
   }
 
-  /// One day: somebody else on call, or back to the usual.
+  /// One day (or each day up to `until`): somebody else on call, or back to
+  /// the usual.
   async setDay(date: string, dto: OnCallDayInput, actor: AuthUser, now = new Date()) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new BadRequestException('Give the day as a date.');
     const today = localDateIn(now, PRACTICE_ZONE);
     if (date < addDaysTo(today, -1)) {
       throw new BadRequestException('Days already past stay as they were.');
     }
-    const { rotas, changed } = await this.rules(date, date);
-    const before = onCallOn(date, rotas, changed.map).employeeId;
+    const until = dto.until && dto.until > date ? dto.until : date;
+    const dates = datesBetween(date, until);
+    if (dates.length > MAX_CHANGED_DAYS) {
+      throw new BadRequestException(`Change at most ${MAX_CHANGED_DAYS} days at once.`);
+    }
+    const { rotas, changed } = await this.rules(date, until);
+    const before = new Map(dates.map((d) => [d, onCallOn(d, rotas, changed.map).employeeId]));
+    const note = dto.note?.trim() || null;
 
     if (dto.employeeId) {
+      const employeeId = dto.employeeId;
       const backupId = dto.backupEmployeeId || null;
-      if (backupId && backupId === dto.employeeId) {
+      if (backupId && backupId === employeeId) {
         throw new BadRequestException('The backup has to be somebody other than the provider.');
       }
-      await this.assertProviders(backupId ? [dto.employeeId, backupId] : [dto.employeeId]);
-      await this.prisma.onCallDay.upsert({
-        where: { date: toUtcDate(date) },
-        create: {
-          date: toUtcDate(date),
-          employeeId: dto.employeeId,
-          backupEmployeeId: backupId,
-          note: dto.note?.trim() || null,
-          setById: actor.id,
-        },
-        update: {
-          employeeId: dto.employeeId,
-          backupEmployeeId: backupId,
-          note: dto.note?.trim() || null,
-          setById: actor.id,
-          swapId: null,
-        },
-      });
+      await this.assertProviders(backupId ? [employeeId, backupId] : [employeeId]);
+      await this.prisma.$transaction(
+        dates.map((d) =>
+          this.prisma.onCallDay.upsert({
+            where: { date: toUtcDate(d) },
+            create: {
+              date: toUtcDate(d),
+              employeeId,
+              backupEmployeeId: backupId,
+              note,
+              setById: actor.id,
+            },
+            update: {
+              employeeId,
+              backupEmployeeId: backupId,
+              note,
+              setById: actor.id,
+              swapId: null,
+            },
+          }),
+        ),
+      );
     } else {
-      await this.prisma.onCallDay.deleteMany({ where: { date: toUtcDate(date) } });
+      await this.prisma.onCallDay.deleteMany({
+        where: { date: { gte: toUtcDate(date), lte: toUtcDate(until) } },
+      });
     }
 
     // Put back to the usual: whoever the pattern has.
-    const after = dto.employeeId ?? onCallOn(date, rotas, new Map()).employeeId;
-    if (before !== after) {
-      const names = await this.people([before, after]);
+    const after = new Map(
+      dates.map((d) => [d, dto.employeeId ?? onCallOn(d, rotas, new Map()).employeeId]),
+    );
+    const moved = dates.filter((d) => before.get(d) !== after.get(d));
+    if (moved.length > 0) {
+      const ids = moved.flatMap((d) => [before.get(d) ?? null, after.get(d) ?? null]);
+      const names = await this.people(ids);
       const name = (id: string | null) => (id ? (names.get(id)?.name ?? 'somebody') : 'nobody');
+      const only = (list: (string | null)[]) => (new Set(list).size === 1 ? list[0] : undefined);
+      const nowOn = only(moved.map((d) => after.get(d) ?? null));
+      const wasOn = only(moved.map((d) => before.get(d) ?? null));
+      const when = daysWords(moved);
       await this.notifications.onCall(
-        [before, after].filter((id): id is string => !!id && id !== actor.id),
+        [...new Set(ids)].filter((id): id is string => !!id && id !== actor.id),
         {
-          title: `On call ${dayWords(date)}: now ${name(after)}`,
-          body: `A manager changed who is on call ${dayWords(date)} - it was ${name(before)}.${dto.note?.trim() ? ` “${dto.note.trim()}”` : ''}`,
+          title: `On call ${when}: ${nowOn !== undefined ? `now ${name(nowOn)}` : 'changed'}`,
+          body: `A manager changed who is on call ${when}${
+            wasOn !== undefined ? ` - it was ${name(wasOn)}` : ''
+          }.${note ? ` “${note}”` : ''}`,
         },
         { email: true },
       );
     }
-    this.logger.log(`On call ${date} set to ${after ?? 'nobody'} by ${actor.id}`);
-    return { date, employeeId: after };
+    this.logger.log(
+      `On call ${date}${until !== date ? ` to ${until}` : ''} set to ${dto.employeeId ?? 'the usual'} by ${actor.id}`,
+    );
+    return { date, until, employeeId: after.get(date) ?? null };
   }
 
   // ------------------------------------------------------------------ swaps
@@ -333,6 +362,8 @@ export class OnCallService {
         id: true,
         giveDate: true,
         takeDate: true,
+        giveDates: true,
+        takeDates: true,
         note: true,
         status: true,
         createdAt: true,
@@ -341,13 +372,18 @@ export class OnCallService {
         partner: { select: PERSON },
       },
     });
-    return rows.map((row) => ({
-      ...row,
-      giveDate: isoDate(row.giveDate),
-      takeDate: row.takeDate ? isoDate(row.takeDate) : null,
-      requester: named(row.requester),
-      partner: named(row.partner),
-    }));
+    return rows.map(({ giveDates: _gives, takeDates: _takes, ...row }) => {
+      const { gives, takes } = swapDays({ ...row, giveDates: _gives, takeDates: _takes });
+      return {
+        ...row,
+        giveDate: gives[0],
+        takeDate: takes[0] ?? null,
+        giveDates: gives,
+        takeDates: takes,
+        requester: named(row.requester),
+        partner: named(row.partner),
+      };
+    });
   }
 
   async askSwap(dto: OnCallSwapInput, actor: AuthUser, now = new Date()) {
@@ -358,24 +394,36 @@ export class OnCallService {
     if (dto.partnerId === actor.id) throw new BadRequestException('Choose another provider.');
     await this.assertProviders([dto.partnerId]);
     const today = localDateIn(now, PRACTICE_ZONE);
-    const takeDate = dto.takeDate || null;
-    for (const date of [dto.giveDate, takeDate]) {
-      if (date && date < today) throw new BadRequestException('Choose days still to come.');
+    const gives = [...new Set([dto.giveDate, ...(dto.giveDates ?? [])])].sort();
+    const takes = [
+      ...new Set([...(dto.takeDate ? [dto.takeDate] : []), ...(dto.takeDates ?? [])]),
+    ].sort();
+    if (gives.length > MAX_SWAP_DAYS || takes.length > MAX_SWAP_DAYS) {
+      throw new BadRequestException(`Choose at most ${MAX_SWAP_DAYS} days at once.`);
     }
-    const span = [dto.giveDate, takeDate ?? dto.giveDate].sort();
-    const { rotas, changed } = await this.rules(span[0], span[1]);
-    if (onCallOn(dto.giveDate, rotas, changed.map).employeeId !== actor.id) {
-      throw new BadRequestException(`You are not on call ${dayWords(dto.giveDate)}.`);
+    for (const date of [...gives, ...takes]) {
+      if (date < today) throw new BadRequestException('Choose days still to come.');
     }
-    if (takeDate && onCallOn(takeDate, rotas, changed.map).employeeId !== dto.partnerId) {
-      throw new BadRequestException(`They are not on call ${dayWords(takeDate)}.`);
+    const all = [...gives, ...takes].sort();
+    const { rotas, changed } = await this.rules(all[0], all[all.length - 1]);
+    for (const date of gives) {
+      if (onCallOn(date, rotas, changed.map).employeeId !== actor.id) {
+        throw new BadRequestException(`You are not on call ${dayWords(date)}.`);
+      }
+    }
+    for (const date of takes) {
+      if (onCallOn(date, rotas, changed.map).employeeId !== dto.partnerId) {
+        throw new BadRequestException(`They are not on call ${dayWords(date)}.`);
+      }
     }
     const swap = await this.prisma.onCallSwap.create({
       data: {
         requesterId: actor.id,
         partnerId: dto.partnerId,
-        giveDate: toUtcDate(dto.giveDate),
-        takeDate: takeDate ? toUtcDate(takeDate) : null,
+        giveDate: toUtcDate(gives[0]),
+        takeDate: takes.length ? toUtcDate(takes[0]) : null,
+        giveDates: gives.map(toUtcDate),
+        takeDates: takes.map(toUtcDate),
         note: dto.note?.trim() || null,
       },
       select: { id: true },
@@ -385,47 +433,46 @@ export class OnCallService {
     await this.notifications.onCall(
       [dto.partnerId],
       {
-        title: `${me} asks you to take on call ${dayWords(dto.giveDate)}`,
-        body: `${takeDate ? `In return, they would take yours ${dayWords(takeDate)}. ` : ''}${
+        title: `${me} asks you to take on call ${daysWords(gives)}`,
+        body: `${takes.length ? `In return, they would take yours ${daysWords(takes)}. ` : ''}${
           dto.note?.trim() ? `“${dto.note.trim()}” ` : ''
-        }Say yes or no on the on-call schedule.`,
+        }Nothing changes until you say yes, on the on-call schedule.`,
       },
       { email: true },
     );
-    this.logger.log(`On-call swap ${swap.id} asked by ${actor.id}`);
+    this.logger.log(`On-call swap ${swap.id} asked by ${actor.id} (${gives.length} days)`);
     return swap;
   }
 
-  /// "Yes": the days change hands, if both are still as they were.
+  /// "Yes": the days change hands, if all of them are still as they were.
   async answerSwap(id: string, accept: boolean, actor: AuthUser, now = new Date()) {
     const swap = await this.requireSwap(id);
     if (swap.partnerId !== actor.id)
       throw new ForbiddenException('Only the provider asked can answer.');
     if (swap.status !== OnCallSwapStatus.PENDING)
       throw new ConflictException('That has already been answered.');
-    const giveDate = isoDate(swap.giveDate);
-    const takeDate = swap.takeDate ? isoDate(swap.takeDate) : null;
+    const { gives, takes } = swapDays(swap);
     /// Each day keeps the backup it had (its own, else the pattern's), unless
     /// that is the provider now taking it.
     const backupFor = new Map<string, string | null>();
+    /// Every day that changes hands, and who has it after.
+    const swapped: [string, string, string][] = [
+      ...gives.map((date): [string, string, string] => [date, swap.requesterId, swap.partnerId]),
+      ...takes.map((date): [string, string, string] => [date, swap.partnerId, swap.requesterId]),
+    ];
 
     if (accept) {
       const today = localDateIn(now, PRACTICE_ZONE);
-      if (giveDate < today || (takeDate && takeDate < today)) {
+      if (swapped.some(([date]) => date < today)) {
         throw new BadRequestException('That day has already gone.');
       }
-      const span = [giveDate, takeDate ?? giveDate].sort();
-      const { rotas, changed } = await this.rules(span[0], span[1]);
-      if (
-        onCallOn(giveDate, rotas, changed.map).employeeId !== swap.requesterId ||
-        (takeDate && onCallOn(takeDate, rotas, changed.map).employeeId !== swap.partnerId)
-      ) {
+      const all = swapped.map(([date]) => date).sort();
+      const { rotas, changed } = await this.rules(all[0], all[all.length - 1]);
+      if (swapped.some(([date, was]) => onCallOn(date, rotas, changed.map).employeeId !== was)) {
         throw new ConflictException(
           'The schedule has changed since this was asked, so it cannot go ahead.',
         );
       }
-      const swapped: [string, string, string][] = [[giveDate, swap.requesterId, swap.partnerId]];
-      if (takeDate) swapped.push([takeDate, swap.partnerId, swap.requesterId]);
       for (const [date, was, becomes] of swapped) {
         const backup = this.backupOf({ date, employeeId: was }, rotas, changed.backups);
         backupFor.set(date, backup && backup !== becomes ? backup : null);
@@ -442,9 +489,7 @@ export class OnCallService {
       });
       if (claimed.count === 0) return false;
       if (accept) {
-        const days: [string, string][] = [[giveDate, swap.partnerId]];
-        if (takeDate) days.push([takeDate, swap.requesterId]);
-        for (const [date, employeeId] of days) {
+        for (const [date, , employeeId] of swapped) {
           await tx.onCallDay.upsert({
             where: { date: toUtcDate(date) },
             create: {
@@ -470,16 +515,16 @@ export class OnCallService {
 
     const names = await this.people([swap.requesterId, swap.partnerId]);
     const them = names.get(swap.partnerId)?.name ?? 'They';
-    const what = `${dayWords(giveDate)}${takeDate ? `, and you take theirs ${dayWords(takeDate)}` : ''}`;
+    const what = `${daysWords(gives)}${takes.length ? `, and you take theirs ${daysWords(takes)}` : ''}`;
     await this.notifications.onCall(
       [swap.requesterId],
       accept
         ? {
-            title: `${them} will take your on call ${dayWords(giveDate)}`,
+            title: `${them} will take your on call ${daysWords(gives)}`,
             body: `Swapped: ${them} is on call ${what}.`,
           }
         : {
-            title: `${them} can’t take your on call ${dayWords(giveDate)}`,
+            title: `${them} can’t take your on call ${daysWords(gives)}`,
             body: 'Ask somebody else, or a manager, on the on-call schedule.',
           },
       { email: true },
@@ -493,8 +538,10 @@ export class OnCallService {
       await this.notifications.onCall(
         managers.map((m) => m.id).filter((m) => m !== swap.requesterId && m !== swap.partnerId),
         {
-          title: `On call swapped: ${them} for ${requester} ${dayWords(giveDate)}`,
-          body: takeDate ? `And ${requester} takes ${dayWords(takeDate)}.` : 'Nothing given back.',
+          title: `On call swapped: ${them} for ${requester} ${daysWords(gives)}`,
+          body: takes.length
+            ? `And ${requester} takes ${daysWords(takes)}.`
+            : 'Nothing given back.',
         },
         { email: false },
       );
@@ -516,7 +563,7 @@ export class OnCallService {
     await this.notifications.onCall(
       [swap.partnerId],
       {
-        title: `${names.get(actor.id)?.name ?? 'A provider'} no longer needs you to take ${dayWords(isoDate(swap.giveDate))}`,
+        title: `${names.get(actor.id)?.name ?? 'A provider'} no longer needs you to take ${daysWords(swapDays(swap).gives)}`,
         body: 'They took back their request to swap on call.',
       },
       { email: false },
@@ -659,4 +706,38 @@ function dayWords(date: string): string {
     month: 'short',
     day: 'numeric',
   });
+}
+
+/// "Mon, Nov 9", "Mon, Nov 9 and Tue, Nov 10", "Mon, Nov 9, Wed, Nov 11 and
+/// Fri, Nov 13"; four or more: "Mon, Nov 9 to Thu, Nov 12 (4 days)" for a run,
+/// else "4 days, Mon, Nov 9 to Fri, Nov 13".
+export function daysWords(dates: string[]): string {
+  const sorted = [...new Set(dates)].sort();
+  if (sorted.length === 0) return '';
+  if (sorted.length === 1) return dayWords(sorted[0]);
+  const consecutive = sorted.every((d, i) => i === 0 || addDaysTo(sorted[i - 1], 1) === d);
+  if (sorted.length > 3 && consecutive) {
+    return `${dayWords(sorted[0])} to ${dayWords(sorted[sorted.length - 1])} (${sorted.length} days)`;
+  }
+  if (sorted.length > 3) {
+    return `${sorted.length} days, ${dayWords(sorted[0])} to ${dayWords(sorted[sorted.length - 1])}`;
+  }
+  return `${sorted.slice(0, -1).map(dayWords).join(', ')} and ${dayWords(sorted[sorted.length - 1])}`;
+}
+
+/// The days a swap gives and takes back. Swaps asked before several days
+/// were possible have only the single giveDate and takeDate.
+function swapDays(swap: {
+  giveDate: Date;
+  takeDate: Date | null;
+  giveDates: Date[];
+  takeDates: Date[];
+}): { gives: string[]; takes: string[] } {
+  const gives = swap.giveDates.length ? swap.giveDates.map(isoDate) : [isoDate(swap.giveDate)];
+  const takes = swap.takeDates.length
+    ? swap.takeDates.map(isoDate)
+    : swap.takeDate
+      ? [isoDate(swap.takeDate)]
+      : [];
+  return { gives: [...gives].sort(), takes: [...takes].sort() };
 }

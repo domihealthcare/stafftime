@@ -165,7 +165,7 @@ After each, look at **Recent calls** at the bottom of **Schedule -> On call**.
    voicemail. Log:
    *Rang through to A's phone*. Check the message is in A's own voicemail.
 7. **Override day**: remove the override. Under On call, press today and
-   choose **Whole day** with provider B, and call: B rings first. Put it back
+   choose **Change who is on call** with provider B, and call: B rings first. Put it back
    to the usual afterwards.
 8. **Split night**: add a part-of-the-day override for the next 15 minutes
    for B, then one from 15 minutes on for A. Call during each.
@@ -199,7 +199,7 @@ After each, look at **Recent calls** at the bottom of **Schedule -> On call**.
   day changed, swaps), now with an optional **backup** on each. A day's turn
   runs from **6 AM** to 6 AM the next day (it was noon for the old answering
   service). For part of a night, or any odd hours, press the day and choose
-  **Part of the day**: an **override** beats the day and the pattern, and
+  **Change part of the day**: an **override** beats the day and the pattern, and
   nothing else changes. The line rings exactly what the On call page shows.
 - **What callers hear**: On call -> Phone line settings -> What callers hear. To use your
   own recording, upload the MP3 to **Twilio -> Assets** (Develop -> Functions

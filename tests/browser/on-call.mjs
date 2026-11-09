@@ -160,13 +160,20 @@ await step('Frankie asks Max to take a Monday, taking Max’s Thursday back', as
   }
   await frankie.getByTestId(`on-call-${monday}`).click();
   const dialog = frankie.getByTestId('on-call-day');
+  // Frankie is not a manager, so asking is the only thing to do: the form
+  // opens at once, and none of a manager's changes are shown.
   const form = dialog.getByRole('form', { name: 'Ask to swap' });
+  if (await dialog.getByRole('form', { name: 'Change this day' }).count()) {
+    throw new Error('a provider is shown the manager’s change');
+  }
+  await form.getByText('Nothing changes until they say yes').or(form.getByText('changes only when they press Yes, swap')).first().waitFor();
   await form.getByLabel('Who').selectOption({ label: 'Max Assistant' });
-  await form.getByLabel('And you take one of theirs').locator(`option[value="${thursday}"]`).waitFor({ state: 'attached' });
-  await form.getByLabel('And you take one of theirs').selectOption(thursday);
+  // This Monday is ticked to start with.
+  if (!(await form.getByTestId(`swap-give-days-${monday}`).isChecked())) throw new Error('the day pressed is not ticked');
+  await form.getByTestId(`swap-take-days-${thursday}`).check();
   await form.getByLabel('Note').fill('Dentist');
   await form.getByRole('button', { name: 'Ask them' }).click();
-  await frankie.getByText('Asked. They have been told').waitFor();
+  await frankie.getByText(/Nothing changes until they say yes/).first().waitFor();
 });
 
 await step('Max is told, says yes, and the days change hands', async () => {
@@ -202,6 +209,80 @@ await step('a manager changes a day, and puts it back to the usual', async () =>
   await call(manager, `/on-call/days/${tuesday}`, { method: 'PUT', body: JSON.stringify({ employeeId: null }) });
   day = (await call(manager, `/on-call?from=${tuesday}&to=${tuesday}`)).body.days[0];
   if (day.employee.id !== frankieId || day.source !== 'USUAL') throw new Error('not back to the usual');
+});
+
+/// Shows the month holding `date` on the On call page.
+const showMonthOf = async (page, date) => {
+  const months =
+    (Number(date.slice(0, 4)) - Number(today.slice(0, 4))) * 12 +
+    (Number(date.slice(5, 7)) - Number(today.slice(5, 7)));
+  for (let i = 0; i < months; i += 1) await page.getByRole('button', { name: 'Next →' }).click();
+  await page.getByTestId(`on-call-${date}`).waitFor();
+};
+
+const tue2 = next(addDays(today, 9), 2);
+const wed2 = addDays(tue2, 1);
+
+await step('Frankie asks Max to take two days in one request; nothing changes until one yes moves both', async () => {
+  await frankie.goto(`${BASE}/on-call`, { waitUntil: 'networkidle' });
+  await showMonthOf(frankie, tue2);
+  await frankie.getByTestId(`on-call-${tue2}`).click();
+  const form = frankie.getByTestId('on-call-day').getByRole('form', { name: 'Ask to swap' });
+  await form.getByLabel('Who').selectOption({ label: 'Max Assistant' });
+  await form.getByTestId(`swap-give-days-${wed2}`).check();
+  await frankie.getByTestId('on-call-day').screenshot({ path: `${OUT}/on-call-ask-several.png` });
+  await form.getByRole('button', { name: 'Ask them' }).click();
+  await frankie.getByText(/Nothing changes until they say yes/).first().waitFor();
+  let days = (await call(frankie, `/on-call?from=${tue2}&to=${wed2}`)).body.days;
+  if (days.some((d) => d.employee.id !== frankieId)) throw new Error('the days changed before Max said yes');
+  const swap = (await call(max, '/on-call/swaps')).body.find(
+    (s) => s.status === 'PENDING' && s.giveDates.includes(wed2),
+  );
+  if (!swap || swap.giveDates.join() !== [tue2, wed2].join()) {
+    throw new Error(`the request reads ${JSON.stringify(swap)}`);
+  }
+  const yes = await call(max, `/on-call/swaps/${swap.id}/accept`, { method: 'POST' });
+  if (yes.status !== 200) throw new Error(`saying yes answered ${yes.status}`);
+  days = (await call(frankie, `/on-call?from=${tue2}&to=${wed2}`)).body.days;
+  if (days.some((d) => d.employee.id !== maxId || d.source !== 'SWAPPED')) {
+    throw new Error(`after yes: ${JSON.stringify(days.map((d) => [d.date, d.employee.id, d.source]))}`);
+  }
+});
+
+await step('a manager chooses first, then changes several days in a row at once', async () => {
+  const from = next(addDays(today, 16), 1); // a Monday
+  const until = addDays(from, 2);
+  await manager.goto(`${BASE}/on-call`, { waitUntil: 'networkidle' });
+  await showMonthOf(manager, from);
+  await manager.getByTestId(`on-call-${from}`).click();
+  const dialog = manager.getByTestId('on-call-day');
+  await dialog.getByText('What would you like to do?').waitFor();
+  await dialog.screenshot({ path: `${OUT}/on-call-day-choices.png` });
+  if ((await dialog.getByRole('form', { name: 'Change this day' }).count()) > 0) {
+    throw new Error('the change form shows before choosing');
+  }
+  await dialog.getByRole('button', { name: /Change who is on call/ }).click();
+  const form = dialog.getByRole('form', { name: 'Change this day' });
+  await form.getByLabel('On call').selectOption({ label: 'Max Assistant' });
+  await form.getByLabel('Last day').fill(until);
+  await dialog.screenshot({ path: `${OUT}/on-call-change-several.png` });
+  await form.getByRole('button', { name: 'Save 3 days' }).click();
+  await manager.getByText(/Saved\. .* changed\./).waitFor();
+  const days = (await call(manager, `/on-call?from=${addDays(from, -1)}&to=${addDays(until, 1)}`)).body.days;
+  const read = (date) => days.find((d) => d.date === date);
+  for (const date of [from, addDays(from, 1), until]) {
+    if (read(date).employee.id !== maxId || read(date).source !== 'CHANGED') {
+      throw new Error(`${date} reads ${JSON.stringify(read(date))}`);
+    }
+  }
+  if (read(addDays(until, 1)).source !== 'USUAL') throw new Error('the day after was changed too');
+  const back = await call(manager, `/on-call/days/${from}`, {
+    method: 'PUT',
+    body: JSON.stringify({ employeeId: null, until }),
+  });
+  if (back.status !== 200) throw new Error(`back to the usual answered ${back.status}`);
+  const after = (await call(manager, `/on-call?from=${from}&to=${until}`)).body.days;
+  if (after.some((d) => d.source !== 'USUAL')) throw new Error('not all back to the usual');
 });
 
 await step('a provider cannot change a day or the pattern, or swap a day not theirs', async () => {
