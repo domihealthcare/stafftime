@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { OnCallSwapStatus, Role } from '@prisma/client';
-import { OnCallService } from './on-call.service';
+import { daysWords, OnCallService } from './on-call.service';
 
 const NOW = new Date('2026-10-12T15:00:00.000Z'); // Mon 12 Oct, 11am in New Jersey
 const frankie = { id: 'frankie', email: 'f@x', role: Role.EMPLOYEE };
@@ -41,7 +41,11 @@ function build(swap: Record<string, unknown> = {}) {
       ]),
     },
     onCallRota: { findMany: jest.fn().mockResolvedValue([ROTA]) },
-    onCallDay: { findMany: jest.fn().mockResolvedValue([]), upsert: jest.fn() },
+    onCallDay: {
+      findMany: jest.fn().mockResolvedValue([]),
+      upsert: jest.fn(),
+      deleteMany: jest.fn(),
+    },
     onCallSwap: {
       create: jest.fn().mockResolvedValue({ id: 'swap-1' }),
       findUnique: jest.fn().mockResolvedValue({
@@ -50,13 +54,17 @@ function build(swap: Record<string, unknown> = {}) {
         partnerId: 'max',
         giveDate: new Date('2026-10-19T00:00:00.000Z'),
         takeDate: new Date('2026-10-22T00:00:00.000Z'),
+        giveDates: [],
+        takeDates: [],
         status: OnCallSwapStatus.PENDING,
         ...swap,
       }),
       updateMany: jest.fn().mockResolvedValue({ count: 1 }),
     },
   };
-  prisma.$transaction = jest.fn(async (work: (tx: unknown) => unknown) => work(prisma));
+  prisma.$transaction = jest.fn(async (work: unknown) =>
+    Array.isArray(work) ? Promise.all(work) : (work as (tx: unknown) => unknown)(prisma),
+  );
   const notifications = { onCall: jest.fn().mockResolvedValue(undefined) };
   return {
     service: new OnCallService(prisma as never, notifications as never),
@@ -182,5 +190,89 @@ describe('OnCallService backups', () => {
       NOW,
     );
     expect(prisma.onCallDay.upsert.mock.calls[0][0].create.backupEmployeeId).toBe('frankie');
+  });
+});
+
+describe('several on-call days at once', () => {
+  it('asks for several days in one request, and checks each is the asker’s', async () => {
+    const { service, prisma, notifications } = build();
+    await service.askSwap(
+      { giveDate: '2026-10-20', giveDates: ['2026-10-19', '2026-10-21'], partnerId: 'max' },
+      frankie,
+      NOW,
+    );
+    const data = prisma.onCallSwap.create.mock.calls[0][0].data;
+    expect(data.giveDate.toISOString().slice(0, 10)).toBe('2026-10-19');
+    expect(data.giveDates.map((d: Date) => d.toISOString().slice(0, 10))).toEqual([
+      '2026-10-19',
+      '2026-10-20',
+      '2026-10-21',
+    ]);
+    expect(notifications.onCall.mock.calls[0][1].title).toContain(
+      'Mon, Oct 19, Tue, Oct 20 and Wed, Oct 21',
+    );
+    // Thursday 22 is Max's, not Frankie's.
+    await expect(
+      service.askSwap(
+        { giveDate: '2026-10-21', giveDates: ['2026-10-22'], partnerId: 'max' },
+        frankie,
+        NOW,
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('a yes moves every day of the request', async () => {
+    const { service, prisma } = build({
+      giveDate: new Date('2026-10-19T00:00:00.000Z'),
+      giveDates: [new Date('2026-10-19T00:00:00.000Z'), new Date('2026-10-20T00:00:00.000Z')],
+      takeDate: null,
+      takeDates: [],
+    });
+    await service.answerSwap('swap-1', true, max, NOW);
+    const moved = prisma.onCallDay.upsert.mock.calls.map((call: any) => [
+      call[0].create.date.toISOString().slice(0, 10),
+      call[0].create.employeeId,
+    ]);
+    expect(moved).toEqual([
+      ['2026-10-19', 'max'],
+      ['2026-10-20', 'max'],
+    ]);
+  });
+
+  it('a manager changes a run of days, and each person is told once', async () => {
+    const { service, prisma, notifications } = build();
+    await service.setDay(
+      '2026-10-19',
+      { employeeId: 'max', until: '2026-10-23', note: 'Conference' },
+      manager,
+      NOW,
+    );
+    expect(prisma.onCallDay.upsert).toHaveBeenCalledTimes(5);
+    expect(notifications.onCall).toHaveBeenCalledTimes(1);
+    const [who, words] = notifications.onCall.mock.calls[0];
+    expect(new Set(who)).toEqual(new Set(['frankie', 'max']));
+    // Thursday was already Max's, so four days moved.
+    expect(words.title).toBe('On call 4 days, Mon, Oct 19 to Fri, Oct 23: now Dr. Max A');
+  });
+
+  it('puts a run of days back to the usual', async () => {
+    const { service, prisma } = build();
+    await service.setDay('2026-10-19', { employeeId: null, until: '2026-10-21' }, manager, NOW);
+    expect(prisma.onCallDay.deleteMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuses more than two months at once', async () => {
+    const { service } = build();
+    await expect(
+      service.setDay('2026-10-19', { employeeId: 'max', until: '2027-01-31' }, manager, NOW),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('words the days', () => {
+    expect(daysWords(['2026-10-19'])).toBe('Mon, Oct 19');
+    expect(daysWords(['2026-10-20', '2026-10-19'])).toBe('Mon, Oct 19 and Tue, Oct 20');
+    expect(daysWords(['2026-10-19', '2026-10-20', '2026-10-21', '2026-10-22'])).toBe(
+      'Mon, Oct 19 to Thu, Oct 22 (4 days)',
+    );
   });
 });

@@ -3927,6 +3927,25 @@ conditional update so two answers cannot both land, and writes both days
 (`OnCallDay.swapId`). The asker is told either way; managers on the bell
 when it goes ahead. The asker can take back a request still waiting.
 
+**Several days, and choosing first** (9 November 2026, Dominguez: "the
+changing of call is confusing ... it should only show ask another provider
+to take it as an option ... i was inserting it like it was changing the call
+and it wasn't"; "also should be able to do multiple days"). A provider who is
+also a manager saw the swap request and the manager's change in one pop-up,
+filled in the request, and expected the day to change. Now the day's pop-up
+shows the choices first (**Ask another provider to take it** - "nothing
+changes until they say yes"; **Change who is on call** - "changes it straight
+away"; **Change part of the day**), and only the chosen form; with one choice
+it opens at once. A swap request carries **several days each way**
+(`OnCallSwap.giveDates` / `takeDates`, the first being `giveDate` /
+`takeDate`, which stay filled so older code reads a request; empty arrays on
+older rows mean the single date, `swapDays`), ticked from the next two
+months; one yes re-checks and moves all of them. A manager's change takes a
+**Last day** (`OnCallDayInput.until`, up to 62 days) and changes every day in
+between in one transaction; each person moved is told **once**, with the
+days in words (`daysWords`). Migration
+`20261109010000_on_call_swap_several_days`.
+
 **Where it shows**: Schedule → **On call** (a third tab beside Shifts and
 Calendar, only for those who may see it) — on call now, swaps waiting, a
 month (a list on a phone), the pattern in words; **On call now** on Home;

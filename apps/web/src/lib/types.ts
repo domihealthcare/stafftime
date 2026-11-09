@@ -2354,6 +2354,9 @@ export interface OnCallSwap {
   id: string;
   giveDate: string;
   takeDate: string | null;
+  /// Every day given and taken back (the first ones are giveDate, takeDate).
+  giveDates: string[];
+  takeDates: string[];
   note: string | null;
   status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CANCELLED';
   createdAt: string;

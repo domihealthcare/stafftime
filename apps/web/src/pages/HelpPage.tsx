@@ -1331,11 +1331,13 @@ const PROVIDERS: Section[] = [
               <strong>On call now</strong> is on <Screen>Home</Screen> too. Your days are shaded.
             </p>
             <p>
-              To swap, press one of your days, choose who should take it and - if you like - one of
-              their days you will take back, then <strong>Ask them</strong>. They are told on the
-              bell and by email and answer <strong>Yes, swap</strong> or{' '}
-              <strong>No, I can’t</strong> on the same screen; the days change hands only when they
-              say yes, and you and the managers are told. You can take a request back while it is
+              To swap, press one of your days (if you are also a manager, choose{' '}
+              <strong>Ask another provider to take it</strong>), choose who should take it, tick any
+              more of your days to go with it and - if you like - days of theirs you will take back,
+              then <strong>Ask them</strong>. This only asks: nothing changes until they answer.
+              They are told on the bell and by email and answer <strong>Yes, swap</strong> or{' '}
+              <strong>No, I can’t</strong> on the same screen; one yes moves every day in the
+              request, and you and the managers are told. You can take a request back while it is
               waiting. To put your on-call days on your phone: Schedule → Calendar →{' '}
               <strong>Separate calendars</strong> → <strong>My on call</strong>.
             </p>
@@ -2704,11 +2706,13 @@ const MANAGERS: Section[] = [
             weekday, then any exceptions - “the 4th Saturday → Dr. Badia” - and the hand-over time
             (6 AM to start). It is saved from a day you choose, so who was on call before stays as
             it was. Weekends are counted by their Saturday, so the 4th weekend is the 4th Saturday
-            and the Sunday after it. For one day only, press the day and choose who is on call (with
-            a note if you like) under <strong>Whole day</strong>;<strong> Back to the usual</strong>{' '}
-            undoes it. For only part of a day or night, choose <strong>Part of the day</strong>{' '}
-            instead: an <strong>override</strong>, listed under the month with Edit and Remove. Both
-            providers are told. Swaps the providers agree between themselves happen on their own,
+            and the Sunday after it. To change days without changing the pattern, press a day and
+            choose <strong>Change who is on call</strong>: who, a backup, a note if you like, and a{' '}
+            <strong>Last day</strong> to change several days in a row at once (up to two months). It
+            changes straight away; <strong>Back to the usual</strong> undoes it. For only part of a
+            day or night, choose <strong>Change part of the day</strong> instead: an{' '}
+            <strong>override</strong>, listed under the month with Edit and Remove. Whoever it moves
+            from and to is told. Swaps the providers agree between themselves happen on their own,
             and you are told. On call is never hours or pay.
           </p>
         ),
@@ -2725,12 +2729,13 @@ const MANAGERS: Section[] = [
             </p>
             <p>
               For part of a night, a vacation evening or any odd hours, press a day on the{' '}
-              <Screen>Schedule → On call</Screen> page, choose <strong>Part of the day</strong> and
-              add an override: from when, until when (the next morning is fine), who and their
-              backup. Nothing else changes. Overrides are listed under the month, where managers can{' '}
-              <strong>Edit</strong> or <strong>Remove</strong> them, and a day with one is marked on
-              the calendar. The line&rsquo;s status, what callers hear and the providers&rsquo;
-              phones are at the bottom of the same page, under <strong>Phone line settings</strong>.
+              <Screen>Schedule → On call</Screen> page, choose{' '}
+              <strong>Change part of the day</strong> and add an override: from when, until when
+              (the next morning is fine), who and their backup. Nothing else changes. Overrides are
+              listed under the month, where managers can <strong>Edit</strong> or{' '}
+              <strong>Remove</strong> them, and a day with one is marked on the calendar. The
+              line&rsquo;s status, what callers hear and the providers&rsquo; phones are at the
+              bottom of the same page, under <strong>Phone line settings</strong>.
             </p>
             <p>
               <strong>What callers hear</strong> holds every message in English and Spanish, the

@@ -67,12 +67,26 @@ export class OnCallDayInput {
   @IsString()
   @MaxLength(200)
   note?: string;
+
+  /// The last day to change the same way, for several days at once. Empty or
+  /// the same day: just the one.
+  @IsOptional()
+  @Matches(DATE_ONLY, { message: 'Give the last day as a date.' })
+  until?: string | null;
 }
 
-/// "Can you take my Saturday?" - and, if offered, a day of theirs back.
+/// "Can you take my Saturday?" (or several days) - and, if offered, days of
+/// theirs back.
 export class OnCallSwapInput {
   @Matches(DATE_ONLY, { message: 'Choose your day as a date.' })
   giveDate!: string;
+
+  /// More of the asker's days, given in the same request.
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(31)
+  @Matches(DATE_ONLY, { each: true, message: 'Choose your days as dates.' })
+  giveDates?: string[];
 
   @IsUUID()
   partnerId!: string;
@@ -80,6 +94,13 @@ export class OnCallSwapInput {
   @IsOptional()
   @Matches(DATE_ONLY, { message: 'Choose their day as a date.' })
   takeDate?: string | null;
+
+  /// More of the partner's days, taken back in the same request.
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(31)
+  @Matches(DATE_ONLY, { each: true, message: 'Choose their days as dates.' })
+  takeDates?: string[];
 
   @IsOptional()
   @IsString()
