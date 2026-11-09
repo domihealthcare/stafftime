@@ -65,10 +65,13 @@ export class CallRoutingSettingsInput {
   @MaxLength(60)
   voiceEs!: string;
 
+  /// No longer used (every ring lasts 45 seconds since 9 November 2026);
+  /// still accepted so a page loaded before then can save.
+  @IsOptional()
   @IsInt()
   @Min(10)
   @Max(60)
-  ringSeconds!: number;
+  ringSeconds?: number;
 
   @IsArray()
   @ArrayMaxSize(8)

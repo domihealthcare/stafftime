@@ -685,7 +685,10 @@ function DayDialog({
               </select>
             )}
           </Field>
-          <Field label="Backup" hint="Optional. Rung if the provider on call does not accept.">
+          <Field
+            label="Backup"
+            hint="Optional. Rung instead when the provider on call has no number that can be dialled."
+          >
             {(props) => (
               <select
                 {...props}

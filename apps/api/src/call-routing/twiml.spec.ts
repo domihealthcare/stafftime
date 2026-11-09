@@ -34,12 +34,15 @@ describe('twiml', () => {
       timeout: 20,
       callerId: '+1201',
       number: '+1202',
-      whisperUrl: 'whisper?x=1&y=2',
+      answeredUrl: 'https://x.example/answered?x=1&y=2',
     });
     expect(xml).toContain('record="do-not-record"');
     expect(xml).toContain('answerOnBridge="true"');
     expect(xml).toContain('action="dial?a=1&amp;b=2"');
-    expect(xml).toContain('<Number url="whisper?x=1&amp;y=2" method="POST">+1202</Number>');
+    expect(xml).toContain(
+      '<Number statusCallbackEvent="answered" statusCallback="https://x.example/answered?x=1&amp;y=2" statusCallbackMethod="POST">+1202</Number>',
+    );
+    expect(xml).not.toContain(' url=');
     expect(dial({ action: 'a', timeout: 45, number: '+1202' })).toContain('<Number>+1202</Number>');
   });
 

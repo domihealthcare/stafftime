@@ -79,30 +79,6 @@ export class CallLogService {
     });
   }
 
-  /// Writes a result on a step still ringing (the provider pressed 2).
-  async markStep(callSid: string, stepNumber: number, result: string): Promise<void> {
-    await this.changeAttempts(callSid, (attempts) => {
-      const at = attempts.map((a) => a.step === stepNumber && a.result === null).lastIndexOf(true);
-      if (at === -1) return attempts;
-      const next = [...attempts];
-      next[at] = { ...next[at], result };
-      return next;
-    });
-  }
-
-  /// The result written for a step so far, or null.
-  async stepResult(callSid: string, stepNumber: number): Promise<string | null> {
-    const row = await this.prisma.callLog.findUnique({
-      where: { callSid },
-      select: { attempts: true },
-    });
-    const attempts = (Array.isArray(row?.attempts)
-      ? row.attempts
-      : []) as unknown as CallAttemptRecord[];
-    const found = [...attempts].reverse().find((a) => a.step === stepNumber);
-    return found?.result ?? null;
-  }
-
   /// Kept for older callers: adds a finished try.
   async addAttempt(callSid: string, attempt: CallAttemptRecord): Promise<void> {
     await this.beginAttempt(callSid, attempt);
@@ -126,8 +102,9 @@ export class CallLogService {
     });
   }
 
-  /// The provider pressed 1 on the whisper. The outcome is set when the dial ends.
-  async recordAcceptance(callSid: string, employeeId: string | null): Promise<void> {
+  /// The provider's phone answered (them, or their voicemail). The outcome
+  /// is set when the dial ends.
+  async recordAnswer(callSid: string, employeeId: string | null): Promise<void> {
     if (!employeeId) return;
     await this.prisma.callLog.updateMany({
       where: { callSid },
@@ -150,15 +127,15 @@ export class CallLogService {
     });
   }
 
-  /// The call ended while still in progress. A provider who pressed 1 took it
-  /// (the dial's own answer may never come when the caller hangs up first);
-  /// otherwise the caller hung up. Returns whether a provider's phone had
+  /// The call ended while still in progress. A provider's phone that had
+  /// answered took it (the dial's own answer may never come when the caller
+  /// hangs up first); otherwise the caller hung up. Returns whether a provider's phone had
   /// been rung, for the alert.
   async markCallerHungUp(callSid: string): Promise<{ updated: boolean; tried: boolean }> {
     const now = new Date();
     await this.prisma.callLog.updateMany({
       where: { callSid, outcome: CallOutcome.IN_PROGRESS, acceptedById: { not: null } },
-      data: { outcome: CallOutcome.ACCEPTED, endedAt: now },
+      data: { outcome: CallOutcome.RANG_THROUGH, endedAt: now },
     });
     const result = await this.prisma.callLog.updateMany({
       where: { callSid, outcome: CallOutcome.IN_PROGRESS, acceptedById: null },
@@ -198,7 +175,7 @@ export class CallLogService {
     const when = clockTime(row.startedAt);
     const body =
       reason === 'HUNG_UP'
-        ? `Call from ${who} at ${when} ended before anybody pressed 1. If they left no voicemail, please call back.`
+        ? `Call from ${who} at ${when} ended before anybody answered. Please call back.`
         : reason === 'NOBODY_TO_RING'
           ? `Call from ${who} at ${when}: nobody on call could be rung. Please call back, and check the on-call schedule and phones.`
           : `Missed call from ${who} at ${when}. Nobody could take it. Please call back.`;

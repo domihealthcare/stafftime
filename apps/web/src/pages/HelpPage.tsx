@@ -1349,18 +1349,13 @@ const PROVIDERS: Section[] = [
           <>
             <p>
               Calls the office sends to the on-call line (after hours, and whenever else the phones
-              send them there) ring the provider on call. Your phone shows the line&rsquo;s number,
-              not the patient&rsquo;s. When you answer you hear{' '}
-              <strong>
-                &ldquo;Domi Healthcare call, English-speaking caller. Press 1 to accept, or 2 to
-                send the caller to your voicemail.&rdquo;
-              </strong>{' '}
-              (or Spanish-speaking). Press <strong>1</strong> to be put through. Press{' '}
-              <strong>2</strong> and your phone rings once more straight away: decline it, or let it
-              ring, and the caller leaves a message on your own voicemail. If you press nothing, the
-              line tries your backup, then rings you once more. That last ring only says &ldquo;Domi
-              Healthcare call&rdquo; and puts the caller through when you answer; if your voicemail
-              answers, the message starts with that line.
+              send them there) ring the provider on call, once. Your phone shows the line&rsquo;s
+              number, not the patient&rsquo;s: save it in your contacts (say, &ldquo;Domi On
+              Call&rdquo;) so you know it is a patient. Nothing is said to you first:{' '}
+              <strong>answer</strong> and you are talking to the caller; <strong>decline</strong>,
+              or let it ring, and your own voicemail takes it, so the caller hears your greeting and
+              leaves a message. Only if your phone does not answer at all (switched off, or no
+              voicemail) does the line ring the default provider.
             </p>
             <p>
               The caller&rsquo;s number, when to call back, is under <strong>Recent calls</strong>{' '}
@@ -2721,8 +2716,11 @@ const MANAGERS: Section[] = [
             <p>
               <Screen>Schedule</Screen> → <strong>On call</strong>. The line rings whoever is on
               call: an <strong>override</strong> first, then the day&rsquo;s change or swap, then
-              the usual pattern, then the <strong>default provider</strong>. Each pattern entry and
-              changed day can have a <strong>Backup</strong>, rung if the provider does not press 1.
+              the usual pattern, then the <strong>default provider</strong>. It rings the provider
+              on call once, for up to 45 seconds, so a call they decline or miss goes to their own
+              voicemail; the default provider is rung only if that phone does not answer at all.
+              Each pattern entry and changed day can have a <strong>Backup</strong>, rung instead
+              when the provider on call has no number that can be dialled.
             </p>
             <p>
               For part of a night, a vacation evening or any odd hours, press a day on the{' '}
@@ -2735,8 +2733,8 @@ const MANAGERS: Section[] = [
             </p>
             <p>
               <strong>What callers hear</strong> holds every message in English and Spanish, the
-              voices, how long each phone rings and the default provider. To use your own recording,
-              put the MP3 on Twilio Assets and paste its https link beside the message.{' '}
+              voices and the default provider. To use your own recording, put the MP3 on Twilio
+              Assets and paste its https link beside the message.{' '}
               <strong>Providers&rsquo; phones</strong> shows whose number cannot be dialled: fix it
               in <Screen>Your profile</Screen> (<strong>On-call number</strong>), or an admin can
               set it under <Screen>Manage → Staff</Screen> → Edit. Setting the line up in Twilio,

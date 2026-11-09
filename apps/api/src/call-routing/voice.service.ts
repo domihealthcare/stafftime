@@ -5,14 +5,9 @@ import { toE164 } from '../common/util/phone';
 import { OnCallRoutingService } from '../on-call/on-call-routing.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CallLogService, CallRole } from './call-log.service';
-import {
-  DEFAULT_MESSAGES,
-  DEFAULT_RING_SECONDS,
-  DEFAULT_VOICE_EN,
-  DEFAULT_VOICE_ES,
-} from './default-messages';
+import { DEFAULT_MESSAGES, DEFAULT_VOICE_EN, DEFAULT_VOICE_ES } from './default-messages';
 import type { RoutingPlan } from './routing-plan';
-import { dial, gather, hangup, Lang, redirect, response, speak, Spoken, say } from './twiml';
+import { dial, gather, hangup, Lang, redirect, response, speak, Spoken } from './twiml';
 
 type Form = Record<string, string | undefined>;
 
@@ -31,8 +26,9 @@ export const STEP_TIMEOUT_MS = 8000;
 export const STEP_MAX_AGE_SECONDS = 4 * 60 * 60;
 /// Twilio's stand-ins for a caller with no number to call back.
 const NO_NUMBER = new Set(['+266696687', '+7378742833', '+2562533', '+8656696', '+86282452253']);
-/// How long a no-whisper step rings: long enough to reach the cell's voicemail.
-const VOICEMAIL_RING_SECONDS = 45;
+/// How long each ring lasts: long enough for an unanswered or declined call
+/// to reach the cell's own voicemail.
+export const RING_SECONDS = 45;
 
 /// One try in the chain. Kept short: it travels in the query string.
 interface Step {
@@ -40,18 +36,13 @@ interface Step {
   n: string;
   id: string | null;
   p: string;
-  w: 0 | 1;
 }
 
 interface Content {
   voiceEn: string;
   voiceEs: string;
-  ringSeconds: number;
   messages: Record<string, Spoken>;
 }
-
-/// The result kept for a step the provider sent to their voicemail with 2.
-export const SENT_TO_VOICEMAIL = 'sent to voicemail';
 
 const ROLES: CallRole[] = ['ON_CALL', 'BACKUP', 'FINAL', 'DEFAULT', 'FALLBACK'];
 const RESULTS: Record<string, string> = {
@@ -82,7 +73,6 @@ export function decodeSteps(value: string | undefined): Step[] {
       n: String(raw.n ?? ''),
       id: typeof raw.id === 'string' ? raw.id : null,
       p: raw.p,
-      w: raw.w ? 1 : 0,
     };
   });
 }
@@ -163,46 +153,24 @@ export class VoiceService {
     );
   }
 
-  /// Played to the provider when their cell answers. On a whisper step: 1
-  /// accepts, 2 sends the caller to their voicemail (Dominguez, November
-  /// 2026). On the last ring (`a=1`) it only says what the call is and
-  /// connects by itself, so a voicemail that answers records that line first.
-  whisper(query: Form): string {
-    if (this.stale(query)) return response(hangup());
-    const who = query.lang === 'es' ? 'Spanish-speaking caller' : 'English-speaking caller';
-    if (query.a === '1') {
-      return response(say(`Domi Healthcare call, ${who}.`, DEFAULT_VOICE_EN));
+  /// Twilio says the provider's phone answered (them, or their voicemail).
+  /// Nothing is played to that phone: the caller is put straight through, so
+  /// one sent to voicemail hears the whole greeting (Dominguez, 9 November
+  /// 2026, after the old "press 1" question and then a short announcement
+  /// each got in the way of the voicemail). Writing it down means a caller
+  /// who hangs up later is not taken for a missed call.
+  async answered(body: Form, query: Form): Promise<string> {
+    if (this.stale(query)) return response();
+    const parent = body.ParentCallSid;
+    if (parent && body.CallStatus === 'in-progress') {
+      await this.quietly(() => this.callLog.recordAnswer(parent, query.e ?? null));
     }
-    const answer = `whisper-answer?${new URLSearchParams(this.carry(query)).toString()}`;
-    return response(
-      gather(
-        { action: answer, timeout: 8, numDigits: 1 },
-        say(
-          `Domi Healthcare call, ${who}. Press 1 to accept, or 2 to send the caller to your voicemail.`,
-          DEFAULT_VOICE_EN,
-        ),
-      ),
-      hangup(),
-    );
+    return response();
   }
 
-  async whisperAnswer(body: Form, query: Form): Promise<string> {
-    if (this.stale(query)) return response(hangup());
-    const digits = (body.Digits ?? '').trim();
-    const parent = body.ParentCallSid;
-    if (digits === '2') {
-      // Written down for the dial step that follows, which then rings their
-      // phone once more with no question, for its voicemail.
-      const stepNumber = Number.parseInt(query.s ?? '', 10);
-      if (parent && Number.isInteger(stepNumber)) {
-        await this.quietly(() => this.callLog.markStep(parent, stepNumber, SENT_TO_VOICEMAIL));
-      }
-      return response(hangup());
-    }
-    if (digits !== '1') return response(hangup());
-    if (parent) {
-      await this.quietly(() => this.callLog.recordAcceptance(parent, query.e ?? null));
-    }
+  /// Kept only for a call already ringing when this version went live: it
+  /// connects at once and says nothing.
+  whisper(): string {
     return response();
   }
 
@@ -237,35 +205,13 @@ export class VoiceService {
           // same moment never reads the call as missed.
           if (callSid) {
             await this.quietly(() =>
-              this.callLog.finish(
-                callSid,
-                step.w ? CallOutcome.ACCEPTED : CallOutcome.RANG_THROUGH,
-                { acceptedById: step.w ? step.id : null },
-              ),
+              this.callLog.finish(callSid, CallOutcome.RANG_THROUGH, { acceptedById: step.id }),
             );
             await this.quietly(() =>
-              this.callLog.endAttempt(
-                callSid,
-                this.attempt(step, index, step.w ? 'accepted' : 'rang through'),
-              ),
+              this.callLog.endAttempt(callSid, this.attempt(step, index, 'rang through')),
             );
           }
           return response(hangup());
-        }
-
-        // Pressed 2: straight to their own voicemail, skipping the backup.
-        if (callSid && step.w) {
-          const marked = await this.stepResult(callSid, index + 1);
-          if (marked === SENT_TO_VOICEMAIL) {
-            const next = [
-              ...steps.slice(0, index + 1),
-              { ...step, r: 'FINAL' as const, w: 0 as const },
-              ...steps.slice(index + 1).filter((later) => later.r === 'DEFAULT'),
-            ];
-            const parts = this.stepParts(next, index + 1, lang, content, body.To);
-            await this.beginStep(callSid, next, index + 1);
-            return response(...parts);
-          }
         }
 
         const result = RESULTS[status] ?? (status === 'completed' ? 'declined' : 'failed');
@@ -340,17 +286,15 @@ export class VoiceService {
     if (index > 0) parts.push(speak(...this.message(content, 'HOLD', lang)));
     const t = String(Math.floor(this.now() / 1000));
     const query = new URLSearchParams({ l: lang, i: String(index), p: encodeSteps(steps), t });
-    const whisper = new URLSearchParams({ lang, t, s: String(index + 1) });
-    if (step.id) whisper.set('e', step.id);
-    // The last ring only announces the call (no key to press).
-    if (!step.w) whisper.set('a', '1');
+    const answered = new URLSearchParams({ t });
+    if (step.id) answered.set('e', step.id);
     parts.push(
       dial({
         action: `dial?${query.toString()}`,
-        timeout: step.w ? content.ringSeconds : VOICEMAIL_RING_SECONDS,
+        timeout: RING_SECONDS,
         callerId: this.config.get<string>('TWILIO_PHONE_NUMBER') || to || undefined,
         number: step.p,
-        whisperUrl: `whisper?${whisper.toString()}`,
+        answeredUrl: this.address(`answered?${answered.toString()}`),
       }),
     );
     return parts;
@@ -360,7 +304,7 @@ export class VoiceService {
   private emergency(content: Content, lang: Lang, to?: string): string {
     const phone = toE164(this.config.get<string>('ONCALL_FALLBACK_PHONE'));
     if (!phone) return response(this.closing(content, lang), hangup());
-    const steps: Step[] = [{ r: 'FALLBACK', n: 'Fail-safe phone', id: null, p: phone, w: 0 }];
+    const steps: Step[] = [{ r: 'FALLBACK', n: 'Fail-safe phone', id: null, p: phone }];
     // Its own step 0: when it ends, the dial route finds no step after it and
     // says the closing words. Never a second fail-safe dial.
     const t = String(Math.floor(this.now() / 1000));
@@ -368,11 +312,18 @@ export class VoiceService {
     return response(
       dial({
         action: `dial?${query.toString()}`,
-        timeout: VOICEMAIL_RING_SECONDS,
+        timeout: RING_SECONDS,
         callerId: this.config.get<string>('TWILIO_PHONE_NUMBER') || to || undefined,
         number: phone,
       }),
     );
+  }
+
+  /// Twilio's status callbacks want a whole address, not one relative to the
+  /// step, so the base the signature is checked against goes in front.
+  private address(route: string): string | undefined {
+    const base = (this.config.get<string>('TWILIO_WEBHOOK_BASE_URL') ?? '').replace(/\/+$/, '');
+    return base ? `${base}/api/call-routing/voice/${route}` : undefined;
   }
 
   private closing(content: Content, lang: Lang): string {
@@ -383,16 +334,6 @@ export class VoiceService {
     const key = `${kind}_${lang.toUpperCase()}`;
     const message = content.messages[key] ?? DEFAULT_MESSAGES[key];
     return [message, lang === 'es' ? content.voiceEs : content.voiceEn];
-  }
-
-  /// Keep the lang and the provider id when the whisper hands on to its answer.
-  private carry(query: Form): Record<string, string> {
-    const out: Record<string, string> = {};
-    if (query.lang) out.lang = query.lang;
-    if (query.e) out.e = query.e;
-    if (query.t) out.t = query.t;
-    if (query.s) out.s = query.s;
-    return out;
   }
 
   /// Nobody could be reached: the log, and the alert (to the providers rung,
@@ -424,16 +365,6 @@ export class VoiceService {
       result,
       at: new Date(this.now()).toISOString(),
     };
-  }
-
-  /// What was written down for a step while it rang (the provider pressed 2),
-  /// or null; never holds up the call for long.
-  private async stepResult(callSid: string, stepNumber: number): Promise<string | null> {
-    try {
-      return await withTimeout(this.callLog.stepResult(callSid, stepNumber), LOG_TIMEOUT_MS);
-    } catch {
-      return null;
-    }
   }
 
   /// A step address signed more than STEP_MAX_AGE_SECONDS ago, or with no
@@ -485,36 +416,33 @@ export class VoiceService {
     if (!phone) return { steps: [], usedFallback: true };
     const name = 'Fail-safe phone';
     return {
-      steps: [
-        { r: 'FALLBACK', n: name, id: null, p: phone, w: 1 },
-        { r: 'FALLBACK', n: name, id: null, p: phone, w: 0 },
-      ],
+      steps: [{ r: 'FALLBACK', n: name, id: null, p: phone }],
       usedFallback: true,
     };
   }
 
+  /// One ring to the provider on call (their backup when they cannot be
+  /// rung), long enough to reach their voicemail; the default provider only
+  /// if that phone does not answer at all (Dominguez, 9 November 2026: "only
+  /// ring the on-call provider 1 time").
   private stepsOf(plan: RoutingPlan): Step[] {
-    const step = (r: CallRole, c: NonNullable<RoutingPlan['onCall']>, w: 0 | 1): Step => ({
+    const step = (r: CallRole, c: NonNullable<RoutingPlan['onCall']>): Step => ({
       r,
       n: c.name,
       id: c.employeeId,
       p: c.phone,
-      w,
     });
     const steps: Step[] = [];
-    if (plan.onCall) steps.push(step('ON_CALL', plan.onCall, 1));
-    if (plan.backup) steps.push(step('BACKUP', plan.backup, 1));
-    if (plan.onCall) steps.push(step('FINAL', plan.onCall, 0));
-    if (plan.fallback) steps.push(step('DEFAULT', plan.fallback, 1));
+    if (plan.onCall) steps.push(step('ON_CALL', plan.onCall));
+    if (plan.fallback) steps.push(step('DEFAULT', plan.fallback));
     return steps;
   }
 
-  /// Messages, voices and the ring time; the defaults if they cannot be read in time.
+  /// Messages and voices; the defaults if they cannot be read in time.
   private defaults(): Content {
     return {
       voiceEn: DEFAULT_VOICE_EN,
       voiceEs: DEFAULT_VOICE_ES,
-      ringSeconds: DEFAULT_RING_SECONDS,
       messages: { ...DEFAULT_MESSAGES },
     };
   }
@@ -532,7 +460,6 @@ export class VoiceService {
       if (settings) {
         content.voiceEn = settings.voiceEn || content.voiceEn;
         content.voiceEs = settings.voiceEs || content.voiceEs;
-        if (settings.ringSeconds > 0) content.ringSeconds = settings.ringSeconds;
       }
       for (const row of rows) {
         if (row.audioUrl || row.text.trim()) {

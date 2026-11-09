@@ -1,6 +1,6 @@
 {
   "name": "stafftime",
-  "version": "1.48.1",
+  "version": "1.49.0",
   "private": true,
   "description": "Domi Staff: staff clock-in, scheduling and timesheets for Domi Healthcare",
   "workspaces": [

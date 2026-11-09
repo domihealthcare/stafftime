@@ -127,7 +127,10 @@ const dialOf = (xml) => {
     action: dial.match(/\baction="([^"]+)"/)?.[1],
     callerId: dial.match(/\bcallerId="([^"]+)"/)?.[1],
     number: xml.match(/<Number\b[^>]*>([^<]+)<\/Number>/)?.[1],
-    whisper: xml.match(/<Number\b[^>]*\burl="([^"]+)"/)?.[1],
+    /// Played to the provider's phone before connecting: there should be none.
+    playsToPhone: /<Number\b[^>]*\burl=/.test(xml),
+    /// Twilio's "the phone answered" callback, a whole address.
+    answered: xml.match(/<Number\b[^>]*\bstatusCallback="([^"]+)"/)?.[1],
   };
 };
 
@@ -176,6 +179,7 @@ let maxId;
 let apiCoverId = null;
 let uiCoverId = null;
 let originalHold = null;
+let originalDefault;
 
 await step('before being providers, the call log and the line screen are not for Frankie or Max', async () => {
   for (const [name, page] of [['Frankie', frankie], ['Max', max]]) {
@@ -226,6 +230,21 @@ await step('set-up: a cover puts Frankie on call, with Max as the backup', async
   apiCoverId = made.body.id;
 });
 
+await step('set-up: Max is the default provider, rung when the on-call does not answer at all', async () => {
+  const settings = (await call(manager, '/on-call/routing/settings')).body;
+  originalDefault = settings.defaultProviderId ?? null;
+  const saved = await call(manager, '/on-call/routing/settings', {
+    method: 'PUT',
+    body: JSON.stringify({
+      defaultProviderId: maxId,
+      voiceEn: settings.voiceEn,
+      voiceEs: settings.voiceEs,
+      messages: [],
+    }),
+  });
+  must(saved.status < 300, `saving the default answered ${saved.status}: ${JSON.stringify(saved.body)}`);
+});
+
 // --------------------------------------------------------------- 1. webhook
 
 await step('a request with no signature is refused', async () => {
@@ -264,8 +283,9 @@ await step('pressing 2 gives the Spanish greeting only, then a Dial that is not 
   must(dial.tag.includes('record="do-not-record"'), `Dial is ${dial.tag}`);
   must(dial.callerId === LINE, `callerId is ${dial.callerId}`);
   must(dial.number === '+12015550103', `dialled ${dial.number} (Frankie is +12015550103)`);
-  must(dial.whisper && dial.whisper.includes('whisper'), 'no whisper url');
-  must(dial.whisper.includes('lang=es'), `the whisper is not Spanish: ${dial.whisper}`);
+  must(!dial.playsToPhone, 'something is played to the provider before the caller is put through');
+  must(dial.tag.includes('timeout="45"'), `the ring is not 45 seconds: ${dial.tag}`);
+  must(dial.answered && dial.answered.includes('/api/call-routing/voice/answered?'), `no answered callback: ${dial.answered}`);
 });
 
 await step('no key, once: the menu again; no key twice: the English greeting', async () => {
@@ -283,8 +303,8 @@ await step('no key, once: the menu again; no key twice: the English greeting', a
 
 await step('nobody answering walks the chain, with hold words, to the closing message', async () => {
   let { callSid, base, chosen, path } = spanishCall;
-  // The chain is: Frankie (whisper), Max (whisper), Frankie again with no
-  // whisper so it reaches her own voicemail, then the closing words.
+  // One ring to Frankie, then the default provider (Max), then the closing
+  // words. Frankie's backup is never rung after her.
   const rung = [dialOf(chosen.text).number];
   let sawHold = false;
   let current = chosen;
@@ -299,7 +319,7 @@ await step('nobody answering walks the chain, with hold words, to the closing me
     if (next) rung.push(next.number);
   }
   must(sawHold, 'no Spanish hold words between tries');
-  must(rung.join() === '+12015550103,+12015550104,+12015550103', `rung ${rung.join()}`);
+  must(rung.join() === '+12015550103,+12015550104', `rung ${rung.join()}`);
   must(current.text.includes('No pudimos comunicarnos'), 'no Spanish closing words');
   must(current.text.includes('<Hangup/>'), 'no Hangup at the end');
   must(!dialOf(current.text), 'it still dials');
@@ -312,60 +332,36 @@ await step('the English hold words and closing words are used for an English cal
   const dial = dialOf(chosen.text);
   const next = await post(resolve(dial.action, first), { ...base, DialCallStatus: 'no-answer', DialBridged: 'false' });
   must(next.text.includes('Please continue to hold'), 'no English hold words');
+  must(dialOf(next.text)?.tag.includes('timeout="45"'), 'the default provider does not ring 45 seconds');
 });
 
-await step('the whisper asks the provider to press 1; only 1 connects', async () => {
-  const { chosen, path } = await callIn(1);
-  const whisperPath = resolve(dialOf(chosen.text).whisper, path);
-  const whisper = await post(whisperPath, { CallSid: sid() });
-  must(whisper.status === 200, `the whisper answered ${whisper.status}`);
-  must(whisper.text.includes('<Gather'), 'no Gather in the whisper');
-  must(whisper.text.includes('Press 1 to accept'), 'no "Press 1 to accept"');
-  must(whisper.text.includes('English-speaking caller'), 'the whisper does not name the language');
-  const answerPath = resolve(whisper.text.match(/<Gather\b[^>]*\baction="([^"]+)"/)[1], whisperPath);
-  const yes = await post(answerPath, { CallSid: sid(), ParentCallSid: sid(), Digits: '1' });
-  must(/^<\?xml[^>]*\?><Response\/>$/.test(yes.text.trim()), `1 did not give an empty Response: ${yes.text}`);
-  const no = await post(answerPath, { CallSid: sid(), ParentCallSid: sid(), Digits: '9' });
-  must(no.text.includes('<Hangup/>'), `9 did not hang up: ${no.text}`);
-});
+const outcomes = async (outcome) =>
+  (await call(manager, '/call-routing/calls')).body.filter((c) => c.outcome === outcome).length;
 
-await step('2 on the whisper sends the caller to the provider\'s voicemail, skipping the backup', async () => {
-  const { callSid, base, chosen, path } = await callIn(1);
+await step("the phone answering is written down, so a hang-up after it is no missed call", async () => {
+  const { callSid, base, chosen } = await callIn(1);
   const dial = dialOf(chosen.text);
-  const whisperPath = resolve(dial.whisper, path);
-  const whisper = await post(whisperPath, { CallSid: sid() });
-  must(
-    whisper.text.includes('or 2 to send the caller to your voicemail'),
-    'the whisper does not offer 2 for voicemail',
-  );
-  const answerPath = resolve(whisper.text.match(/<Gather\b[^>]*\baction="([^"]+)"/)[1], whisperPath);
-  const two = await post(answerPath, { CallSid: sid(), ParentCallSid: callSid, Digits: '2' });
-  must(two.text.includes('<Hangup/>'), `2 did not hang up on the provider: ${two.text}`);
-  // The dial then ends without being bridged; the next ring is the same
-  // provider again (not the backup), with only an announcement.
-  const next = await post(resolve(dial.action, path), {
-    ...base,
-    DialCallStatus: 'completed',
-    DialBridged: 'false',
-  });
-  const again = dialOf(next.text);
-  must(again, `no dial after pressing 2: ${next.text}`);
-  must(again.number === dial.number, `rang ${again.number}, not the same provider ${dial.number}`);
-  must(again.whisper && again.whisper.includes('a=1'), `the last ring has no announcement: ${again.whisper}`);
-  const announce = await post(resolve(again.whisper, path), { CallSid: sid() });
-  must(announce.text.includes('Domi Healthcare call,'), 'the announcement does not say what the call is');
-  must(!announce.text.includes('<Gather') && !announce.text.includes('<Hangup'), 'the announcement asks for a key or hangs up');
+  const answeredUrl = new URL(unescapeXml(dial.answered));
+  const answeredPath = answeredUrl.pathname + answeredUrl.search;
+  const before = await outcomes('RANG_THROUGH');
+  const answered = await post(answeredPath, { CallSid: sid(), ParentCallSid: callSid, CallStatus: 'in-progress' });
+  must(/^<\?xml[^>]*\?><Response\/>$/.test(answered.text.trim()), `answered gave ${answered.text}`);
+  // The caller hangs up mid-conversation, before Twilio reports the dial.
+  await post(`${VOICE}/status`, { ...base, CallStatus: 'completed' });
+  must((await outcomes('RANG_THROUGH')) === before + 1, 'the call was not logged as rang through');
+  // A call already ringing when this went live still asks for the old address.
+  const old = await post(`${VOICE}/whisper?lang=en&t=1`, { CallSid: sid() });
+  must(/^<\?xml[^>]*\?><Response\/>$/.test(old.text.trim()), `the old whisper address gave ${old.text}`);
 });
 
-await step('a call a provider accepts is logged as accepted', async () => {
+await step('a call put through is logged as rang through to that provider', async () => {
   const { base, chosen, path } = await callIn(1);
   const dial = dialOf(chosen.text);
   const done = await post(resolve(dial.action, path), { ...base, DialCallStatus: 'completed', DialBridged: 'true' });
   must(done.text.includes('<Hangup/>'), 'a bridged call did not end with Hangup');
   const log = (await call(manager, '/call-routing/calls')).body;
-  // The log does not hand out the call's sid, so look for the accepted one.
-  const found = log.find((c) => c.outcome === 'ACCEPTED');
-  must(found && found.outcome === 'ACCEPTED', 'no accepted call in the log');
+  const found = log.find((c) => c.outcome === 'RANG_THROUGH' && c.acceptedBy?.name === 'Frankie Front-Desk');
+  must(found, 'no call rang through to Frankie in the log');
 });
 
 await step('nothing the webhook said records, listens or takes a voicemail', async () => {
@@ -458,12 +454,12 @@ await step('providers see the overrides read-only', async () => {
   must((await card.getByRole('button', { name: 'Remove' }).count()) === 0, 'a provider sees Remove');
 });
 
-await step('a call made during the cover dials its provider, and the backup second', async () => {
+await step('a call made during the cover dials its provider once, not the backup after', async () => {
   const { chosen, base, path } = await callIn(1);
   const first = dialOf(chosen.text);
   must(first.number === '+12015550104', `dialled ${first.number}, not Max (+12015550104)`);
   const next = await post(resolve(first.action, path), { ...base, DialCallStatus: 'busy', DialBridged: 'false' });
-  must(dialOf(next.text)?.number === '+12015550103', 'the backup (Frankie) was not rung second');
+  must(dialOf(next.text)?.number !== '+12015550103', 'the backup (Frankie) was rung after the on-call');
 });
 
 await step('the override can be changed', async () => {
@@ -555,11 +551,15 @@ await step('the Call log shows the calls with the full number and an outcome bad
   const table = manager.getByTestId('call-log-table');
   await table.waitFor();
   await table.getByText('(201) 555-0142').first().waitFor();
-  const row = table.locator('tr', { hasText: '(201) 555-0142' }).filter({ hasText: 'Nobody reached' }).first();
+  // The Spanish call nobody took (an English one from a later step is newer).
+  const row = table
+    .locator('tr', { hasText: '(201) 555-0142' })
+    .filter({ hasText: 'Nobody reached' })
+    .filter({ hasText: 'Spanish' })
+    .first();
   await row.waitFor();
-  await row.getByText('Spanish').waitFor();
   await row.getByText('Frankie Front-Desk').first().waitFor();
-  await table.locator('tr', { hasText: '(201) 555-0142' }).filter({ hasText: /Accepted/ }).first().waitFor();
+  await table.locator('tr', { hasText: '(201) 555-0142' }).filter({ hasText: /Rang through/ }).first().waitFor();
   must((await manager.getByRole('link', { name: 'Call log' }).count()) === 0, 'the old Call log link is still there');
   must((await manager.getByRole('link', { name: 'After-hours calls' }).count()) === 0, 'the old After-hours calls link is still there');
 });
@@ -679,7 +679,20 @@ await step('screenshots at 1280 and 390, with no sideways scroll on a phone', as
 
 // --------------------------------------------------------------- clean-up
 
-await step('clean-up: the suite takes its cover away', async () => {
+await step('clean-up: the suite takes its cover away and puts the default back', async () => {
+  if (originalDefault !== undefined) {
+    const settings = (await call(manager, '/on-call/routing/settings')).body;
+    const saved = await call(manager, '/on-call/routing/settings', {
+      method: 'PUT',
+      body: JSON.stringify({
+        defaultProviderId: originalDefault,
+        voiceEn: settings.voiceEn,
+        voiceEs: settings.voiceEs,
+        messages: [],
+      }),
+    });
+    must(saved.status < 300, `putting the default back answered ${saved.status}`);
+  }
   for (const id of [uiCoverId, apiCoverId].filter(Boolean)) {
     const gone = await call(manager, `/on-call/covers/${id}`, { method: 'DELETE' });
     must(gone.status < 300 || gone.status === 404, `removing a cover answered ${gone.status}`);

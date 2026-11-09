@@ -76,16 +76,16 @@ describe('CallLogService', () => {
     expect(notifications.personal.mock.calls[0][2].body).toContain('from a withheld number at');
   });
 
-  it('marks a hang-up only while in progress and not accepted', async () => {
+  it('marks a hang-up only while in progress and not answered', async () => {
     const { service, prisma } = build({ attempts: [attempt('ON_CALL', 'e1')] });
     expect(await service.markCallerHungUp('CA1')).toEqual({ updated: true, tried: true });
-    // First a call somebody pressed 1 on is settled as accepted ...
+    // First a call a provider's phone answered is settled as rang through ...
     expect(prisma.callLog.updateMany.mock.calls[0][0].where).toEqual({
       callSid: 'CA1',
       outcome: 'IN_PROGRESS',
       acceptedById: { not: null },
     });
-    expect(prisma.callLog.updateMany.mock.calls[0][0].data.outcome).toBe('ACCEPTED');
+    expect(prisma.callLog.updateMany.mock.calls[0][0].data.outcome).toBe('RANG_THROUGH');
     // ... then the rest as the caller hanging up.
     expect(prisma.callLog.updateMany.mock.calls[1][0].where).toEqual({
       callSid: 'CA1',
@@ -138,12 +138,12 @@ describe('CallLogService', () => {
     expect(notifications.personal.mock.calls[0][0]).toEqual(['a1', 'a2']);
   });
 
-  it('a caller who hung up is asked about voicemail, not called missed', async () => {
+  it('a caller who hung up is told as ended early, not called missed', async () => {
     const { service, notifications } = build({ attempts: [attempt('FINAL', 'e1')] });
     await service.sendMissedCallAlert('CA1', 'HUNG_UP');
     const words = notifications.personal.mock.calls[0][2];
-    expect(words.body).toContain('ended before anybody pressed 1');
-    expect(words.body).toContain('If they left no voicemail');
+    expect(words.body).toContain('ended before anybody answered');
+    expect(words.body).not.toContain('Missed');
   });
 
   it('shapes the list for the screen', async () => {
