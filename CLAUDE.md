@@ -2537,6 +2537,14 @@ Beyond the phases, the parts worth knowing about before picking up work:
   test plan); `tests/browser/call-routing.mjs`. Same release: the On call
   page, override form, on-call number hints and Help say "the on-call line"
   instead of "after-hours".
+- **Every day under the Timesheet's Day** (9 November 2026, Dominguez:
+  "Timesheet - where is Tuesday?", version 1.50.1): the Day filter listed
+  only days with a punch or time off, so a day still to come (Tuesday, on a
+  Monday) or one nobody worked was missing while later days with somebody's
+  time off showed. It now lists every day of the period (up to 62 days; a
+  longer custom period keeps to the days with something), and a punch's day
+  is New Jersey's, not the browser's. `days` in `TimesheetPage.tsx`;
+  `tests/browser/correct.mjs`.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

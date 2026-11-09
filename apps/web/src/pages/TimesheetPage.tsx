@@ -3,6 +3,8 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { api } from '../lib/api';
 import { OnePersonNote, useOnePerson } from '../components/OnePerson';
 import { durationHours, formatCalendarDate, formatDate, formatTime } from '../lib/format';
+import { addCalendarDays } from '../lib/dates';
+import { practiceDate } from '../lib/practice-time';
 import { useIsManager, useSession } from '../lib/session';
 import { handEntryReasonLabel } from '../lib/hand-entry';
 import { plural, t as translate, useT } from '../lib/i18n';
@@ -167,18 +169,27 @@ export function TimesheetPage() {
     }
   }
 
-  // The days of the period that have a punch, for the Day filter.
+  // Every day of the period for the Day filter (November 2026, Dominguez:
+  // "where is Tuesday?"). It used to list only days with a punch or time off,
+  // so a day still to come, or one nobody worked, was simply not there. A
+  // long custom period (over two months) keeps to the days with something.
   const days = useMemo(() => {
     const seen = new Map<string, string>();
+    const length = (Date.parse(range.to) - Date.parse(range.from)) / 86_400_000;
+    if (length >= 0 && length <= MAX_DAYS_LISTED) {
+      for (let key = range.from; key <= range.to; key = addCalendarDays(key, 1)) {
+        seen.set(key, formatCalendarDate(key, { year: false }));
+      }
+    }
     for (const entry of entries) {
       const key = dayKey(entry.clockInAt);
-      if (!seen.has(key)) seen.set(key, formatDate(entry.clockInAt));
+      if (!seen.has(key)) seen.set(key, formatCalendarDate(key, { year: false }));
     }
     for (const off of timeOff?.days ?? []) {
       if (!seen.has(off.date)) seen.set(off.date, formatCalendarDate(off.date, { year: false }));
     }
     return [...seen].sort(([a], [b]) => a.localeCompare(b));
-  }, [entries, timeOff]);
+  }, [range, entries, timeOff]);
 
   const query = search.trim().toLowerCase();
   const shown = entries.filter(
@@ -796,8 +807,13 @@ function TimeOffCard({ date, request, isManager, selfId, onEdit }: TimeOffLinePr
   );
 }
 
+/// The longest period whose every day is offered under Day.
+const MAX_DAYS_LISTED = 62;
+
+/// The day a punch belongs to, on New Jersey's calendar (as the server and the
+/// days off go), not this browser's.
 function dayKey(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-CA');
+  return practiceDate(new Date(iso));
 }
 
 /// Closed, waiting on approval, and without a single flag - what "Approve all
