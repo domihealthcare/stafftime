@@ -265,7 +265,7 @@ function SwapList({
       await api.answerOnCallSwap(swap.id, how);
       onChanged(
         how === 'accept'
-          ? `Done - you are on call ${day(swap.giveDate)}.`
+          ? `Done - you are on call ${days(gives(swap))}.`
           : how === 'decline'
             ? 'Said no. They have been told.'
             : 'Taken back.',
@@ -289,15 +289,20 @@ function SwapList({
               <Card className="flex flex-wrap items-center gap-3 p-3" testId={`swap-${swap.id}`}>
                 <p className="flex-1 text-sm text-slate-800">
                   {fromMe ? 'You asked' : swap.requester.name + ' asks'}{' '}
-                  {toMe ? 'you' : swap.partner.name} to take <strong>{day(swap.giveDate)}</strong>
-                  {swap.takeDate && (
+                  {toMe ? 'you' : swap.partner.name} to take <strong>{days(gives(swap))}</strong>
+                  {takes(swap).length > 0 && (
                     <>
                       {' '}
-                      - and {fromMe ? 'you take' : 'takes'} <strong>{day(swap.takeDate)}</strong>{' '}
+                      - and {fromMe ? 'you take' : 'takes'} <strong>{days(takes(swap))}</strong>{' '}
                       back
                     </>
                   )}
                   .{swap.note && <span className="text-slate-600"> “{swap.note}”</span>}
+                  {fromMe && (
+                    <span className="block text-xs text-slate-500">
+                      Nothing changes until {swap.partner.name} says yes.
+                    </span>
+                  )}
                 </p>
                 {toMe && (
                   <>
@@ -455,8 +460,8 @@ function MonthView({
         </div>
       )}
       <p className="text-xs text-slate-500">
-        Press a day to {me ? 'ask to swap one of yours, or ' : ''}see more. ↔ swapped between
-        providers · ✎ changed by a manager · purple: an override for part of a day.
+        Press a day to {me ? 'ask another provider to take yours, or ' : ''}see more. ↔ swapped
+        between providers · ✎ changed by a manager · purple: an override for part of a day.
       </p>
     </section>
   );
@@ -465,6 +470,8 @@ function MonthView({
 const WEEKDAYS_SUNDAY_FIRST = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 // -------------------------------------------------------------- one day
+
+type DayAction = 'ask' | 'change' | 'part';
 
 function DayDialog({
   day: entry,
@@ -483,30 +490,310 @@ function DayDialog({
 }) {
   const mine = entry.employee?.id === me;
   const future = entry.date >= practiceDate();
-  const [who, setWho] = useState(entry.employee?.id ?? '');
-  const [backup, setBackup] = useState(entry.backup?.id ?? '');
-  const [note, setNote] = useState(entry.note ?? '');
-  const [swapNote, setSwapNote] = useState('');
+  const canAsk = mine && future;
+  // What can be done from here. With only one, it opens at once; with more,
+  // the pop-up shows the choices first and only the chosen one's form, so
+  // asking a colleague is never mistaken for changing the day (Dominguez,
+  // November 2026).
+  const actions: DayAction[] = [
+    ...(canAsk ? (['ask'] as const) : []),
+    ...(canChange ? (['change', 'part'] as const) : []),
+  ];
+  const [action, setAction] = useState<DayAction | null>(actions.length === 1 ? actions[0] : null);
+
+  return (
+    <Modal title={`On call ${day(entry.date)}`} onClose={onClose} testId="on-call-day">
+      <p className="text-sm text-slate-700">
+        <strong>{entry.employee ? entry.employee.name : 'Nobody is set'}</strong>, from{' '}
+        {clockWords(entry.changesAt)} {day(entry.date)} to {clockWords(entry.changesAt)} the next
+        day.
+        {entry.source === 'SWAPPED' && ' Swapped between providers.'}
+        {entry.source === 'CHANGED' && ' Changed by a manager.'}
+      </p>
+      {entry.backup && <p className="mt-1 text-sm text-slate-700">Backup: {entry.backup.name}</p>}
+      {entry.note && <p className="mt-1 text-sm text-slate-600">“{entry.note}”</p>}
+
+      {actions.length > 1 && action === null && (
+        <div
+          className="mt-4 space-y-2 border-t border-slate-100 pt-4"
+          role="group"
+          aria-label="What would you like to do?"
+        >
+          <p className="text-sm font-semibold text-slate-900">What would you like to do?</p>
+          {actions.map((choice) => (
+            <button
+              key={choice}
+              type="button"
+              onClick={() => setAction(choice)}
+              className="block w-full rounded-lg border border-slate-200 p-3 text-left hover:border-brand-400 hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600"
+            >
+              <span className="block text-sm font-semibold text-slate-900">
+                {ACTION_WORDS[choice].label}
+              </span>
+              <span className="block text-xs text-slate-600">{ACTION_WORDS[choice].hint}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {action && (
+        <div className="mt-4 border-t border-slate-100 pt-4">
+          {actions.length > 1 && (
+            <button
+              type="button"
+              onClick={() => setAction(null)}
+              className="tap mb-2 text-sm text-brand-700 underline"
+            >
+              ← Something else
+            </button>
+          )}
+          {action === 'ask' && (
+            <AskToTakeForm entry={entry} providers={providers} me={me} onDone={onDone} />
+          )}
+          {action === 'change' && (
+            <ChangeDaysForm entry={entry} providers={providers} onDone={onDone} />
+          )}
+          {action === 'part' && (
+            <>
+              <h3 className="mb-2 text-sm font-semibold text-slate-900">
+                Override part of the day
+              </h3>
+              <OverrideForm
+                date={entry.date}
+                cover={null}
+                providers={providers}
+                onCancel={() => (actions.length > 1 ? setAction(null) : onClose())}
+                onSaved={onDone}
+              />
+            </>
+          )}
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+const ACTION_WORDS: Record<DayAction, { label: string; hint: string }> = {
+  ask: {
+    label: 'Ask another provider to take it',
+    hint: 'They are asked first. Nothing changes until they say yes.',
+  },
+  change: {
+    label: 'Change who is on call',
+    hint: 'Changes it straight away, for this day or several days in a row.',
+  },
+  part: {
+    label: 'Change part of the day',
+    hint: 'An override for some hours, like 6 PM to 6 AM.',
+  },
+};
+
+/// The days within the next two months, to offer as more days to give or
+/// take back.
+function useComingDays() {
+  const [found, setFound] = useState<OnCallDay[] | null>(null);
+  useEffect(() => {
+    const from = practiceDate();
+    api
+      .onCall(from, addCalendarDays(from, 62))
+      .then((schedule) => setFound(schedule.days))
+      .catch(() => setFound([]));
+  }, []);
+  return found;
+}
+
+function AskToTakeForm({
+  entry,
+  providers,
+  me,
+  onDone,
+}: {
+  entry: OnCallDay;
+  providers: OnCallPerson[];
+  me: string;
+  onDone: (message: string) => void;
+}) {
+  const coming = useComingDays();
   const [partner, setPartner] = useState('');
-  const [takeDate, setTakeDate] = useState('');
-  const [partnerDays, setPartnerDays] = useState<OnCallDay[]>([]);
-  const [mode, setMode] = useState<'whole' | 'part'>('whole');
+  const [give, setGive] = useState<string[]>([entry.date]);
+  const [take, setTake] = useState<string[]>([]);
+  const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Their days in the next two months, to offer one back.
-  useEffect(() => {
-    if (!partner) {
-      setPartnerDays([]);
-      return;
+  const myDays = (coming ?? []).filter((d) => d.employee?.id === me).map((d) => d.date);
+  if (!myDays.includes(entry.date)) myDays.unshift(entry.date);
+  const theirDays = partner
+    ? (coming ?? []).filter((d) => d.employee?.id === partner).map((d) => d.date)
+    : [];
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    if (!partner || give.length === 0) return;
+    setBusy(true);
+    setError(null);
+    const gives = [...give].sort();
+    const takes = [...take].sort();
+    try {
+      await api.askOnCallSwap({
+        giveDate: gives[0],
+        giveDates: gives,
+        partnerId: partner,
+        takeDate: takes[0] ?? null,
+        takeDates: takes,
+        note: note.trim() || undefined,
+      });
+      const name = providers.find((p) => p.id === partner)?.name ?? 'They';
+      onDone(
+        `Asked ${name} to take ${days(gives)}. Nothing changes until they say yes - you will hear when they answer.`,
+      );
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not do that.');
+      setBusy(false);
     }
-    const from = practiceDate();
-    const to = addCalendarDays(from, 62);
-    api
-      .onCall(from, to)
-      .then((found) => setPartnerDays(found.days.filter((d) => d.employee?.id === partner)))
-      .catch(() => setPartnerDays([]));
-  }, [partner]);
+  }
+
+  return (
+    <form className="space-y-3" aria-label="Ask to swap" onSubmit={(event) => void submit(event)}>
+      <h3 className="text-sm font-semibold text-slate-900">Ask another provider to take it</h3>
+      <p className="text-xs text-slate-600">
+        This sends them a request. The schedule changes only when they press Yes, swap.
+      </p>
+      <Field label="Who">
+        {(props) => (
+          <select
+            {...props}
+            required
+            value={partner}
+            onChange={(event) => {
+              setPartner(event.target.value);
+              setTake([]);
+            }}
+            className={inputClass}
+          >
+            <option value="">Choose a provider…</option>
+            {providers
+              .filter((p) => p.id !== me)
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+          </select>
+        )}
+      </Field>
+      <DayTicks
+        legend="Your days for them to take"
+        hint="Tick as many as you need."
+        dates={myDays}
+        chosen={give}
+        onChange={setGive}
+        loading={coming === null}
+        testId="swap-give-days"
+      />
+      {partner && (
+        <DayTicks
+          legend="And you take some of theirs back"
+          hint="Optional - leave them all unticked and they simply cover."
+          dates={theirDays}
+          chosen={take}
+          onChange={setTake}
+          loading={coming === null}
+          empty="They have no on-call days in the next two months."
+          testId="swap-take-days"
+        />
+      )}
+      <Field label="Note" hint="Optional.">
+        {(props) => (
+          <input
+            {...props}
+            maxLength={200}
+            value={note}
+            onChange={(event) => setNote(event.target.value)}
+            className={inputClass}
+          />
+        )}
+      </Field>
+      <button
+        type="submit"
+        disabled={busy || !partner || give.length === 0}
+        className={buttonClass('primary', 'sm')}
+      >
+        {busy ? 'Asking…' : 'Ask them'}
+      </button>
+      {error && <Alert>{error}</Alert>}
+    </form>
+  );
+}
+
+/// A ticked list of on-call days.
+function DayTicks({
+  legend,
+  hint,
+  dates,
+  chosen,
+  onChange,
+  loading,
+  empty,
+  testId,
+}: {
+  legend: string;
+  hint: string;
+  dates: string[];
+  chosen: string[];
+  onChange: (dates: string[]) => void;
+  loading: boolean;
+  empty?: string;
+  testId: string;
+}) {
+  return (
+    <fieldset data-testid={testId}>
+      <legend className="text-sm font-medium text-slate-800">{legend}</legend>
+      <p className="text-xs text-slate-500">{hint}</p>
+      {loading ? (
+        <p className="mt-1 text-xs text-slate-500">Loading your days…</p>
+      ) : dates.length === 0 ? (
+        <p className="mt-1 text-xs text-slate-500">{empty}</p>
+      ) : (
+        <div className="mt-1 grid max-h-48 grid-cols-1 gap-1 overflow-y-auto sm:grid-cols-2">
+          {dates.map((date) => (
+            <label key={date} className="flex items-center gap-2 text-sm text-slate-800">
+              <input
+                type="checkbox"
+                data-testid={`${testId}-${date}`}
+                checked={chosen.includes(date)}
+                onChange={(event) =>
+                  onChange(
+                    event.target.checked ? [...chosen, date] : chosen.filter((d) => d !== date),
+                  )
+                }
+              />
+              {day(date)}
+            </label>
+          ))}
+        </div>
+      )}
+    </fieldset>
+  );
+}
+
+function ChangeDaysForm({
+  entry,
+  providers,
+  onDone,
+}: {
+  entry: OnCallDay;
+  providers: OnCallPerson[];
+  onDone: (message: string) => void;
+}) {
+  const [who, setWho] = useState(entry.employee?.id ?? '');
+  const [backup, setBackup] = useState(entry.backup?.id ?? '');
+  const [note, setNote] = useState(entry.note ?? '');
+  const [until, setUntil] = useState(entry.date);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const last = until && until > entry.date ? until : entry.date;
+  const span = last === entry.date ? day(entry.date) : `${day(entry.date)} to ${day(last)}`;
 
   async function run(action: () => Promise<unknown>, message: string) {
     setBusy(true);
@@ -521,234 +808,115 @@ function DayDialog({
   }
 
   return (
-    <Modal title={`On call ${day(entry.date)}`} onClose={onClose} testId="on-call-day">
-      <p className="text-sm text-slate-700">
-        <strong>{entry.employee ? entry.employee.name : 'Nobody is set'}</strong>, from{' '}
-        {clockWords(entry.changesAt)} {day(entry.date)} to {clockWords(entry.changesAt)} the next
-        day.
-        {entry.source === 'SWAPPED' && ' Swapped between providers.'}
-        {entry.source === 'CHANGED' && ' Changed by a manager.'}
-      </p>
-      {entry.backup && <p className="mt-1 text-sm text-slate-700">Backup: {entry.backup.name}</p>}
-      {entry.note && <p className="mt-1 text-sm text-slate-600">“{entry.note}”</p>}
-
-      {mine && future && (
-        <form
-          className="mt-4 space-y-3 border-t border-slate-100 pt-4"
-          aria-label="Ask to swap"
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (!partner) return;
-            void run(
-              () =>
-                api.askOnCallSwap({
-                  giveDate: entry.date,
-                  partnerId: partner,
-                  takeDate: takeDate || null,
-                  note: swapNote.trim() || undefined,
-                }),
-              'Asked. They have been told, and you will hear when they answer.',
-            );
-          }}
-        >
-          <h3 className="text-sm font-semibold text-slate-900">Ask another provider to take it</h3>
-          <Field label="Who">
-            {(props) => (
-              <select
-                {...props}
-                required
-                value={partner}
-                onChange={(event) => {
-                  setPartner(event.target.value);
-                  setTakeDate('');
-                }}
-                className={inputClass}
-              >
-                <option value="">Choose a provider…</option>
-                {providers
-                  .filter((p) => p.id !== me)
-                  .map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-              </select>
-            )}
-          </Field>
-          {partner && (
-            <Field label="And you take one of theirs" hint="Optional - or they simply cover.">
-              {(props) => (
-                <select
-                  {...props}
-                  value={takeDate}
-                  onChange={(event) => setTakeDate(event.target.value)}
-                  className={inputClass}
-                >
-                  <option value="">No, just cover</option>
-                  {partnerDays.map((d) => (
-                    <option key={d.date} value={d.date}>
-                      {day(d.date)}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </Field>
-          )}
-          <Field label="Note" hint="Optional.">
-            {(props) => (
-              <input
-                {...props}
-                maxLength={200}
-                value={swapNote}
-                onChange={(event) => setSwapNote(event.target.value)}
-                className={inputClass}
-              />
-            )}
-          </Field>
-          <button
-            type="submit"
-            disabled={busy || !partner}
-            className={buttonClass('primary', 'sm')}
+    <form
+      className="space-y-3"
+      aria-label="Change this day"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void run(
+          () =>
+            api.setOnCallDay(entry.date, {
+              employeeId: who || null,
+              backupEmployeeId: who && backup && backup !== who ? backup : null,
+              note: note.trim() || undefined,
+              until: last,
+            }),
+          `Saved. ${span} changed.`,
+        );
+      }}
+    >
+      <h3 className="text-sm font-semibold text-slate-900">Change who is on call</h3>
+      <Field label="On call">
+        {(props) => (
+          <select
+            {...props}
+            value={who}
+            onChange={(event) => setWho(event.target.value)}
+            className={inputClass}
           >
-            {busy ? 'Asking…' : 'Ask them'}
-          </button>
-        </form>
-      )}
-
-      {canChange && (
-        <div
-          className="mt-4 flex gap-2 border-t border-slate-100 pt-4"
-          role="group"
-          aria-label="What to change"
-        >
-          <button
-            type="button"
-            aria-pressed={mode === 'whole'}
-            onClick={() => setMode('whole')}
-            className={buttonClass(mode === 'whole' ? 'primary' : 'secondary', 'sm')}
+            {providers.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        )}
+      </Field>
+      <Field
+        label="Backup"
+        hint="Optional. Rung instead when the provider on call has no number that can be dialled."
+      >
+        {(props) => (
+          <select
+            {...props}
+            value={backup}
+            onChange={(event) => setBackup(event.target.value)}
+            className={inputClass}
           >
-            Whole day
-          </button>
-          <button
-            type="button"
-            aria-pressed={mode === 'part'}
-            onClick={() => setMode('part')}
-            className={buttonClass(mode === 'part' ? 'primary' : 'secondary', 'sm')}
-          >
-            Part of the day
-          </button>
-        </div>
-      )}
-      {canChange && mode === 'part' && (
-        <div className="mt-3">
-          <h3 className="mb-2 text-sm font-semibold text-slate-900">Override part of the day</h3>
-          <OverrideForm
-            date={entry.date}
-            cover={null}
-            providers={providers}
-            onCancel={() => setMode('whole')}
-            onSaved={onDone}
+            <option value="">No backup</option>
+            {providers
+              .filter((p) => p.id !== who)
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+          </select>
+        )}
+      </Field>
+      <Field
+        label="Last day"
+        hint="Leave it on this day for one day, or pick a later day to change every day up to it."
+      >
+        {(props) => (
+          <input
+            {...props}
+            type="date"
+            min={entry.date}
+            max={addCalendarDays(entry.date, 61)}
+            value={until}
+            onChange={(event) => setUntil(event.target.value)}
+            className={inputClass}
           />
-        </div>
-      )}
-      {canChange && mode === 'whole' && (
-        <form
-          className="mt-3 space-y-3"
-          aria-label="Change this day"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void run(
-              () =>
-                api.setOnCallDay(entry.date, {
-                  employeeId: who || null,
-                  backupEmployeeId: who && backup && backup !== who ? backup : null,
-                  note: note.trim() || undefined,
-                }),
-              `Saved. ${day(entry.date)} is changed.`,
-            );
-          }}
-        >
-          <h3 className="text-sm font-semibold text-slate-900">Change this day</h3>
-          <Field label="On call">
-            {(props) => (
-              <select
-                {...props}
-                value={who}
-                onChange={(event) => setWho(event.target.value)}
-                className={inputClass}
-              >
-                {providers.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            )}
-          </Field>
-          <Field
-            label="Backup"
-            hint="Optional. Rung instead when the provider on call has no number that can be dialled."
+        )}
+      </Field>
+      <Field label="Note" hint="Optional - “covering Dr. D’s vacation”.">
+        {(props) => (
+          <input
+            {...props}
+            maxLength={200}
+            value={note}
+            onChange={(event) => setNote(event.target.value)}
+            className={inputClass}
+          />
+        )}
+      </Field>
+      <div className="flex flex-wrap gap-2">
+        <button type="submit" disabled={busy || !who} className={buttonClass('primary', 'sm')}>
+          {last === entry.date ? 'Save' : `Save ${datesBetweenCount(entry.date, last)} days`}
+        </button>
+        {(entry.source === 'CHANGED' || entry.source === 'SWAPPED' || last !== entry.date) && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() =>
+              void run(
+                () => api.setOnCallDay(entry.date, { employeeId: null, until: last }),
+                `${span} back to the usual.`,
+              )
+            }
+            className={buttonClass('secondary', 'sm')}
           >
-            {(props) => (
-              <select
-                {...props}
-                value={backup}
-                onChange={(event) => setBackup(event.target.value)}
-                className={inputClass}
-              >
-                <option value="">No backup</option>
-                {providers
-                  .filter((p) => p.id !== who)
-                  .map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-              </select>
-            )}
-          </Field>
-          <Field label="Note" hint="Optional - “covering Dr. D’s vacation”.">
-            {(props) => (
-              <input
-                {...props}
-                maxLength={200}
-                value={note}
-                onChange={(event) => setNote(event.target.value)}
-                className={inputClass}
-              />
-            )}
-          </Field>
-          <div className="flex flex-wrap gap-2">
-            <button type="submit" disabled={busy || !who} className={buttonClass('primary', 'sm')}>
-              Save
-            </button>
-            {(entry.source === 'CHANGED' || entry.source === 'SWAPPED') && (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() =>
-                  void run(
-                    () => api.setOnCallDay(entry.date, { employeeId: null }),
-                    `${day(entry.date)} is back to the usual.`,
-                  )
-                }
-                className={buttonClass('secondary', 'sm')}
-              >
-                Back to the usual
-              </button>
-            )}
-          </div>
-          <p className="text-xs text-slate-500">
-            Whoever it moves from and to is told on the bell and by email.
-          </p>
-        </form>
-      )}
-      {error && (
-        <div className="mt-3">
-          <Alert>{error}</Alert>
-        </div>
-      )}
-    </Modal>
+            Back to the usual
+          </button>
+        )}
+      </div>
+      <p className="text-xs text-slate-500">
+        This changes the schedule straight away. Whoever it moves from and to is told on the bell
+        and by email.
+      </p>
+      {error && <Alert>{error}</Alert>}
+    </form>
   );
 }
 
@@ -1205,7 +1373,7 @@ function OverridesList({
       {live.length === 0 ? (
         <EmptyState>
           No overrides this month.
-          {canEdit && ' Press a day above and choose Part of the day to add one.'}
+          {canEdit && ' Press a day above and choose Change part of the day to add one.'}
         </EmptyState>
       ) : (
         <ul className="space-y-2">
@@ -1257,6 +1425,32 @@ function shiftMonth(month: string, by: number): string {
   const [year, m] = month.split('-').map(Number);
   const date = new Date(Date.UTC(year, m - 1 + by, 1));
   return date.toISOString().slice(0, 7);
+}
+
+/// The days a swap gives, and takes back (older swaps have only the one).
+function gives(swap: OnCallSwap): string[] {
+  return swap.giveDates?.length ? swap.giveDates : [swap.giveDate];
+}
+
+function takes(swap: OnCallSwap): string[] {
+  return swap.takeDates?.length ? swap.takeDates : swap.takeDate ? [swap.takeDate] : [];
+}
+
+/// "Mon, Nov 9", "Mon, Nov 9 and Tue, Nov 10", or for four or more
+/// "Mon, Nov 9 to Thu, Nov 12 (4 days)".
+function days(dates: string[]): string {
+  const sorted = [...new Set(dates)].sort();
+  if (sorted.length <= 1) return sorted.map(day).join('');
+  if (sorted.length > 3) {
+    return `${day(sorted[0])} to ${day(sorted[sorted.length - 1])} (${sorted.length} days)`;
+  }
+  return `${sorted.slice(0, -1).map(day).join(', ')} and ${day(sorted[sorted.length - 1])}`;
+}
+
+function datesBetweenCount(from: string, until: string): number {
+  let count = 1;
+  for (let d = from; d < until; d = addCalendarDays(d, 1)) count += 1;
+  return count;
 }
 
 function day(date: string): string {

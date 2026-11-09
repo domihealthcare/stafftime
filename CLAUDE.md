@@ -2483,9 +2483,30 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `ApproveTimeOff.tsx`; Help has both guides' topics;
   `tests/browser/provider-day-off.mjs`. Worth carrying to the EMR module with
   *Who can cover this?* and *Someone called out*.
+- **On call: choose first, and several days at once** (9 November 2026,
+  Dominguez: "the changing of call is confusing ... it should only show ask
+  another provider to take it as an option but not all the things be there -
+  i was inserting it like it was changing the call and it wasn't", and "also
+  should be able to do multiple days"; version 1.49.0): pressing a day on
+  **Schedule -> On call** shows **What would you like to do?** first -
+  **Ask another provider to take it** (only on your own future days; "nothing
+  changes until they say yes"), and for managers **Change who is on call**
+  ("changes it straight away") and **Change part of the day** (the override)
+  - and only the chosen form, with **← Something else** to go back; with one
+  choice (a provider who is not a manager) it opens at once. **Asking** ticks
+  any of your days in the next two months (the pressed one ticked) and,
+  optionally, any of theirs to take back; one **Yes, swap** moves them all,
+  re-checked then (`OnCallSwap.giveDates` / `takeDates`, migration
+  `20261109010000_on_call_swap_several_days`; `giveDate` / `takeDate` stay
+  the first of each). **Changing** has a **Last day** (up to 62 days), saved
+  in one go with **Save N days** or **Back to the usual** for the run, and
+  each person moved is told once (`OnCallDayInput.until`, `daysWords` in
+  `on-call.service.ts`). `pages/OnCallPage.tsx`; `tests/browser/on-call.mjs`,
+  `call-routing.mjs`; Help's two on-call topics. Worth carrying to the EMR
+  module with on call.
 - **The whisper no longer says "after-hours"** (9 November 2026, Dominguez:
   "the whisper is saying after hours caller - but it isn't only for after
-  hours"; version 1.48.1): the provider now hears "Domi Healthcare call,
+  hours"; released in 1.50.0): the provider now hears "Domi Healthcare call,
   English-speaking caller. Press 1 to accept, or 2 to send the caller to
   your voicemail", and the last ring "Domi Healthcare call, English-speaking
   caller". The missed-call alert is "Missed call" ("Call from ... ended
@@ -2497,7 +2518,7 @@ Beyond the phases, the parts worth knowing about before picking up work:
   think im going to have to take the whisper out"; then "the caller is not
   hearing a voicemail from my phone"; his choices: **only ring the on-call
   provider once**, **nothing said to the phone**, **keep 45 seconds**;
-  version 1.49.0): the line rings the provider on call **once, for up to 45
+  version 1.50.0): the line rings the provider on call **once, for up to 45
   seconds**, and puts the caller through the moment the phone answers, so
   declining or not answering is their own voicemail with its whole greeting.
   The **default provider** follows only if that phone does not answer at all;

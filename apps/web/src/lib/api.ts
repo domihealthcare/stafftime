@@ -1768,17 +1768,24 @@ export const api = {
     request<OnCallRota[]>(`/on-call/rotas/${startsOn}`, { method: 'DELETE' }),
   setOnCallDay: (
     date: string,
-    body: { employeeId: string | null; backupEmployeeId?: string | null; note?: string },
+    body: {
+      employeeId: string | null;
+      backupEmployeeId?: string | null;
+      note?: string;
+      until?: string | null;
+    },
   ) =>
-    request<{ date: string; employeeId: string | null }>(`/on-call/days/${date}`, {
+    request<{ date: string; until: string; employeeId: string | null }>(`/on-call/days/${date}`, {
       method: 'PUT',
       body: JSON.stringify(body),
     }),
   onCallSwaps: () => request<OnCallSwap[]>('/on-call/swaps'),
   askOnCallSwap: (body: {
     giveDate: string;
+    giveDates?: string[];
     partnerId: string;
     takeDate?: string | null;
+    takeDates?: string[];
     note?: string;
   }) => request<{ id: string }>('/on-call/swaps', { method: 'POST', body: JSON.stringify(body) }),
   answerOnCallSwap: (id: string, answer: 'accept' | 'decline' | 'cancel') =>

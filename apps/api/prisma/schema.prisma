@@ -3594,6 +3594,11 @@ model OnCallSwap {
   giveDate    DateTime         @db.Date
   /// The partner's day, for the requester to take back. Null: just cover.
   takeDate    DateTime?        @db.Date
+  /// Every day given, the first being giveDate (November 2026: several at
+  /// once). Empty on swaps asked before then: read giveDate.
+  giveDates   DateTime[]       @default([]) @db.Date
+  /// Every day taken back, the first being takeDate. Empty: read takeDate.
+  takeDates   DateTime[]       @default([]) @db.Date
   note        String?
   status      OnCallSwapStatus @default(PENDING)
   createdAt   DateTime         @default(now())

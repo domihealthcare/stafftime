@@ -422,7 +422,7 @@ await step('a manager adds a part-of-day override from the On call page, and it 
   await manager.goto(`${BASE}/on-call`, { waitUntil: 'networkidle' });
   await manager.getByTestId(`on-call-${today}`).click();
   const day = manager.getByTestId('on-call-day');
-  await day.getByRole('button', { name: 'Part of the day' }).click();
+  await day.getByRole('button', { name: /Change part of the day/ }).click();
   const form = day.getByRole('form', { name: 'Override' });
   // The defaults are 6 PM that day until 6 AM the next.
   must((await form.getByLabel('From time').inputValue()) === '18:00', 'the default start is not 6 PM');
@@ -645,6 +645,7 @@ await step('the On call page has a Backup choice in the pattern and in a one-day
   await manager.reload({ waitUntil: 'networkidle' });
   await manager.getByTestId(`on-call-${today}`).click();
   const dialog = manager.getByTestId('on-call-day');
+  await dialog.getByRole('button', { name: /Change who is on call/ }).click();
   const change = dialog.getByRole('form', { name: 'Change this day' });
   await change.getByLabel('Backup').waitFor();
 });
