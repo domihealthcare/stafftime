@@ -2924,6 +2924,39 @@ const MANAGERS: Section[] = [
         ),
       },
       {
+        question: 'Where do I write notes about somebody\u2019s pay, or a raise from before?',
+        answer: (
+          <>
+            <p>
+              <Screen>Manage → Finances → Pay & raises</Screen>, press their name, then{' '}
+              <strong>Notes and past raises</strong> at the bottom → <strong>+ Add a note</strong>.
+              Write what was asked for and agreed, any responsibilities added, or a raise from the
+              old evaluation sheet, and pick <strong>When it happened</strong> (today, or an earlier
+              day). The notes are listed newest first, with who wrote them; the list of staff shows
+              how many each person has.
+            </p>
+            <p>
+              To have somebody read it, tick them under <strong>Let someone know</strong> (only the
+              others who see Pay &amp; raises are offered). They are told on the bell and by email
+              that you want them to read a note on that person&rsquo;s pay, never the note itself or
+              an amount, and the link opens the person once they have put in their PIN. Their list
+              shows <strong>A note for you to read</strong> until they open them, and the note shows
+              &ldquo;not read yet&rdquo; or when they read it. To tell somebody about a note already
+              written, press <strong>Edit</strong> on it and tick them.
+            </p>
+            <p>
+              Only the people who see Pay &amp; raises read them, behind the PIN like the rest of
+              pay. The writer can <strong>Edit</strong> a note (it then says &ldquo;Edited&rdquo;);
+              the writer or an admin can remove it. A note changes nobody's pay: when a raise has
+              taken effect, also put it under <strong>Pay and position</strong> →{' '}
+              <strong>+ Add a change</strong> (Pay change, the new pay and the day it started), or
+              approve it on the Raise card, as that is what the rota&rsquo;s cost reads. Facts about
+              pay and work only, never a patient&rsquo;s details.
+            </p>
+          </>
+        ),
+      },
+      {
         question: 'How do I make sure everybody has read something?',
         answer: (
           <>

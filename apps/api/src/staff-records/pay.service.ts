@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import {
   ChecklistKind,
+  NotificationKind,
   ChecklistTaskStatus,
   EmploymentChangeKind,
   EmploymentStatus,
@@ -20,9 +21,17 @@ import {
 import { type AuthUser, isViewingAs } from '../common/auth/auth-user';
 import { isoDate, toUtcDate } from '../common/util/calendar-date.util';
 import { practiceToday } from '../common/util/zoned-time.util';
+import { NotificationsService } from '../email/notifications.service';
 import { EventsService } from '../events/events.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { DecideRaiseDto, LeavingRecordDto, RaiseMeetingDto, RequestRaiseDto } from './dto/pay.dto';
+import {
+  DecideRaiseDto,
+  LeavingRecordDto,
+  PayNoteDto,
+  RaiseMeetingDto,
+  RequestRaiseDto,
+} from './dto/pay.dto';
+import { mayEditPayNote, mayRemovePayNote, payNoteProblem, payNoteWords } from './pay-notes';
 import { EmploymentChangeDto } from './dto/staff-records.dto';
 import {
   decisionProblem,
@@ -96,6 +105,7 @@ export class PayService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly events: EventsService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   // ------------------------------------------------------------- reading
@@ -124,6 +134,7 @@ export class PayService {
           take: 1,
         },
         leavingRecord: true,
+        _count: { select: { payNotesAbout: true } },
         checklists: {
           where: { kind: ChecklistKind.OFFBOARDING },
           select: { id: true, completedAt: true, tasks: { select: { status: true } } },
@@ -134,6 +145,15 @@ export class PayService {
       orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
     });
     this.logger.log(`Pay overview read by ${viewer.id}`);
+    // Notes somebody asked the viewer to read and they have not opened yet.
+    const waiting = await this.prisma.payNoteRecipient.findMany({
+      where: { employeeId: viewer.id, readAt: null },
+      select: { note: { select: { employeeId: true } } },
+    });
+    const waitingFor = new Map<string, number>();
+    for (const row of waiting) {
+      waitingFor.set(row.note.employeeId, (waitingFor.get(row.note.employeeId) ?? 0) + 1);
+    }
 
     const current = [];
     const former = [];
@@ -149,6 +169,8 @@ export class PayService {
           lastPay: last.pay,
           leaving: leavingOf(person.leavingRecord),
           exitChecklist: checklist ? checklistProgress(checklist) : null,
+          noteCount: person._count.payNotesAbout,
+          notesForMe: waitingFor.get(person.id) ?? 0,
         });
       } else {
         const raise = person.payRaises[0];
@@ -156,6 +178,8 @@ export class PayService {
           ...personOf(person),
           ...currentOf(changes, today),
           upcoming: upcomingOf(changes, today),
+          noteCount: person._count.payNotesAbout,
+          notesForMe: waitingFor.get(person.id) ?? 0,
           openRaise: raise
             ? {
                 id: raise.id,
@@ -175,6 +199,11 @@ export class PayService {
   async person(employeeId: string, viewer: AuthUser) {
     await this.assertAllowed(viewer);
     const today = isoDate(practiceToday());
+    // Opening the person reads any note on them somebody asked the viewer to.
+    await this.prisma.payNoteRecipient.updateMany({
+      where: { employeeId: viewer.id, readAt: null, note: { employeeId } },
+      data: { readAt: new Date() },
+    });
     const person = await this.prisma.employee.findFirst({
       where: { id: employeeId, ...NOT_A_PROVIDER },
       select: {
@@ -188,6 +217,16 @@ export class PayService {
           orderBy: [{ requestedOn: 'desc' }, { createdAt: 'desc' }],
         },
         leavingRecord: { include: { updatedBy: PERSON_NAME } },
+        payNotesAbout: {
+          include: {
+            author: PERSON_NAME,
+            recipients: {
+              select: { employeeId: true, readAt: true, employee: PERSON_NAME },
+              orderBy: { toldAt: 'asc' },
+            },
+          },
+          orderBy: [{ notedOn: 'desc' }, { createdAt: 'desc' }],
+        },
         checklists: {
           where: { kind: ChecklistKind.OFFBOARDING },
           select: { id: true, completedAt: true, tasks: { select: { status: true } } },
@@ -216,6 +255,8 @@ export class PayService {
         updatedAt: person.leavingRecord?.updatedAt.toISOString() ?? null,
       },
       exitChecklist: checklist ? checklistProgress(checklist) : null,
+      notes: person.payNotesAbout.map((note) => payNoteOf(note, viewer)),
+      notifiable: await this.notifiable(viewer),
     };
   }
 
@@ -457,6 +498,133 @@ export class PayService {
     return this.person(employeeId, actor);
   }
 
+  // ---------------------------------------------------------------- notes
+
+  async addNote(employeeId: string, dto: PayNoteDto, actor: AuthUser) {
+    await this.assertAllowed(actor);
+    await this.assertPerson(employeeId);
+    const notedOn = this.checkNote(dto);
+    const told = await this.checkNotify(dto.notify, actor);
+    const note = await this.prisma.payNote.create({
+      data: { employeeId, authorId: actor.id, notedOn: toUtcDate(notedOn), body: dto.body.trim() },
+      select: { id: true },
+    });
+    this.logger.log(`Pay note ${note.id} on ${employeeId} written by ${actor.id}`);
+    await this.tell(note.id, employeeId, told, actor);
+    return this.person(employeeId, actor);
+  }
+
+  async updateNote(id: string, dto: PayNoteDto, actor: AuthUser) {
+    await this.assertAllowed(actor);
+    const note = await this.findNote(id);
+    if (!mayEditPayNote(actor, note)) {
+      throw new ForbiddenException('Only the person who wrote a note can change it.');
+    }
+    const notedOn = this.checkNote(dto);
+    const told = await this.checkNotify(dto.notify, actor);
+    await this.prisma.payNote.update({
+      where: { id },
+      data: { notedOn: toUtcDate(notedOn), body: dto.body.trim(), editedAt: new Date() },
+    });
+    this.logger.log(`Pay note ${id} edited by ${actor.id}`);
+    await this.tell(id, note.employeeId, told, actor);
+    return this.person(note.employeeId, actor);
+  }
+
+  async removeNote(id: string, actor: AuthUser) {
+    await this.assertAllowed(actor);
+    const note = await this.findNote(id);
+    if (!mayRemovePayNote(actor, note)) {
+      throw new ForbiddenException('Only the person who wrote a note, or an admin, can remove it.');
+    }
+    await this.prisma.payNote.delete({ where: { id } });
+    this.logger.log(`Pay note ${id} removed by ${actor.id}`);
+    return this.person(note.employeeId, actor);
+  }
+
+  /// Who a note can be shown to: everybody else who can open Pay & raises.
+  private async notifiable(viewer: AuthUser) {
+    const people = await this.prisma.employee.findMany({
+      where: {
+        ...A_PERSON,
+        canSeeRotaCost: true,
+        employmentStatus: { not: EmploymentStatus.TERMINATED },
+        id: { not: viewer.id },
+      },
+      select: { id: true, firstName: true, lastName: true, preferredName: true },
+      orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+    });
+    return people.map((person) => ({
+      id: person.id,
+      name: `${person.preferredName ?? person.firstName} ${person.lastName}`,
+    }));
+  }
+
+  /// The people to tell, each one who can open pay notes themselves.
+  private async checkNotify(ids: string[] | undefined, actor: AuthUser): Promise<string[]> {
+    const wanted = [...new Set(ids ?? [])];
+    if (wanted.length === 0) return [];
+    const allowed = new Set((await this.notifiable(actor)).map((person) => person.id));
+    if (wanted.some((id) => !allowed.has(id))) {
+      throw new BadRequestException(
+        'Only somebody else who sees Pay & raises can be told about a pay note.',
+      );
+    }
+    return wanted;
+  }
+
+  /// Bell and email to the people not told about this note before: who
+  /// wrote it and whose pay, never the words or an amount. They read it
+  /// behind their own PIN.
+  private async tell(noteId: string, employeeId: string, ids: string[], actor: AuthUser) {
+    if (ids.length === 0) return;
+    const already = await this.prisma.payNoteRecipient.findMany({
+      where: { noteId, employeeId: { in: ids } },
+      select: { employeeId: true },
+    });
+    const told = new Set(already.map((row) => row.employeeId));
+    const fresh = ids.filter((id) => !told.has(id));
+    if (fresh.length === 0) return;
+    await this.prisma.payNoteRecipient.createMany({
+      data: fresh.map((id) => ({ noteId, employeeId: id })),
+      skipDuplicates: true,
+    });
+    const [writer, subject] = await Promise.all([
+      this.prisma.employee.findUniqueOrThrow({
+        where: { id: actor.id },
+        select: { firstName: true, lastName: true, preferredName: true },
+      }),
+      this.prisma.employee.findUniqueOrThrow({
+        where: { id: employeeId },
+        select: { firstName: true, lastName: true, preferredName: true },
+      }),
+    ]);
+    await this.notifications.personal(
+      fresh,
+      NotificationKind.PAY,
+      payNoteWords(writer, subject, employeeId),
+    );
+    this.logger.log(`Pay note ${noteId}: ${fresh.length} told by ${actor.id}`);
+  }
+
+  /// The day the note is for (today when not given), once the note is fine.
+  private checkNote(dto: PayNoteDto): string {
+    const today = isoDate(practiceToday());
+    const notedOn = dto.notedOn ? dto.notedOn.slice(0, 10) : today;
+    const problem = payNoteProblem(dto.body, notedOn, today);
+    if (problem) throw new BadRequestException(problem);
+    return notedOn;
+  }
+
+  private async findNote(id: string) {
+    const note = await this.prisma.payNote.findFirst({
+      where: { id, employee: NOT_A_PROVIDER },
+      select: { id: true, employeeId: true, authorId: true },
+    });
+    if (!note) throw new NotFoundException('That note is not on file any more.');
+    return note;
+  }
+
   // ------------------------------------------------------------- helpers
 
   private async assertAllowed(viewer: AuthUser) {
@@ -559,6 +727,53 @@ function checklistProgress(checklist: {
     done: checklist.tasks.filter((task) => task.status !== ChecklistTaskStatus.PENDING).length,
     total: checklist.tasks.length,
     completed: checklist.completedAt !== null,
+  };
+}
+
+export interface PayNoteView {
+  id: string;
+  notedOn: string;
+  body: string;
+  author: string | null;
+  createdAt: string;
+  editedAt: string | null;
+  canEdit: boolean;
+  canRemove: boolean;
+  /// The people asked to read it, and when they did.
+  told: { id: string; name: string; readAt: string | null }[];
+}
+
+function payNoteOf(
+  note: {
+    id: string;
+    notedOn: Date;
+    body: string;
+    authorId: string | null;
+    author: { firstName: string; lastName: string } | null;
+    createdAt: Date;
+    editedAt: Date | null;
+    recipients: {
+      employeeId: string;
+      readAt: Date | null;
+      employee: { firstName: string; lastName: string };
+    }[];
+  },
+  viewer: AuthUser,
+): PayNoteView {
+  return {
+    id: note.id,
+    notedOn: isoDate(note.notedOn),
+    body: note.body,
+    author: note.author ? fullName(note.author) : null,
+    createdAt: note.createdAt.toISOString(),
+    editedAt: note.editedAt?.toISOString() ?? null,
+    canEdit: mayEditPayNote(viewer, note),
+    canRemove: mayRemovePayNote(viewer, note),
+    told: note.recipients.map((row) => ({
+      id: row.employeeId,
+      name: fullName(row.employee),
+      readAt: row.readAt?.toISOString() ?? null,
+    })),
   };
 }
 

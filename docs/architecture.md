@@ -5899,6 +5899,29 @@ out of both the screen and the rota's cost by one filter, `NOT_A_PROVIDER`.
 Their pay models differ (provider productivity) and Dominguez left them for
 later.
 
+**Notes on pay (`PayNote`, November 2026)**: after four raises were settled
+over email, Angelica asked for "a section under 'Pay and Position' that has
+'Previous recorded raises/comments'". Free text per person, with the day it
+happened (`notedOn`, today or earlier, so an old evaluation sheet's raises can
+go in on their own days), who wrote it and when it was edited. Read only with
+the person on Pay & raises (`PayService.person`; the overview carries a count,
+never the words), so the same people and the same PIN. Rules in
+`staff-records/pay-notes.ts`: the writer edits, the writer or an admin
+removes. Unlike the confidential staff notes, the rota-cost people see notes
+about themselves, as they already see their own pay there. A note is never
+pay: the rota's cost still reads `EmploymentChange` only.
+
+**Asking somebody to read a pay note** (`PayNoteRecipient`): the writer
+ticks any of the other rota-cost people (`notifiable`, checked on the server,
+so nobody who cannot open pay notes is ever told about one). The alert goes
+through `NotificationsService.personal` (bell, email, phone push), so its
+words leave the app: `payNoteWords` names the writer and whose pay and
+nothing more. "Read" is set when the person next loads that person on Pay &
+raises (`PayService.person` marks their unread rows first), not when they
+press the bell, since the bell is outside the PIN. The overview counts each
+viewer's unread rows per person (`notesForMe`). The page keeps the open
+person in the address (`?person=`) so the alert's link lands on them.
+
 ## The exit checklist (October 2026)
 
 Dominguez asked for "an exit employee checklist for terminated employees (i.e.

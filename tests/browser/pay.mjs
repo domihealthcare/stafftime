@@ -214,6 +214,107 @@ await step('approving it from a day to come puts it in the history as coming up'
     .waitFor();
 });
 
+await step('notes and past raises: written, changed and removed on the person', async () => {
+  const row = admin.getByTestId('pay-row').filter({ hasText: 'Casey Paysuite' });
+  await row.getByRole('button').click();
+  const notes = dialog().getByTestId('pay-notes');
+  await notes.getByText('No notes yet.').waitFor();
+  await notes.getByRole('button', { name: '+ Add a note' }).click();
+  await notes.getByLabel('Note', { exact: true }).fill('Asked for $25. Agreed $24 from the first payroll in January.\nNow also does RPM.');
+  await notes.getByLabel('When it happened').fill(addDays(today(), -30));
+  await notes.getByRole('button', { name: 'Save note' }).click();
+  const note = notes.getByTestId('pay-note');
+  await note.getByText(/Agreed \$24/).waitFor();
+  const stored = sql(`select "notedOn"::text from pay_notes where "employeeId" = '${casey.id}'`);
+  if (stored !== addDays(today(), -30)) throw new Error(`stored the day as ${stored}`);
+
+  // A day still to come is refused; so is somebody not on the pay list.
+  const future = await call(admin, `/pay/${casey.id}/notes`, {
+    method: 'POST',
+    body: JSON.stringify({ body: 'Later', notedOn: addDays(today(), 1) }),
+  });
+  if (future.status !== 400) throw new Error(`a day to come answered ${future.status}`);
+  const outsider = await call(manager, `/pay/${casey.id}/notes`, {
+    method: 'POST',
+    body: JSON.stringify({ body: 'Not mine to write' }),
+  });
+  if (outsider.status !== 403) throw new Error(`a manager not on the list got ${outsider.status}`);
+  // Never in the overview's words, only a count.
+  const overview = await call(admin, '/pay');
+  if (JSON.stringify(overview.body).includes('Agreed $24')) throw new Error('the overview carries the words');
+
+  await note.getByRole('button', { name: /^Edit the / }).click();
+  await notes.getByLabel('Note', { exact: true }).fill('Asked for $25. Agreed $24 from the first payroll in January.');
+  await notes.getByRole('button', { name: 'Save changes' }).click();
+  await note.getByText(/Edited/).waitFor();
+  if ((await note.innerText()).includes('RPM')) throw new Error('the old words are still there');
+
+  await dialog().getByRole('button', { name: 'Close' }).click();
+  await row.getByText(/1 note\b/).waitFor();
+
+  await row.getByRole('button').click();
+  await dialog().getByTestId('pay-note').getByRole('button', { name: /^Remove the / }).click();
+  await admin.getByRole('alertdialog').getByRole('button', { name: 'Yes, remove it' }).click();
+  await dialog().getByTestId('pay-notes').getByText('No notes yet.').waitFor();
+  const left = sql(`select count(*) from pay_notes where "employeeId" = '${casey.id}'`);
+  if (left !== '0') throw new Error(`${left} notes left after removing`);
+  await dialog().getByRole('button', { name: 'Close' }).click();
+});
+
+await step('a note can ask somebody else on Pay & raises to read it', async () => {
+  const managerMe = (await call(manager, '/auth/me')).body;
+  const managerId = managerMe.employee?.id ?? managerMe.id;
+  // Somebody who cannot open pay notes cannot be told about one.
+  const refused = await call(admin, `/pay/${casey.id}/notes`, {
+    method: 'POST',
+    body: JSON.stringify({ body: 'For the manager', notify: [managerId] }),
+  });
+  if (refused.status !== 400) throw new Error(`telling somebody off the list answered ${refused.status}`);
+
+  const granted = await call(admin, `/rota-cost/access/${managerId}`, { method: 'PUT' });
+  if (granted.status !== 200) throw new Error(`grant answered ${granted.status}`);
+  await admin.reload({ waitUntil: 'networkidle' });
+  await admin.getByTestId('pay-row').filter({ hasText: 'Casey Paysuite' }).getByRole('button').click();
+  const notes = dialog().getByTestId('pay-notes');
+  await notes.getByRole('button', { name: '+ Add a note' }).click();
+  await notes.getByLabel('Note', { exact: true }).fill('Asked for $26. Please look before Friday.');
+  await notes.getByRole('checkbox', { name: /Morgan|Manager/ }).first().check();
+  await notes.getByRole('button', { name: 'Save note' }).click();
+  const told = notes.getByTestId('pay-note-told');
+  await told.getByText(/not read yet/).waitFor();
+
+  // The bell (and email) say who and whose pay, never the words or amount.
+  const bell = await call(manager, '/notifications');
+  const items = bell.body.items ?? bell.body.notifications ?? bell.body;
+  const note = items.find((item) => item.kind === 'PAY');
+  if (!note) throw new Error(`no PAY notification: ${JSON.stringify(bell.body).slice(0, 300)}`);
+  if (!note.title.includes('wants you to read a note')) throw new Error(`title read "${note.title}"`);
+  if (/\$|26|Friday/.test(`${note.title} ${note.body}`)) throw new Error(`it carried the note: ${note.body}`);
+  if (note.link !== `/pay?person=${casey.id}`) throw new Error(`link was ${note.link}`);
+
+  // Their list says a note is waiting; following the link reads it.
+  await call(manager, '/pay-lock/unlock', {
+    method: 'POST',
+    body: JSON.stringify({ password: 'shift-change-2026' }),
+  });
+  const waiting = await call(manager, '/pay');
+  const row = waiting.body.current.find((person) => person.id === casey.id);
+  if (row?.notesForMe !== 1) throw new Error(`notesForMe was ${row?.notesForMe}`);
+  await manager.goto(`${BASE}${note.link}`, { waitUntil: 'networkidle' });
+  await manager.getByTestId('pay-person').getByText(/Please look before Friday/).waitFor();
+  const after = await call(manager, '/pay');
+  if (after.body.current.find((person) => person.id === casey.id)?.notesForMe !== 0) {
+    throw new Error('still waiting after it was opened');
+  }
+
+  // And the writer sees it was read.
+  await dialog().getByRole('button', { name: 'Close' }).click();
+  await admin.getByTestId('pay-row').filter({ hasText: 'Casey Paysuite' }).getByRole('button').click();
+  await dialog().getByTestId('pay-note-told').getByText(/read it/).waitFor();
+  await dialog().getByRole('button', { name: 'Close' }).click();
+  await call(admin, `/rota-cost/access/${managerId}`, { method: 'DELETE' });
+});
+
 await step('somebody who left has their leaving details and exit checklist', async () => {
   const left = await call(admin, `/employees/${drew.id}?terminationDate=${today()}`, { method: 'DELETE' });
   if (left.status >= 300) throw new Error(`terminate answered ${left.status}`);

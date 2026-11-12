@@ -487,21 +487,24 @@ model Employee {
 
   /// CME activities a provider asks to have approved, and their allowance
   /// (October 2026).
-  cmeRequests        CmeRequest[]     @relation("CmeRequestProvider")
-  cmeRequestsDecided CmeRequest[]     @relation("CmeRequestDecidedBy")
-  cmeAllowance       CmeAllowance?    @relation("CmeAllowanceProvider")
-  expenseRequests    ExpenseRequest[] @relation("ExpenseRequester")
-  expensesDecided    ExpenseRequest[] @relation("ExpenseDecidedBy")
-  staffNotesAbout    StaffNote[]      @relation("StaffNoteAbout")
-  staffNotesWritten  StaffNote[]      @relation("StaffNoteAuthor")
+  cmeRequests        CmeRequest[]       @relation("CmeRequestProvider")
+  cmeRequestsDecided CmeRequest[]       @relation("CmeRequestDecidedBy")
+  cmeAllowance       CmeAllowance?      @relation("CmeAllowanceProvider")
+  expenseRequests    ExpenseRequest[]   @relation("ExpenseRequester")
+  expensesDecided    ExpenseRequest[]   @relation("ExpenseDecidedBy")
+  staffNotesAbout    StaffNote[]        @relation("StaffNoteAbout")
+  staffNotesWritten  StaffNote[]        @relation("StaffNoteAuthor")
+  payNotesAbout      PayNote[]          @relation("PayNoteAbout")
+  payNotesWritten    PayNote[]          @relation("PayNoteAuthor")
+  payNotesForMe      PayNoteRecipient[]
   /// Face ID, Touch ID, a fingerprint or Windows Hello for signing in
   /// (November 2026). See `Passkey`.
   passkeys           Passkey[]
   /// A provider's saved signature, and every time one was stamped on a PDF
   /// (November 2026). See `SavedSignature`.
-  savedSignature     SavedSignature?  @relation("SavedSignatureOwner")
-  signatureUsesOf    SignatureUse[]   @relation("SignatureUseOwner")
-  signatureUsesBy    SignatureUse[]   @relation("SignatureUseBy")
+  savedSignature     SavedSignature?    @relation("SavedSignatureOwner")
+  signatureUsesOf    SignatureUse[]     @relation("SignatureUseOwner")
+  signatureUsesBy    SignatureUse[]     @relation("SignatureUseBy")
 
   /// Phones and computers that get the bell's notifications as push
   /// notifications (October 2026).
@@ -2668,6 +2671,9 @@ enum NotificationKind {
   DOWNTIME
   /// Your account: Face ID (a passkey) was set up for it, November 2026.
   ACCOUNT
+  /// Somebody on Pay & raises wants you to read a note on a person's pay
+  /// (November 2026). Who and whose pay only, never the words or amounts.
+  PAY
 }
 
 /// Something the app wants one person to know, shown under the bell in the
@@ -3172,6 +3178,50 @@ model PayRaise {
   @@index([employeeId, requestedOn])
   @@index([status])
   @@map("pay_raises")
+}
+
+/// A note on somebody's pay (November 2026, Kayla, Angelica and Dominguez,
+/// after a raise was settled by email: "can we add a section under 'Pay and
+/// Position' that has 'Previous recorded raises/comments'"). Free text on Pay &
+/// raises, for the rota-cost people only, behind the PIN: what was asked and
+/// agreed, added responsibilities, a raise from the old evaluation sheet. The
+/// day it happened (`notedOn`, today unless given) orders them. The writer
+/// edits theirs (marked edited); the writer or an admin removes it. Read only
+/// by `src/staff-records/pay.service.ts`; never in the payroll export, the
+/// Directory or the AI service. The pay itself still goes in EmploymentChange.
+model PayNote {
+  id         String    @id @default(uuid()) @db.Uuid
+  employeeId String    @db.Uuid
+  employee   Employee  @relation("PayNoteAbout", fields: [employeeId], references: [id], onDelete: Cascade)
+  authorId   String?   @db.Uuid
+  author     Employee? @relation("PayNoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  notedOn    DateTime  @db.Date
+  body       String
+  createdAt  DateTime  @default(now())
+  editedAt   DateTime?
+
+  recipients PayNoteRecipient[]
+
+  @@index([employeeId, notedOn])
+  @@map("pay_notes")
+}
+
+/// Somebody the writer of a pay note asked to read it (November 2026,
+/// Dominguez: "kayla wants me to read the note"): told on the bell and by
+/// email (who wrote it and whose pay, never the words), and marked read when
+/// they next open that person on Pay & raises. Only people who can open pay
+/// notes themselves (`canSeeRotaCost`) are ever told.
+model PayNoteRecipient {
+  noteId     String    @db.Uuid
+  note       PayNote   @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  employeeId String    @db.Uuid
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  toldAt     DateTime  @default(now())
+  readAt     DateTime?
+
+  @@id([noteId, employeeId])
+  @@index([employeeId, readAt])
+  @@map("pay_note_recipients")
 }
 
 /// Why somebody left (October 2026, Dominguez: "full leaving details but only

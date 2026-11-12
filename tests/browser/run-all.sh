@@ -125,6 +125,7 @@ reset_state() {
     -c "delete from employees where email like 'imp-%@example.com';" \
     -c "delete from employment_changes;" \
     -c "delete from pay_raises;" \
+    -c "delete from pay_notes;" \
     -c "delete from leaving_records;" \
     -c "delete from practice_events where title like 'Check-in: %';" \
     -c "delete from employee_personal_records;" \

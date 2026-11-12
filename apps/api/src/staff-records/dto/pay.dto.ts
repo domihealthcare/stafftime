@@ -1,5 +1,7 @@
 import { LeavingKind, PayRateUnit } from '@prisma/client';
 import {
+  ArrayMaxSize,
+  IsArray,
   IsBoolean,
   IsDateString,
   IsEnum,
@@ -8,10 +10,12 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   Max,
   MaxLength,
   Min,
 } from 'class-validator';
+import { MAX_PAY_NOTE_LENGTH } from '../pay-notes';
 
 const RATE = { maxDecimalPlaces: 2 } as const;
 const RATE_MESSAGE = { message: 'Pay is an amount in dollars and cents.' };
@@ -103,4 +107,24 @@ export class LeavingRecordDto {
   @IsOptional()
   @IsDateString()
   lastPaycheckOn?: string | null;
+}
+
+/// A note on somebody's pay: the words, and the day it happened (today if
+/// left out). Who it is about is in the address.
+export class PayNoteDto {
+  @IsString()
+  @MaxLength(MAX_PAY_NOTE_LENGTH)
+  body!: string;
+
+  @IsOptional()
+  @IsDateString()
+  notedOn?: string | null;
+
+  /// People on Pay & raises to tell about it ("Let someone know"). On an
+  /// edit, only the ones not told before are told.
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsUUID('all', { each: true })
+  notify?: string[];
 }
