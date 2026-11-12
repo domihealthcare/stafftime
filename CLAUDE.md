@@ -2566,7 +2566,20 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `staff-records/pay-notes.ts` (rules, pure), routes on `PayController`
   (`POST /pay/:employeeId/notes`, `PUT` / `DELETE /pay/notes/:id`),
   `PayNotesSection` in `pages/PayPage.tsx`; Help *Where do I write notes
-  about somebody's pay*; `tests/browser/pay.mjs`. **Nothing from the email
+  about somebody's pay*; `tests/browser/pay.mjs`. **Let someone know** (same
+  day, Dominguez: "is there a way to notify a person (i.e. kayla wants me to
+  read the note)"; his choices: **bell and email**, and **show who read
+  it**): the note form ticks any of the others who see Pay & raises (nobody
+  else, server-checked); each is told once, on the bell and by email (and
+  phone once switched on), "Kayla Bermeo wants you to read a note" / "A
+  note on Selena V's pay", **never the words or an amount**, linking to
+  `/pay?person=<id>` (the page opens that person, behind the PIN). Their list
+  says **A note for you to read** until they open that person, which marks
+  it read; the note shows "For X: not read yet" or "X read it" and when. An
+  edit can tell more people, never the same one twice.
+  `PayNoteRecipient` (`pay_note_recipients`, pinned), notification kind
+  `PAY` (migrations `20261112020000_pay_note_kind`,
+  `20261112030000_pay_note_recipients`), `payNoteWords` in `pay-notes.ts`. **Nothing from the email
   was entered**: the four raises go in on the live site, as notes and as
   approved raises from the first payroll. Worth carrying to the EMR module
   with Pay & raises.

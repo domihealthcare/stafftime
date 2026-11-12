@@ -5911,6 +5911,17 @@ removes. Unlike the confidential staff notes, the rota-cost people see notes
 about themselves, as they already see their own pay there. A note is never
 pay: the rota's cost still reads `EmploymentChange` only.
 
+**Asking somebody to read a pay note** (`PayNoteRecipient`): the writer
+ticks any of the other rota-cost people (`notifiable`, checked on the server,
+so nobody who cannot open pay notes is ever told about one). The alert goes
+through `NotificationsService.personal` (bell, email, phone push), so its
+words leave the app: `payNoteWords` names the writer and whose pay and
+nothing more. "Read" is set when the person next loads that person on Pay &
+raises (`PayService.person` marks their unread rows first), not when they
+press the bell, since the bell is outside the PIN. The overview counts each
+viewer's unread rows per person (`notesForMe`). The page keeps the open
+person in the address (`?person=`) so the alert's link lands on them.
+
 ## The exit checklist (October 2026)
 
 Dominguez asked for "an exit employee checklist for terminated employees (i.e.
