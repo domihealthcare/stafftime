@@ -1,13 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma, PtoStatus, PtoType } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
-import { isoDate } from '../common/util/calendar-date.util';
+import { isoDate, toUtcDate } from '../common/util/calendar-date.util';
 import { practiceToday } from '../common/util/zoned-time.util';
 import { NotificationsService } from '../email/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { countedDateList } from './counted-days';
 import { describeSplit } from './describe-time-off';
-import { ApprovedToWalk, PastBalanceSplit, walkApproved } from './past-balance-split';
+import { ApprovedToWalk, PastBalanceSplit, splitByYear, walkApproved } from './past-balance-split';
+import { splitWrites } from './split-writes';
 import { PtoPolicyService, TYPE_BUCKET } from './pto-policy.service';
 import { TimeOffDaysService } from './time-off-days.service';
 
@@ -26,9 +27,9 @@ export interface PastBalanceFix {
   isHalfDay: boolean;
   paidDays: number;
   unpaidDays: number;
-  /// The paid part's dates, or null when all of it becomes Unpaid.
-  paid: { startDate: string; endDate: string } | null;
-  unpaid: { startDate: string; endDate: string };
+  /// What it becomes, in date order: paid stretches stay as asked, the
+  /// others become Unpaid (more than two only across the turn of the year).
+  segments: { startDate: string; endDate: string; paid: boolean; days: number }[];
 }
 
 interface Found {
@@ -82,13 +83,12 @@ export class PastBalanceRepairService {
         isHalfDay: request.isHalfDay,
         paidDays: split.paidDays,
         unpaidDays: split.unpaidDays,
-        paid: split.paid
-          ? { startDate: isoDate(split.paid.startDate), endDate: isoDate(split.paid.endDate) }
-          : null,
-        unpaid: {
-          startDate: isoDate(split.unpaid.startDate),
-          endDate: isoDate(split.unpaid.endDate),
-        },
+        segments: split.segments.map((segment) => ({
+          startDate: isoDate(segment.startDate),
+          endDate: isoDate(segment.endDate),
+          paid: segment.paid,
+          days: segment.days,
+        })),
       }));
   }
 
@@ -105,40 +105,21 @@ export class PastBalanceRepairService {
     let done = 0;
     for (const { request, split } of found) {
       const reviewedAt = new Date();
-      const writes: Prisma.PrismaPromise<{ id: string }>[] = [
-        this.prisma.ptoRequest.update({
+      const writes: Prisma.PrismaPromise<{ id: string }>[] = splitWrites(
+        this.prisma,
+        request,
+        split,
+        {
           where: {
-            id: request.id,
             status: PtoStatus.APPROVED,
             type: request.type,
             startDate: request.startDate,
             endDate: request.endDate,
           },
-          data: split.paid
-            ? { endDate: split.paid.endDate }
-            : { type: PtoType.UNPAID, unpaidPastBalanceOf: request.type, pastBalance: false },
-          select: { id: true },
-        }),
-      ];
-      if (split.paid) {
-        writes.push(
-          this.prisma.ptoRequest.create({
-            data: {
-              employeeId: request.employeeId,
-              type: PtoType.UNPAID,
-              status: PtoStatus.APPROVED,
-              startDate: split.unpaid.startDate,
-              endDate: split.unpaid.endDate,
-              isHalfDay: split.unpaid.isHalfDay,
-              reviewedById: actor.id,
-              reviewedAt,
-              splitFromId: request.id,
-              unpaidPastBalanceOf: request.type,
-            },
-            select: { id: true },
-          }),
-        );
-      }
+          reviewedById: actor.id,
+          reviewedAt,
+        },
+      );
       writes.push(
         this.prisma.ptoChange.create({
           data: {
@@ -220,9 +201,12 @@ export class PastBalanceRepairService {
       ),
     ]);
 
-    const found: Found[] = [];
+    // What each splittable request found left in each year's walk, so one
+    // running into the next policy year is judged on both (November 2026).
+    const leftIn = new Map<string, Map<number, number>>();
     keys.forEach((key, index) => {
       const bucket = key.split(':')[1] as 'vacation' | 'sick';
+      const year = Number(key.split(':')[2]);
       const balance = balances[index];
       const from = balance.yearStart;
       const to = balance.yearEnd;
@@ -230,20 +214,43 @@ export class PastBalanceRepairService {
       const walk: ApprovedToWalk[] = groups.get(key)!.map((request) => {
         const closed = closedByPerson.get(request.employeeId) ?? new Set<string>();
         const dates = countedDateList(request, closed).filter((d) => d >= from && d <= to);
-        const inOneYear = isoDate(request.startDate) >= from && isoDate(request.endDate) <= to;
         return {
           id: request.id,
           request,
           countedDates: dates,
-          splittable: inOneYear && request.recordedById === null && request._count.changes === 0,
+          splittable: request.recordedById === null && request._count.changes === 0,
         };
       });
-      const splits = walkApproved(walk, allowance.available - allowance.usedBefore);
-      for (const request of groups.get(key)!) {
-        const split = splits.get(request.id);
-        if (split) found.push({ request, split });
+      const leftBefore = new Map<string, number>();
+      walkApproved(walk, allowance.available - allowance.usedBefore, leftBefore);
+      for (const [id, left] of leftBefore) {
+        const byYear = leftIn.get(id) ?? new Map<number, number>();
+        byYear.set(year, left);
+        leftIn.set(id, byYear);
       }
     });
+
+    const found: Found[] = [];
+    for (const request of requests) {
+      const left = leftIn.get(request.id);
+      if (!left) continue;
+      // Every year it falls in, in order. A year not walked (one before this
+      // policy year, whose payroll is done) counts as covering its days.
+      const closed = closedByPerson.get(request.employeeId) ?? new Set<string>();
+      const byYear = new Map<number, string[]>();
+      for (const date of countedDateList(request, closed)) {
+        const year = this.policy.policyYearOf(toUtcDate(date), policy);
+        byYear.set(year, [...(byYear.get(year) ?? []), date]);
+      }
+      const parts = [...byYear.entries()]
+        .sort(([a], [b]) => a - b)
+        .map(([year, countedDates]) => ({
+          countedDates,
+          left: left.get(year) ?? Number.POSITIVE_INFINITY,
+        }));
+      const split = splitByYear(request, parts);
+      if (split) found.push({ request, split });
+    }
     return found.sort((a, b) => a.request.startDate.getTime() - b.request.startDate.getTime());
   }
 

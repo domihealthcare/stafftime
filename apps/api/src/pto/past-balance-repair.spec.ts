@@ -7,6 +7,12 @@ import { PastBalanceRepairService } from './past-balance-repair.service';
  * which requests are found, and what splitting one writes.
  */
 describe('PastBalanceRepairService', () => {
+  // The walk is for this policy year and later: fixed in November 2026.
+  beforeAll(() => {
+    jest.useFakeTimers({ now: new Date('2026-11-12T15:00:00.000Z'), doNotFake: ['nextTick'] });
+  });
+  afterAll(() => jest.useRealTimers());
+
   const day = (d: string) => new Date(`${d}T00:00:00.000Z`);
   const manager = { id: 'mgr-1', email: 'morgan@domihealthcare.com', role: Role.MANAGER };
   const frankie = {
@@ -54,10 +60,11 @@ describe('PastBalanceRepairService', () => {
         start: new Date(Date.UTC(year, 0, 1)),
         end: new Date(Date.UTC(year + 1, 0, 1)),
       }),
-      balancesOn: jest.fn(async (asked: unknown[]) =>
-        asked.map(() => ({
-          yearStart: '2026-01-01',
-          yearEnd: '2026-12-31',
+      // Each calendar year has its own 5 sick days.
+      balancesOn: jest.fn(async (asked: { day: Date }[]) =>
+        asked.map(({ day: on }) => ({
+          yearStart: `${on.getUTCFullYear()}-01-01`,
+          yearEnd: `${on.getUTCFullYear()}-12-31`,
           sick: { available: 5, usedBefore: 0 },
           vacation: { available: 15, usedBefore: 0 },
         })),
@@ -82,8 +89,7 @@ describe('PastBalanceRepairService', () => {
       id: 'past',
       paidDays: 0,
       unpaidDays: 2,
-      paid: null,
-      unpaid: { startDate: '2026-11-09', endDate: '2026-11-10' },
+      segments: [{ startDate: '2026-11-09', endDate: '2026-11-10', paid: false, days: 2 }],
     });
   });
 
@@ -136,5 +142,43 @@ describe('PastBalanceRepairService', () => {
       new Prisma.PrismaClientKnownRequestError('gone', { code: 'P2025', clientVersion: 'x' }),
     );
     await expect(service.split(['past'], manager)).resolves.toEqual({ split: 0 });
+  });
+
+  it('judges a request across the turn of the year on each year (November 2026)', async () => {
+    // The week in November used all of 2026's 5 sick days. Mon 28 December to
+    // Tue 5 January: its 4 December days are past 2026's balance, its 3
+    // January days are paid from 2027's.
+    const crossing = {
+      ...fits,
+      id: 'crossing',
+      startDate: day('2026-12-28'),
+      endDate: day('2027-01-05'),
+      createdAt: day('2026-10-03'),
+    };
+    const { service, prisma } = build([fits, crossing]);
+    const found = await service.list(manager);
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatchObject({
+      id: 'crossing',
+      paidDays: 3,
+      unpaidDays: 4,
+      segments: [
+        { startDate: '2026-12-28', endDate: '2026-12-31', paid: false, days: 4 },
+        { startDate: '2027-01-01', endDate: '2027-01-05', paid: true, days: 3 },
+      ],
+    });
+
+    await service.split(['crossing'], manager);
+    const update = prisma.ptoRequest.update.mock.calls[0][0];
+    expect(update.data).toMatchObject({
+      type: PtoType.UNPAID,
+      unpaidPastBalanceOf: PtoType.SICK,
+    });
+    expect(isoDate(update.data.endDate)).toBe('2026-12-31');
+    const part = prisma.ptoRequest.create.mock.calls[0][0].data;
+    expect(part).toMatchObject({ type: PtoType.SICK, splitFromId: 'crossing' });
+    expect(part.unpaidPastBalanceOf).toBeNull();
+    expect(isoDate(part.startDate)).toBe('2027-01-01');
+    expect(isoDate(part.endDate)).toBe('2027-01-05');
   });
 });

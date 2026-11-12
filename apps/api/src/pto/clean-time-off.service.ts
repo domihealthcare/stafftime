@@ -1,10 +1,10 @@
 import { HttpException, Injectable, Logger } from '@nestjs/common';
 import { PtoStatus, PtoType } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
-import { isoDate } from '../common/util/calendar-date.util';
+import { addUtcDays, isoDate, toUtcDate } from '../common/util/calendar-date.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { notCleanBecause } from './clean-time-off';
-import { PtoPolicyService } from './pto-policy.service';
+import { PtoBalance, PtoPolicyService } from './pto-policy.service';
 import { PtoService } from './pto.service';
 import { clashesIn, readClashFacts } from './time-off-clashes';
 
@@ -53,17 +53,36 @@ export class CleanTimeOffService {
       ),
       this.pto.conflictingShiftsFor(requests),
     ]);
+    // A request into the next policy year must have enough left in that
+    // year too (November 2026: each year judged on its own).
+    const crossing = requests
+      .map((request, index) => ({ request, index }))
+      .filter(({ request, index }) => isoDate(request.endDate) > balances[index].yearEnd);
+    const nextYear = new Map<number, PtoBalance>();
+    if (crossing.length > 0) {
+      const later = await this.policy.balancesOn(
+        crossing.map(({ request, index }) => ({
+          employeeId: request.employeeId,
+          day: addUtcDays(toUtcDate(balances[index].yearEnd), 1),
+        })),
+      );
+      crossing.forEach(({ index }, at) => nextYear.set(index, later[at]));
+    }
     return requests.map((request, index) => {
       const balance = balances[index];
+      const remainingIn = (one: PtoBalance) =>
+        request.type === PtoType.VACATION
+          ? one.vacation.remaining
+          : request.type === PtoType.SICK
+            ? one.sick.remaining
+            : null;
       const clashes = clashesIn(facts, isoDate(request.startDate), isoDate(request.endDate), {
         employeeId: request.employeeId,
       });
-      const remaining =
-        request.type === PtoType.VACATION
-          ? balance.vacation.remaining
-          : request.type === PtoType.SICK
-            ? balance.sick.remaining
-            : null;
+      const following = nextYear.get(index);
+      const first = remainingIn(balance);
+      const second = following ? remainingIn(following) : null;
+      const remaining = first === null || second === null ? first : Math.min(first, second);
       const why = notCleanBecause({
         type: request.type,
         remaining,

@@ -94,10 +94,10 @@ const WED = (() => {
 const NEXT_WED = plusDays(WED, 7);
 const FRIDAY = plusDays(WED, 2);
 // Two weeks of weekdays (Monday to the Sunday after next) for the step that
-// asks for more than is left. A request across New Year is left out of the
-// balance check (it is counted against the year it starts in, with a note),
-// so from mid November the dates after NEXT_WED would cross into January and
-// show no warning: move on a week at a time until both ends are in one year.
+// asks for more than is left. A request across New Year is judged year by
+// year (its own step below), with a warning for each year, so from mid
+// November the dates after NEXT_WED would cross into January and read
+// differently: move on a week at a time until both ends are in one year.
 const LONG = (() => {
   let start = plusDays(NEXT_WED, 5);
   while (start.getUTCFullYear() !== plusDays(start, 13).getUTCFullYear()) {
@@ -218,6 +218,81 @@ await step(
 
 const max = await signIn('ma@domihealthcare.com');
 const maxId = sql("select id from employees where email = 'ma@domihealthcare.com'");
+
+await step('across New Year, each year is checked on its own balance', async () => {
+  // Two years on, so nothing else this suite asks for is in those years:
+  // 14 December to 15 January, sick, 5 days a year.
+  const year = Number(
+    new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }).slice(0, 4),
+  ) + 2;
+  const from = `${year}-12-14`;
+  const to = `${year + 1}-01-15`;
+  const weekdays = (a, b) => {
+    let n = 0;
+    for (let d = new Date(`${a}T12:00:00Z`); d <= new Date(`${b}T12:00:00Z`); d = plusDays(d, 1)) {
+      if (d.getUTCDay() !== 0 && d.getUTCDay() !== 6) n += 1;
+    }
+    return n;
+  };
+  const december = weekdays(from, `${year}-12-31`);
+  const january = weekdays(`${year + 1}-01-01`, to);
+
+  await frankie.goto(`${BASE}/time-off?request=1`, { waitUntil: 'networkidle' });
+  await frankie.getByLabel('Type').selectOption('SICK');
+  await frankie.getByLabel('First day').fill(from);
+  await frankie.getByLabel('Last day').fill(to);
+  const warning = frankie.getByTestId('past-balance');
+  await warning
+    .getByText(`You have 5 sick days left in ${year} - this asks for ${december} days that year.`)
+    .waitFor({ timeout: 10000 });
+  await warning
+    .getByText(`You have 5 sick days left in ${year + 1} - this asks for ${january} days that year.`)
+    .waitFor();
+  await warning.getByText(`The ${december - 5 + january - 5} days past it may be unpaid`).waitFor();
+  if (await frankie.getByRole('button', { name: 'Send request' }).isEnabled()) {
+    throw new Error('it could be sent without the tick');
+  }
+  const refused = await api(frankie, '/pto', {
+    method: 'POST',
+    body: JSON.stringify({ type: 'SICK', startDate: from, endDate: to }),
+  });
+  if (refused.status !== 400 || !/may be unpaid/.test(JSON.stringify(refused.body))) {
+    throw new Error(`without the tick: ${refused.status} ${JSON.stringify(refused.body)}`);
+  }
+  await warning.getByRole('checkbox').check();
+  const sent = frankie.waitForResponse(
+    (r) => r.url().endsWith('/api/pto') && r.request().method() === 'POST',
+  );
+  await frankie.getByRole('button', { name: 'Send request' }).click();
+  const created = await (await sent).json();
+  if (!created.pastBalance) throw new Error('not marked past the balance');
+
+  // The manager sees both unpaid stretches before deciding, then approving
+  // splits it: paid, unpaid, paid, unpaid.
+  const manager = await signIn('manager@domihealthcare.com');
+  await manager.goto(`${BASE}/time-off`, { waitUntil: 'networkidle' });
+  const card = manager.getByTestId(`time-off-request-${created.id}`);
+  const split = card.getByTestId('approval-split');
+  await split.waitFor({ timeout: 10000 });
+  const words = await split.innerText();
+  if (!/10 days are paid as Sick/.test(words) || !/ and /.test(words.split('unpaid:')[1] ?? '')) {
+    throw new Error(`said "${words}"`);
+  }
+  const approved = await api(manager, `/pto/${created.id}/review`, {
+    method: 'PATCH',
+    body: JSON.stringify({ decision: 'APPROVED' }),
+  });
+  if (approved.status !== 200) throw new Error(`approve answered ${approved.status}`);
+  const rows = sql(
+    `select type || ' ' || "startDate"::text || '..' || "endDate"::text from pto_requests where id = '${created.id}' or "splitFromId" = '${created.id}' order by "startDate"`,
+  ).split('\n');
+  const kinds = rows.map((row) => row.split(' ')[0]);
+  if (kinds.join(',') !== 'SICK,UNPAID,SICK,UNPAID') {
+    throw new Error(`split into ${rows.join(' | ')}`);
+  }
+  if (!rows[2].includes(`${year + 1}-01-01..`)) throw new Error(`January paid part: ${rows[2]}`);
+  await manager.context().close();
+});
 
 await step('sick days are not cut down for starting part-way through the year', async () => {
   const year = new Date().getFullYear();

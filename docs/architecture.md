@@ -971,9 +971,27 @@ day before the unpaid part starts, so a weekend between them stays with it.
 All in one transaction, still conditional on the request being `PENDING`, so
 two managers deciding at once still cannot both succeed. A `PtoChange` row
 records the split ("Approved past the sick balance: 3 days Sick, ...; 2
-days Unpaid, ..."). A request across the policy year's end is not split
-(as before, it is compared against no single year). Shifts are handled over
-the whole original range: the person is off either way.
+days Unpaid, ..."). Shifts are handled over the whole original range: the
+person is off either way.
+
+**Across the end of the policy year, each year on its own** (12 November
+2026, Dominguez: "check each year separately"). Until then a request over
+New Year was left out of every check: no warning on the form, no tick, not
+marked past the balance, never split, while its days were still counted
+against each year (`countedDays` clips to the year). Now
+`TimeOffDaysService.balancesAcross` reads the balance of every policy year a
+request falls in, and `splitByYear` (`past-balance-split.ts`) pays each
+year's days from that year's balance, joining neighbouring stretches of the
+same kind: a request can be paid, unpaid, then paid again. The request keeps
+its first stretch; every later one is its own row with `splitFromId` (the
+same root, so cancelling any cancels all), Unpaid ones naming the balance,
+a paid one keeping the kind asked for (`split-writes.ts`, shared with the
+repair). The preview answers `years` (each year's days, what was left and
+after) and `pastBalance`; the form warns for each year that runs short, and
+`create` needs the tick for any of them. "Approve the clean time off" checks
+the next year's balance too. The repair walks each year as before and then
+judges a request across two years on both walks together (`walkApproved`'s
+`leftBefore`); a year before this policy year counts as covering its days.
 
 While a request waits, its card says what approving will do (`approvalSplit`
 on every listed request still `PENDING`, from one batch of balances).
@@ -994,9 +1012,10 @@ balances have started again), each person's approved requests drawing on a
 balance are walked in date order (`walkApproved` in
 `pto/past-balance-split.ts`), starting from `available - usedBefore`, each
 paid from what is left until it runs out, split by the same rule as approving.
-Time off an admin recorded, one a manager has changed since (any
-`PtoChange`), or one running into another policy year uses up its days but is
-never split: those were somebody's deliberate choice. A manager sees the list
+Time off an admin recorded, or one a manager has changed since (any
+`PtoChange`), uses up its days but is never split: those were somebody's
+deliberate choice. (One running into another policy year was skipped too
+until 12 November 2026; it is now judged on each year, see above.) A manager sees the list
 first, at the top of Time off requests (`GET /pto/past-balance`), never their
 own, and one press splits them (`POST /pto/past-balance/split`), worked out
 afresh, each in its own transaction guarded on the request still being

@@ -747,6 +747,12 @@ const STAFF: Section[] = [
               more days off are unpaid.
             </p>
             <p>
+              Time off that runs over New Year takes each year&rsquo;s days from that year&rsquo;s
+              balance: the December days from this year&rsquo;s, the January days from next
+              year&rsquo;s. The form shows both, and warns about whichever year you do not have
+              enough left in.
+            </p>
+            <p>
               A manager may change your time off afterwards - the kind, the dates, or a day paid
               after all. You are told on the bell and by email, and the request shows who changed
               it, when and why.
@@ -2488,14 +2494,16 @@ const MANAGERS: Section[] = [
             the days still covered as they were asked for and makes the rest a separate{' '}
             <strong>Unpaid</strong> part, approved with it, so the Time off screen says exactly
             which days payroll pays. Only whole days are paid: with half a day left, that half stays
-            in the balance. With nothing left, all of it is Unpaid. Cancelling either part cancels
-            both. To pay a day after all, edit the Unpaid part and make it Sick or PTO. Requests
-            approved before this (2 November 2026) that went past the balance are listed at the top
-            of the Time off screen, with what splitting each would do, and{' '}
-            <strong>Split them into paid and unpaid days</strong> puts them right in one go: each
-            person&rsquo;s requests this year are taken in date order, the earliest paid first. Time
-            off an admin recorded, or one a manager has changed since, is left as it is but still
-            uses up its days. Each person is told.
+            in the balance. With nothing left, all of it is Unpaid. Time off over New Year is
+            checked year by year: the December days against this year&rsquo;s balance and the
+            January days against next year&rsquo;s, so it can come out as paid, unpaid, then paid
+            again, each its own part. Cancelling any part cancels them all. To pay a day after all,
+            edit the Unpaid part and make it Sick or PTO. Requests approved before this (2 November
+            2026) that went past the balance are listed at the top of the Time off screen, with what
+            splitting each would do, and <strong>Split them into paid and unpaid days</strong> puts
+            them right in one go: each person&rsquo;s requests this year are taken in date order,
+            the earliest paid first. Time off an admin recorded, or one a manager has changed since,
+            is left as it is but still uses up its days. Each person is told.
           </p>
         ),
       },

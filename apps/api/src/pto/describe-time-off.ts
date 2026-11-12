@@ -44,16 +44,19 @@ export function dayCount(days: number): string {
 }
 
 /// "Approved past the sick balance: 3 days Sick, Mon, Nov 2 to Wed, Nov 4;
-/// 2 days Unpaid, Thu, Nov 5 to Fri, Nov 6". `opening` is what comes before
-/// "sick balance": "Approved past the", or "Split past the" for one put
-/// right after it was approved.
+/// 2 days Unpaid, Thu, Nov 5 to Fri, Nov 6". Across the turn of the year
+/// there may be more stretches, each named in turn. `opening` is what comes
+/// before "sick balance": "Approved past the", or "Split past the" for one
+/// put right after it was approved.
 export function describeSplit(
   request: { type: PtoType; startDate: Date; endDate: Date; isHalfDay: boolean },
   split: PastBalanceSplit,
   opening: string,
 ): string {
   const heading = `${opening} ${balanceName(request.type)} balance`;
-  const unpaid = `${dayCount(split.unpaidDays)} Unpaid, ${describeDates(split.unpaid)}`;
-  if (!split.paid) return `${heading}: ${unpaid}`;
-  return `${heading}: ${dayCount(split.paidDays)} ${TIME_OFF_KIND[request.type]}, ${describeDates({ ...split.paid, isHalfDay: false })}; ${unpaid}`;
+  const stretches = split.segments.map(
+    (segment) =>
+      `${dayCount(segment.days)} ${segment.paid ? TIME_OFF_KIND[request.type] : 'Unpaid'}, ${describeDates(segment)}`,
+  );
+  return `${heading}: ${stretches.join('; ')}`;
 }

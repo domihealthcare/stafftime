@@ -118,6 +118,8 @@ describe('PtoService', () => {
           inOneYear: true,
           remaining,
           after: remaining - taken,
+          years: [{ policyYear: 2026, days: taken, remaining, after: remaining - taken }],
+          pastBalance: remaining - taken < 0,
         };
       }),
     };
@@ -616,8 +618,22 @@ describe('PtoService', () => {
         split: {
           paidDays: 3,
           unpaidDays: 2,
-          paid: { startDate: day('2026-11-02'), endDate: day('2026-11-04') },
-          unpaid: { startDate: day('2026-11-05'), endDate: day('2026-11-06'), isHalfDay: false },
+          segments: [
+            {
+              startDate: day('2026-11-02'),
+              endDate: day('2026-11-04'),
+              isHalfDay: false,
+              paid: true,
+              days: 3,
+            },
+            {
+              startDate: day('2026-11-05'),
+              endDate: day('2026-11-06'),
+              isHalfDay: false,
+              paid: false,
+              days: 2,
+            },
+          ],
         },
       });
       await service.review('pto-1', { decision: PtoStatus.APPROVED }, manager);
@@ -652,8 +668,15 @@ describe('PtoService', () => {
         split: {
           paidDays: 0,
           unpaidDays: 5,
-          paid: null,
-          unpaid: { startDate: day('2026-11-02'), endDate: day('2026-11-06'), isHalfDay: false },
+          segments: [
+            {
+              startDate: day('2026-11-02'),
+              endDate: day('2026-11-06'),
+              isHalfDay: false,
+              paid: false,
+              days: 5,
+            },
+          ],
         },
       });
       await service.review('pto-1', { decision: PtoStatus.APPROVED }, manager);
@@ -670,14 +693,78 @@ describe('PtoService', () => {
         split: {
           paidDays: 3,
           unpaidDays: 2,
-          paid: { startDate: day('2026-11-02'), endDate: day('2026-11-04') },
-          unpaid: { startDate: day('2026-11-05'), endDate: day('2026-11-06'), isHalfDay: false },
+          segments: [
+            {
+              startDate: day('2026-11-02'),
+              endDate: day('2026-11-04'),
+              isHalfDay: false,
+              paid: true,
+              days: 3,
+            },
+            {
+              startDate: day('2026-11-05'),
+              endDate: day('2026-11-06'),
+              isHalfDay: false,
+              paid: false,
+              days: 2,
+            },
+          ],
         },
       });
       await service.review('pto-1', { decision: PtoStatus.APPROVED, shifts: 'REMOVE' }, manager);
       const where = prisma.shift.findMany.mock.calls[0][0].where;
       // The window reaches Friday, the end of the unpaid part.
       expect(where.startsAt.lt.getTime()).toBeGreaterThan(day('2026-11-06').getTime());
+    });
+
+    it('across the turn of the year, writes each stretch: unpaid in December, paid in January', async () => {
+      const crossing = {
+        ...pending,
+        startDate: day('2026-12-28'),
+        endDate: day('2027-01-05'),
+      };
+      const { service, prisma } = build({
+        request: crossing,
+        split: {
+          paidDays: 5,
+          unpaidDays: 2,
+          segments: [
+            {
+              startDate: day('2026-12-28'),
+              endDate: day('2026-12-29'),
+              isHalfDay: false,
+              paid: true,
+              days: 2,
+            },
+            {
+              startDate: day('2026-12-30'),
+              endDate: day('2026-12-31'),
+              isHalfDay: false,
+              paid: false,
+              days: 2,
+            },
+            {
+              startDate: day('2027-01-01'),
+              endDate: day('2027-01-05'),
+              isHalfDay: false,
+              paid: true,
+              days: 3,
+            },
+          ],
+        },
+      });
+      await service.review('pto-1', { decision: PtoStatus.APPROVED }, manager);
+      const update = prisma.ptoRequest.update.mock.calls[0][0];
+      expect(isoDate(update.data.endDate)).toBe('2026-12-29');
+      expect(update.data.type).toBeUndefined();
+      const parts = prisma.ptoRequest.create.mock.calls.map(
+        ([call]: [{ data: { type: PtoType; startDate: Date; endDate: Date } }]) =>
+          `${call.data.type} ${isoDate(call.data.startDate)}..${isoDate(call.data.endDate)}`,
+      );
+      expect(parts).toEqual(['UNPAID 2026-12-30..2026-12-31', 'SICK 2027-01-01..2027-01-05']);
+      expect(prisma.ptoChange.create.mock.calls[0][0].data.summary).toBe(
+        'Approved past the sick balance: 2 days Sick, Mon, Dec 28 to Tue, Dec 29; 2 days Unpaid, Wed, Dec 30 to Thu, Dec 31; 3 days Sick, Fri, Jan 1 to Tue, Jan 5',
+      );
     });
 
     it('splits nothing when it is declined', async () => {

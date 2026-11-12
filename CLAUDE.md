@@ -2584,10 +2584,28 @@ Beyond the phases, the parts worth knowing about before picking up work:
   approved raises from the first payroll. Worth carrying to the EMR module
   with Pay & raises. Same release, test only: `time-off-feedback.mjs` asked
   for two weeks of sick days starting a few weeks ahead, which from mid
-  November crosses New Year, and a request across policy years is left out
-  of the past-the-balance check (on purpose, `inOneYear`), so no warning
-  showed and it failed on `main` too; its dates now move on a week at a time
+  November crosses New Year, and a request across policy years was then left
+  out of the past-the-balance check (`inOneYear`; checked year by year since
+  1.51.1, below), so no warning showed and it failed on `main` too; its dates now move on a week at a time
   until both ends are in one year (`LONG`).
+- **Time off over New Year, checked year by year** (12 November 2026,
+  Dominguez, version 1.51.1; chosen over refusing such requests: "check each
+  year separately"): a request across the end of the policy year had no
+  past-the-balance warning, no tick, no **Past the balance** mark and no
+  split on approval (its days were still counted against each year). Now
+  each year's days are judged on that year's balance: the form says "4 days
+  in 2026, 1 left afterwards; 3 days in 2027, ..." and warns for each year
+  that runs short ("You have 2 sick days left in 2026 - this asks for 4 days
+  that year"), the tick is needed for any, approving splits by year (paid,
+  unpaid, paid again is possible; each stretch its own row on the same
+  `splitFromId`, a later paid one keeping its kind), the manager's card lists
+  the unpaid stretches, **Split them into paid and unpaid days** now covers
+  old approved ones across the year, and **Approve the clean time off**
+  checks the next year too. `splitByYear` in `pto/past-balance-split.ts`
+  (pure), `TimeOffDaysService.balancesAcross` and `preview().years`,
+  `pto/split-writes.ts`; no migration; Help's two time off topics;
+  `tests/browser/time-off-feedback.mjs` (a request two years on, so nothing
+  else is in those years). Worth carrying to the EMR module with time off.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

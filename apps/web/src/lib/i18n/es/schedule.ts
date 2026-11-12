@@ -200,8 +200,18 @@ export const SCHEDULE: Record<string, string> = {
   'working from home': 'trabajando desde casa',
   'Your manager will sort those out when they decide - you’ll be told.':
     'Tu gerente los arreglará cuando decida - se te avisará.',
-  'falls outside the {year} policy year, so it does not come off the balance above.':
-    'cae fuera del año de la política {year}, así que no se descuenta del saldo de arriba.',
+  '{n} in {year}, {left} left afterwards': '{n} en {year}, te quedarán {left}',
+  '{n} in {year}': '{n} en {year}',
+  'Each year’s days come off that year’s balance.':
+    'Los días de cada año se descuentan del saldo de ese año.',
+  'You have {left} sick days left in {year} - this asks for {days} that year.':
+    'Te quedan {left} días de enfermedad en {year} - esto pide {days} ese año.',
+  'You have {left} PTO days left in {year} - this asks for {days} that year.':
+    'Te quedan {left} días de PTO en {year} - esto pide {days} ese año.',
+  '{name} has {left} sick days left in {year} - this asks for {days} that year.':
+    'A {name} le quedan {left} días de enfermedad en {year} - esto pide {days} ese año.',
+  '{name} has {left} PTO days left in {year} - this asks for {days} that year.':
+    'A {name} le quedan {left} días de PTO en {year} - esto pide {days} ese año.',
   'weekends don’t count': 'los fines de semana no cuentan',
   'counts against the {year} policy year: {n} left afterwards.':
     'cuenta para el año de la política {year}: te quedarán {n}.',
@@ -229,6 +239,9 @@ export const SCHEDULE: Record<string, string> = {
     'Luego {days} sin pago, {range}: pasa del saldo de {balance}.',
   'Past the balance: once approved, {paid} are paid as {kind} and {unpaid} are unpaid, from {date}.':
     'Pasa del saldo: una vez aprobado, {paid} se pagan como {kind} y {unpaid} quedan sin pago, desde el {date}.',
+  'Past the balance: once approved, {paid} are paid as {kind} and {unpaid} are unpaid: {ranges}.':
+    'Pasa del saldo: una vez aprobado, {paid} se pagan como {kind} y {unpaid} quedan sin pago: {ranges}.',
+  ' and ': ' y ',
   'Past the balance: nothing is left, so once approved all of it is unpaid.':
     'Pasa del saldo: no queda nada, así que una vez aprobado todo queda sin pago.',
   'Changed by {name} on {date}': 'Cambiado por {name} el {date}',
