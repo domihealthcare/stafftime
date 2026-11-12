@@ -27,6 +27,7 @@ import type {
   PayLockStatus,
   PayOverview,
   PayPerson,
+  PayNoteInput,
   RaiseDecisionInput,
   RaiseMeetingInput,
   RaiseRequestInput,
@@ -1814,6 +1815,11 @@ export const api = {
   removeRaise: (id: string) => request<PayPerson>(`/pay/raises/${id}`, { method: 'DELETE' }),
   updateLeaving: (employeeId: string, body: Partial<LeavingDetails>) =>
     request<PayPerson>(`/pay/${employeeId}/leaving`, { method: 'PUT', body: JSON.stringify(body) }),
+  addPayNote: (employeeId: string, body: PayNoteInput) =>
+    request<PayPerson>(`/pay/${employeeId}/notes`, { method: 'POST', body: JSON.stringify(body) }),
+  updatePayNote: (id: string, body: PayNoteInput) =>
+    request<PayPerson>(`/pay/notes/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  removePayNote: (id: string) => request<PayPerson>(`/pay/notes/${id}`, { method: 'DELETE' }),
   payLock: () => request<PayLockStatus>('/pay-lock'),
   unlockPay: (proof: { pin: string } | { password: string }) =>
     request<PayLockStatus>('/pay-lock/unlock', { method: 'POST', body: JSON.stringify(proof) }),

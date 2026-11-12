@@ -5899,6 +5899,18 @@ out of both the screen and the rota's cost by one filter, `NOT_A_PROVIDER`.
 Their pay models differ (provider productivity) and Dominguez left them for
 later.
 
+**Notes on pay (`PayNote`, November 2026)**: after four raises were settled
+over email, Angelica asked for "a section under 'Pay and Position' that has
+'Previous recorded raises/comments'". Free text per person, with the day it
+happened (`notedOn`, today or earlier, so an old evaluation sheet's raises can
+go in on their own days), who wrote it and when it was edited. Read only with
+the person on Pay & raises (`PayService.person`; the overview carries a count,
+never the words), so the same people and the same PIN. Rules in
+`staff-records/pay-notes.ts`: the writer edits, the writer or an admin
+removes. Unlike the confidential staff notes, the rota-cost people see notes
+about themselves, as they already see their own pay there. A note is never
+pay: the rota's cost still reads `EmploymentChange` only.
+
 ## The exit checklist (October 2026)
 
 Dominguez asked for "an exit employee checklist for terminated employees (i.e.

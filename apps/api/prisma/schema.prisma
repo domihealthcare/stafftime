@@ -494,6 +494,8 @@ model Employee {
   expensesDecided    ExpenseRequest[] @relation("ExpenseDecidedBy")
   staffNotesAbout    StaffNote[]      @relation("StaffNoteAbout")
   staffNotesWritten  StaffNote[]      @relation("StaffNoteAuthor")
+  payNotesAbout      PayNote[]        @relation("PayNoteAbout")
+  payNotesWritten    PayNote[]        @relation("PayNoteAuthor")
   /// Face ID, Touch ID, a fingerprint or Windows Hello for signing in
   /// (November 2026). See `Passkey`.
   passkeys           Passkey[]
@@ -3172,6 +3174,30 @@ model PayRaise {
   @@index([employeeId, requestedOn])
   @@index([status])
   @@map("pay_raises")
+}
+
+/// A note on somebody's pay (November 2026, Kayla, Angelica and Dominguez,
+/// after a raise was settled by email: "can we add a section under 'Pay and
+/// Position' that has 'Previous recorded raises/comments'"). Free text on Pay &
+/// raises, for the rota-cost people only, behind the PIN: what was asked and
+/// agreed, added responsibilities, a raise from the old evaluation sheet. The
+/// day it happened (`notedOn`, today unless given) orders them. The writer
+/// edits theirs (marked edited); the writer or an admin removes it. Read only
+/// by `src/staff-records/pay.service.ts`; never in the payroll export, the
+/// Directory or the AI service. The pay itself still goes in EmploymentChange.
+model PayNote {
+  id         String    @id @default(uuid()) @db.Uuid
+  employeeId String    @db.Uuid
+  employee   Employee  @relation("PayNoteAbout", fields: [employeeId], references: [id], onDelete: Cascade)
+  authorId   String?   @db.Uuid
+  author     Employee? @relation("PayNoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  notedOn    DateTime  @db.Date
+  body       String
+  createdAt  DateTime  @default(now())
+  editedAt   DateTime?
+
+  @@index([employeeId, notedOn])
+  @@map("pay_notes")
 }
 
 /// Why somebody left (October 2026, Dominguez: "full leaving details but only

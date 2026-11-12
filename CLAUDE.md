@@ -134,7 +134,7 @@ what they are given to work on: a News post's words or an admin's notes, a
 pasted booking message, and for a time-off decline the person's first name,
 dates and the manager's words (counts of who else is off, never names).
 Never the clinical forms, the suggestion box, survey answers (360s included), staff
-profiles, staff notes, licenses, punch locations, the reps list, PINs or passwords;
+profiles, staff notes, pay notes, licenses, punch locations, the reps list, PINs or passwords;
 nothing is kept beyond a daily count, unless somebody saves what a helper
 wrote (and a post's Spanish, once translated, stays on the post). Off until
 `ANTHROPIC_API_KEY` is set — see `docs/ask-domi-staff-setup.md`.
@@ -2545,6 +2545,31 @@ Beyond the phases, the parts worth knowing about before picking up work:
   longer custom period keeps to the days with something), and a punch's day
   is New Jersey's, not the browser's. `days` in `TimesheetPage.tsx`;
   `tests/browser/correct.mjs`.
+- **Notes and past raises on Pay & raises** (12 November 2026, Dominguez,
+  after Kayla, Angelica and he settled four raises by email; Angelica: "can
+  we add a section under 'Pay and Position' that has 'Previous recorded
+  raises/comments'", and Kayla: "unclear where on DomiStaff to add previous
+  raises as listed on Employee Eval sheet"; version 1.51.0): a **Notes and
+  past raises** card on each person's pop-up, under Pay and position: **+ Add
+  a note**, the words (up to 2,000 characters) and **When it happened**
+  (today or earlier, so the eval sheet's raises go in on their own days),
+  newest first with who wrote it. The writer **Edits** theirs ("Edited" and
+  when); the writer or an admin removes it. **The same people as Pay &
+  raises** (`canSeeRotaCost`, off while viewing as somebody), behind the
+  PIN; they see notes about themselves, as they see their own pay there
+  (unlike the confidential staff notes). The list of staff shows "N notes",
+  never the words. **A note is not pay**: the card says a raise that took
+  effect also goes under Pay and position (+ Add a change) or is approved on
+  the Raise card, which is what the rota's cost reads. Never in the payroll
+  export, the Directory or the AI service. `PayNote` (`pay_notes`, migration
+  `20261112010000_pay_notes`, pinned by the schema guard),
+  `staff-records/pay-notes.ts` (rules, pure), routes on `PayController`
+  (`POST /pay/:employeeId/notes`, `PUT` / `DELETE /pay/notes/:id`),
+  `PayNotesSection` in `pages/PayPage.tsx`; Help *Where do I write notes
+  about somebody's pay*; `tests/browser/pay.mjs`. **Nothing from the email
+  was entered**: the four raises go in on the live site, as notes and as
+  approved raises from the first payroll. Worth carrying to the EMR module
+  with Pay & raises.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

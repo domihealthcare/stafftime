@@ -214,6 +214,53 @@ await step('approving it from a day to come puts it in the history as coming up'
     .waitFor();
 });
 
+await step('notes and past raises: written, changed and removed on the person', async () => {
+  const row = admin.getByTestId('pay-row').filter({ hasText: 'Casey Paysuite' });
+  await row.getByRole('button').click();
+  const notes = dialog().getByTestId('pay-notes');
+  await notes.getByText('No notes yet.').waitFor();
+  await notes.getByRole('button', { name: '+ Add a note' }).click();
+  await notes.getByLabel('Note', { exact: true }).fill('Asked for $25. Agreed $24 from the first payroll in January.\nNow also does RPM.');
+  await notes.getByLabel('When it happened').fill(addDays(today(), -30));
+  await notes.getByRole('button', { name: 'Save note' }).click();
+  const note = notes.getByTestId('pay-note');
+  await note.getByText(/Agreed \$24/).waitFor();
+  const stored = sql(`select "notedOn"::text from pay_notes where "employeeId" = '${casey.id}'`);
+  if (stored !== addDays(today(), -30)) throw new Error(`stored the day as ${stored}`);
+
+  // A day still to come is refused; so is somebody not on the pay list.
+  const future = await call(admin, `/pay/${casey.id}/notes`, {
+    method: 'POST',
+    body: JSON.stringify({ body: 'Later', notedOn: addDays(today(), 1) }),
+  });
+  if (future.status !== 400) throw new Error(`a day to come answered ${future.status}`);
+  const outsider = await call(manager, `/pay/${casey.id}/notes`, {
+    method: 'POST',
+    body: JSON.stringify({ body: 'Not mine to write' }),
+  });
+  if (outsider.status !== 403) throw new Error(`a manager not on the list got ${outsider.status}`);
+  // Never in the overview's words, only a count.
+  const overview = await call(admin, '/pay');
+  if (JSON.stringify(overview.body).includes('Agreed $24')) throw new Error('the overview carries the words');
+
+  await note.getByRole('button', { name: /^Edit the / }).click();
+  await notes.getByLabel('Note', { exact: true }).fill('Asked for $25. Agreed $24 from the first payroll in January.');
+  await notes.getByRole('button', { name: 'Save changes' }).click();
+  await note.getByText(/Edited/).waitFor();
+  if ((await note.innerText()).includes('RPM')) throw new Error('the old words are still there');
+
+  await dialog().getByRole('button', { name: 'Close' }).click();
+  await row.getByText(/1 note\b/).waitFor();
+
+  await row.getByRole('button').click();
+  await dialog().getByTestId('pay-note').getByRole('button', { name: /^Remove the / }).click();
+  await admin.getByRole('alertdialog').getByRole('button', { name: 'Yes, remove it' }).click();
+  await dialog().getByTestId('pay-notes').getByText('No notes yet.').waitFor();
+  const left = sql(`select count(*) from pay_notes where "employeeId" = '${casey.id}'`);
+  if (left !== '0') throw new Error(`${left} notes left after removing`);
+  await dialog().getByRole('button', { name: 'Close' }).click();
+});
+
 await step('somebody who left has their leaving details and exit checklist', async () => {
   const left = await call(admin, `/employees/${drew.id}?terminationDate=${today()}`, { method: 'DELETE' });
   if (left.status >= 300) throw new Error(`terminate answered ${left.status}`);

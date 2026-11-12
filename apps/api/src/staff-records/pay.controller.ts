@@ -12,7 +12,13 @@ import {
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { PayLockGuard } from '../pay-lock/pay-lock.guard';
-import { DecideRaiseDto, LeavingRecordDto, RaiseMeetingDto, RequestRaiseDto } from './dto/pay.dto';
+import {
+  DecideRaiseDto,
+  LeavingRecordDto,
+  PayNoteDto,
+  RaiseMeetingDto,
+  RequestRaiseDto,
+} from './dto/pay.dto';
 import { EmploymentChangeDto } from './dto/staff-records.dto';
 import { PayService } from './pay.service';
 
@@ -105,5 +111,28 @@ export class PayController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.pay.updateLeaving(employeeId, dto, user);
+  }
+
+  @Post(':employeeId/notes')
+  addNote(
+    @Param('employeeId', ParseUUIDPipe) employeeId: string,
+    @Body() dto: PayNoteDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.pay.addNote(employeeId, dto, user);
+  }
+
+  @Put('notes/:id')
+  updateNote(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: PayNoteDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.pay.updateNote(id, dto, user);
+  }
+
+  @Delete('notes/:id')
+  removeNote(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    return this.pay.removeNote(id, user);
   }
 }

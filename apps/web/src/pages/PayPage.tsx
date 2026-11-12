@@ -11,6 +11,8 @@ import { atPracticeTime, formatPracticeDateTime, practiceDate } from '../lib/pra
 import { useIsManager, useSession } from '../lib/session';
 import type {
   LeavingKind,
+  PayNote,
+  PayNoteInput,
   PayOverview,
   PayPerson,
   PayRaise,
@@ -173,6 +175,7 @@ export function PayPage() {
                       <span className="block font-medium text-slate-900">{person.name}</span>
                       <span className="block text-xs text-slate-600">
                         {person.position?.value ?? (person.jobRoles.join(', ') || 'No job role')}
+                        {person.noteCount > 0 && ` · ${notesCount(person.noteCount)}`}
                       </span>
                     </span>
                     <span className="text-sm">
@@ -245,6 +248,7 @@ export function PayPage() {
                             ? `Last day ${formatCalendarDate(person.terminationDate)}`
                             : 'Last day not recorded'}
                           {person.hireDate && ` · started ${formatCalendarDate(person.hireDate)}`}
+                          {person.noteCount > 0 && ` · ${notesCount(person.noteCount)}`}
                         </p>
                       </div>
                       <button
@@ -431,9 +435,237 @@ function PayPersonDialog({
               remove: (id) => api.removePayChange(id),
             }}
           />
+          <PayNotesSection person={person} onChanged={changed} />
         </div>
       )}
     </Modal>
+  );
+}
+
+// ------------------------------------------------------------------- notes
+
+function notesCount(count: number): string {
+  return `${count} note${count === 1 ? '' : 's'}`;
+}
+
+/**
+ * Notes on somebody's pay (November 2026, Angelica: "can we add a section
+ * under 'Pay and Position' that has 'Previous recorded raises/comments'"),
+ * after four raises were settled over email: what was asked and agreed, a
+ * responsibility added, a raise from the old evaluation sheet. Only the
+ * people who see Pay & raises read them; the writer changes theirs, the
+ * writer or an admin removes it.
+ */
+function PayNotesSection({
+  person,
+  onChanged,
+}: {
+  person: PayPerson;
+  onChanged: (person: PayPerson) => void;
+}) {
+  const confirm = useConfirm();
+  const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+
+  async function remove(note: PayNote) {
+    const sure = await confirm({
+      title: 'Remove this note?',
+      body: `The ${formatCalendarDate(note.notedOn)} note comes off for good. Their pay does not change.`,
+      confirmLabel: 'Yes, remove it',
+      cancelLabel: 'Keep it',
+    });
+    if (!sure) return;
+    try {
+      onChanged(await api.removePayNote(note.id));
+      setProblem(null);
+    } catch (err) {
+      setProblem(err instanceof ApiError ? err.message : 'Could not remove that.');
+    }
+  }
+
+  return (
+    <Card className="p-4" testId="pay-notes">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-base font-semibold text-slate-900">Notes and past raises</h2>
+        {!adding && (
+          <button
+            type="button"
+            onClick={() => {
+              setAdding(true);
+              setEditingId(null);
+            }}
+            className={buttonClass('secondary', 'sm')}
+          >
+            + Add a note
+          </button>
+        )}
+      </div>
+      <p className="mt-1 text-sm text-slate-600">
+        What was asked for and agreed, responsibilities added, raises from before Domi Staff. Only
+        the people who see Pay &amp; raises read these. A raise that changed their pay also goes
+        under Pay and position (+ Add a change, with the day it took effect), which sets the rota's
+        cost.
+      </p>
+
+      {problem && (
+        <div className="mt-3">
+          <Alert>{problem}</Alert>
+        </div>
+      )}
+
+      {adding && (
+        <div className="mt-3">
+          <PayNoteForm
+            initial={{ body: '', notedOn: practiceDate() }}
+            submitLabel="Save note"
+            onCancel={() => setAdding(false)}
+            onSave={async (input) => {
+              onChanged(await api.addPayNote(person.id, input));
+              setAdding(false);
+            }}
+          />
+        </div>
+      )}
+
+      {person.notes.length === 0 ? (
+        !adding && <p className="mt-3 text-sm text-slate-600">No notes yet.</p>
+      ) : (
+        <ol className="mt-3 space-y-3" aria-label="Pay notes">
+          {person.notes.map((note) => (
+            <li
+              key={note.id}
+              className="rounded-lg border border-slate-200 p-3"
+              data-testid="pay-note"
+            >
+              {editingId === note.id ? (
+                <PayNoteForm
+                  initial={{ body: note.body, notedOn: note.notedOn }}
+                  submitLabel="Save changes"
+                  onCancel={() => setEditingId(null)}
+                  onSave={async (input) => {
+                    onChanged(await api.updatePayNote(note.id, input));
+                    setEditingId(null);
+                  }}
+                />
+              ) : (
+                <>
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <p className="text-xs text-slate-600">
+                      <span className="font-medium text-slate-800">
+                        {formatCalendarDate(note.notedOn)}
+                      </span>
+                      {note.author && ` · ${note.author}`}
+                      {note.editedAt && ` · Edited ${formatPracticeDateTime(note.editedAt)}`}
+                    </p>
+                    {(note.canEdit || note.canRemove) && (
+                      <div className="flex gap-2">
+                        {note.canEdit && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingId(note.id);
+                              setAdding(false);
+                            }}
+                            className={buttonClass('secondary', 'sm')}
+                            aria-label={`Edit the ${formatCalendarDate(note.notedOn)} note`}
+                          >
+                            Edit
+                          </button>
+                        )}
+                        {note.canRemove && (
+                          <button
+                            type="button"
+                            onClick={() => void remove(note)}
+                            className={buttonClass('secondary', 'sm')}
+                            aria-label={`Remove the ${formatCalendarDate(note.notedOn)} note`}
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <p className="mt-1 whitespace-pre-line break-words text-sm text-slate-800">
+                    {note.body}
+                  </p>
+                </>
+              )}
+            </li>
+          ))}
+        </ol>
+      )}
+    </Card>
+  );
+}
+
+function PayNoteForm({
+  initial,
+  submitLabel,
+  onSave,
+  onCancel,
+}: {
+  initial: PayNoteInput;
+  submitLabel: string;
+  onSave: (input: PayNoteInput) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [body, setBody] = useState(initial.body);
+  const [notedOn, setNotedOn] = useState(initial.notedOn ?? practiceDate());
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+
+  return (
+    <form
+      aria-label="Pay note"
+      className="space-y-3"
+      onSubmit={async (event) => {
+        event.preventDefault();
+        if (!body.trim()) {
+          setProblem('Write the note.');
+          return;
+        }
+        setBusy(true);
+        setProblem(null);
+        try {
+          await onSave({ body: body.trim(), notedOn: notedOn || null });
+        } catch (err) {
+          setProblem(err instanceof ApiError ? err.message : 'Could not save that.');
+        } finally {
+          setBusy(false);
+        }
+      }}
+    >
+      <Field
+        label="Note"
+        hint="E.g. asked for $25, agreed $24 from the first payroll in January; now also does RPM. Facts about pay and work only, never a patient's details."
+      >
+        {(props) => (
+          <textarea
+            {...props}
+            rows={4}
+            maxLength={2000}
+            value={body}
+            onChange={(event) => setBody(event.target.value)}
+            className={inputClass}
+          />
+        )}
+      </Field>
+      <Field label="When it happened" hint="Today, or an earlier day for something already past.">
+        {(props) => (
+          <input
+            {...props}
+            type="date"
+            max={practiceDate()}
+            value={notedOn}
+            onChange={(event) => setNotedOn(event.target.value)}
+            className={`${inputClass} max-w-xs`}
+          />
+        )}
+      </Field>
+      {problem && <Alert>{problem}</Alert>}
+      <FormButtons busy={busy} label={submitLabel} onCancel={onCancel} />
+    </form>
   );
 }
 

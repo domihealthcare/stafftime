@@ -22,7 +22,14 @@ import { isoDate, toUtcDate } from '../common/util/calendar-date.util';
 import { practiceToday } from '../common/util/zoned-time.util';
 import { EventsService } from '../events/events.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { DecideRaiseDto, LeavingRecordDto, RaiseMeetingDto, RequestRaiseDto } from './dto/pay.dto';
+import {
+  DecideRaiseDto,
+  LeavingRecordDto,
+  PayNoteDto,
+  RaiseMeetingDto,
+  RequestRaiseDto,
+} from './dto/pay.dto';
+import { mayEditPayNote, mayRemovePayNote, payNoteProblem } from './pay-notes';
 import { EmploymentChangeDto } from './dto/staff-records.dto';
 import {
   decisionProblem,
@@ -124,6 +131,7 @@ export class PayService {
           take: 1,
         },
         leavingRecord: true,
+        _count: { select: { payNotesAbout: true } },
         checklists: {
           where: { kind: ChecklistKind.OFFBOARDING },
           select: { id: true, completedAt: true, tasks: { select: { status: true } } },
@@ -149,6 +157,7 @@ export class PayService {
           lastPay: last.pay,
           leaving: leavingOf(person.leavingRecord),
           exitChecklist: checklist ? checklistProgress(checklist) : null,
+          noteCount: person._count.payNotesAbout,
         });
       } else {
         const raise = person.payRaises[0];
@@ -156,6 +165,7 @@ export class PayService {
           ...personOf(person),
           ...currentOf(changes, today),
           upcoming: upcomingOf(changes, today),
+          noteCount: person._count.payNotesAbout,
           openRaise: raise
             ? {
                 id: raise.id,
@@ -188,6 +198,10 @@ export class PayService {
           orderBy: [{ requestedOn: 'desc' }, { createdAt: 'desc' }],
         },
         leavingRecord: { include: { updatedBy: PERSON_NAME } },
+        payNotesAbout: {
+          include: { author: PERSON_NAME },
+          orderBy: [{ notedOn: 'desc' }, { createdAt: 'desc' }],
+        },
         checklists: {
           where: { kind: ChecklistKind.OFFBOARDING },
           select: { id: true, completedAt: true, tasks: { select: { status: true } } },
@@ -216,6 +230,7 @@ export class PayService {
         updatedAt: person.leavingRecord?.updatedAt.toISOString() ?? null,
       },
       exitChecklist: checklist ? checklistProgress(checklist) : null,
+      notes: person.payNotesAbout.map((note) => payNoteOf(note, viewer)),
     };
   }
 
@@ -457,6 +472,64 @@ export class PayService {
     return this.person(employeeId, actor);
   }
 
+  // ---------------------------------------------------------------- notes
+
+  async addNote(employeeId: string, dto: PayNoteDto, actor: AuthUser) {
+    await this.assertAllowed(actor);
+    await this.assertPerson(employeeId);
+    const notedOn = this.checkNote(dto);
+    const note = await this.prisma.payNote.create({
+      data: { employeeId, authorId: actor.id, notedOn: toUtcDate(notedOn), body: dto.body.trim() },
+      select: { id: true },
+    });
+    this.logger.log(`Pay note ${note.id} on ${employeeId} written by ${actor.id}`);
+    return this.person(employeeId, actor);
+  }
+
+  async updateNote(id: string, dto: PayNoteDto, actor: AuthUser) {
+    await this.assertAllowed(actor);
+    const note = await this.findNote(id);
+    if (!mayEditPayNote(actor, note)) {
+      throw new ForbiddenException('Only the person who wrote a note can change it.');
+    }
+    const notedOn = this.checkNote(dto);
+    await this.prisma.payNote.update({
+      where: { id },
+      data: { notedOn: toUtcDate(notedOn), body: dto.body.trim(), editedAt: new Date() },
+    });
+    this.logger.log(`Pay note ${id} edited by ${actor.id}`);
+    return this.person(note.employeeId, actor);
+  }
+
+  async removeNote(id: string, actor: AuthUser) {
+    await this.assertAllowed(actor);
+    const note = await this.findNote(id);
+    if (!mayRemovePayNote(actor, note)) {
+      throw new ForbiddenException('Only the person who wrote a note, or an admin, can remove it.');
+    }
+    await this.prisma.payNote.delete({ where: { id } });
+    this.logger.log(`Pay note ${id} removed by ${actor.id}`);
+    return this.person(note.employeeId, actor);
+  }
+
+  /// The day the note is for (today when not given), once the note is fine.
+  private checkNote(dto: PayNoteDto): string {
+    const today = isoDate(practiceToday());
+    const notedOn = dto.notedOn ? dto.notedOn.slice(0, 10) : today;
+    const problem = payNoteProblem(dto.body, notedOn, today);
+    if (problem) throw new BadRequestException(problem);
+    return notedOn;
+  }
+
+  private async findNote(id: string) {
+    const note = await this.prisma.payNote.findFirst({
+      where: { id, employee: NOT_A_PROVIDER },
+      select: { id: true, employeeId: true, authorId: true },
+    });
+    if (!note) throw new NotFoundException('That note is not on file any more.');
+    return note;
+  }
+
   // ------------------------------------------------------------- helpers
 
   private async assertAllowed(viewer: AuthUser) {
@@ -559,6 +632,41 @@ function checklistProgress(checklist: {
     done: checklist.tasks.filter((task) => task.status !== ChecklistTaskStatus.PENDING).length,
     total: checklist.tasks.length,
     completed: checklist.completedAt !== null,
+  };
+}
+
+export interface PayNoteView {
+  id: string;
+  notedOn: string;
+  body: string;
+  author: string | null;
+  createdAt: string;
+  editedAt: string | null;
+  canEdit: boolean;
+  canRemove: boolean;
+}
+
+function payNoteOf(
+  note: {
+    id: string;
+    notedOn: Date;
+    body: string;
+    authorId: string | null;
+    author: { firstName: string; lastName: string } | null;
+    createdAt: Date;
+    editedAt: Date | null;
+  },
+  viewer: AuthUser,
+): PayNoteView {
+  return {
+    id: note.id,
+    notedOn: isoDate(note.notedOn),
+    body: note.body,
+    author: note.author ? fullName(note.author) : null,
+    createdAt: note.createdAt.toISOString(),
+    editedAt: note.editedAt?.toISOString() ?? null,
+    canEdit: mayEditPayNote(viewer, note),
+    canRemove: mayRemovePayNote(viewer, note),
   };
 }
 

@@ -2929,6 +2929,7 @@ export interface PayOverview {
   current: (PayPersonBasics &
     StaffRecord['current'] & {
       upcoming: PayUpcoming | null;
+      noteCount: number;
       openRaise: {
         id: string;
         status: PayRaiseStatus;
@@ -2941,6 +2942,7 @@ export interface PayOverview {
     lastPay: StaffRecord['current']['pay'];
     leaving: LeavingDetails;
     exitChecklist: ExitChecklistProgress | null;
+    noteCount: number;
   })[];
 }
 
@@ -2969,6 +2971,25 @@ export interface PayPerson extends PayPersonBasics {
   raises: PayRaise[];
   leaving: LeavingDetails & { updatedBy: string | null; updatedAt: string | null };
   exitChecklist: ExitChecklistProgress | null;
+  notes: PayNote[];
+}
+
+/// A note on somebody's pay (November 2026): what was asked and agreed, a
+/// past raise, an added responsibility. The day it happened orders them.
+export interface PayNote {
+  id: string;
+  notedOn: string;
+  body: string;
+  author: string | null;
+  createdAt: string;
+  editedAt: string | null;
+  canEdit: boolean;
+  canRemove: boolean;
+}
+
+export interface PayNoteInput {
+  body: string;
+  notedOn: string | null;
 }
 
 export interface RaiseRequestInput {

@@ -42,6 +42,7 @@ describe('what this app deliberately does not store', () => {
     'EmployeePersonalRecord',
     'EmploymentChange',
     'PayRaise',
+    'PayNote',
     'LeavingRecord',
   ])('has no identity numbers on %s', (name) => {
     const body = model(name).toLowerCase();
@@ -618,6 +619,21 @@ describe('what this app deliberately does not store', () => {
         'requestedOn',
         'status',
         'updatedAt',
+      ].sort(),
+    );
+    // Notes on pay (November 2026): the words, the day, who wrote them.
+    // Free text, but no documents, no receipts, nothing uploaded.
+    expect(fieldsOf('PayNote')).toEqual(
+      [
+        'author',
+        'authorId',
+        'body',
+        'createdAt',
+        'editedAt',
+        'employee',
+        'employeeId',
+        'id',
+        'notedOn',
       ].sort(),
     );
     expect(fieldsOf('LeavingRecord')).toEqual(
