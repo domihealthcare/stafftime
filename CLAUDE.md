@@ -2582,7 +2582,12 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `20261112030000_pay_note_recipients`), `payNoteWords` in `pay-notes.ts`. **Nothing from the email
   was entered**: the four raises go in on the live site, as notes and as
   approved raises from the first payroll. Worth carrying to the EMR module
-  with Pay & raises.
+  with Pay & raises. Same release, test only: `time-off-feedback.mjs` asked
+  for two weeks of sick days starting a few weeks ahead, which from mid
+  November crosses New Year, and a request across policy years is left out
+  of the past-the-balance check (on purpose, `inOneYear`), so no warning
+  showed and it failed on `main` too; its dates now move on a week at a time
+  until both ends are in one year (`LONG`).
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

@@ -93,6 +93,18 @@ const WED = (() => {
 })();
 const NEXT_WED = plusDays(WED, 7);
 const FRIDAY = plusDays(WED, 2);
+// Two weeks of weekdays (Monday to the Sunday after next) for the step that
+// asks for more than is left. A request across New Year is left out of the
+// balance check (it is counted against the year it starts in, with a note),
+// so from mid November the dates after NEXT_WED would cross into January and
+// show no warning: move on a week at a time until both ends are in one year.
+const LONG = (() => {
+  let start = plusDays(NEXT_WED, 5);
+  while (start.getUTCFullYear() !== plusDays(start, 13).getUTCFullYear()) {
+    start = plusDays(start, 7);
+  }
+  return { start, end: plusDays(start, 13) };
+})();
 
 async function api(page, path, options = {}) {
   return page.evaluate(
@@ -162,8 +174,8 @@ await step(
     await frankie.goto(`${BASE}/time-off?request=1`, { waitUntil: 'networkidle' });
     await frankie.getByLabel('Type').selectOption('SICK');
     // Two weeks of sick days, more than the 5 a year.
-    await frankie.getByLabel('First day').fill(iso(plusDays(NEXT_WED, 5)));
-    await frankie.getByLabel('Last day').fill(iso(plusDays(NEXT_WED, 18)));
+    await frankie.getByLabel('First day').fill(iso(LONG.start));
+    await frankie.getByLabel('Last day').fill(iso(LONG.end));
     const warning = frankie.getByTestId('past-balance');
     await warning.getByText(/sick days left - this asks for 10 days/).waitFor({ timeout: 10000 });
     const send = frankie.getByRole('button', { name: 'Send request' });
@@ -174,8 +186,8 @@ await step(
       method: 'POST',
       body: JSON.stringify({
         type: 'SICK',
-        startDate: iso(plusDays(NEXT_WED, 5)),
-        endDate: iso(plusDays(NEXT_WED, 18)),
+        startDate: iso(LONG.start),
+        endDate: iso(LONG.end),
       }),
     });
     if (refused.status !== 400 || !/may be unpaid/.test(JSON.stringify(refused.body))) {
