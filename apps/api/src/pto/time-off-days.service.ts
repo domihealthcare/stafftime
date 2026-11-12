@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PtoType } from '@prisma/client';
-import { isoDate } from '../common/util/calendar-date.util';
+import { addUtcDays, isoDate, toUtcDate } from '../common/util/calendar-date.util';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   closedFor,
@@ -10,14 +10,28 @@ import {
   NO_CLOSURES,
   skippedDays,
 } from './counted-days';
-import { PastBalanceSplit, splitPastBalance } from './past-balance-split';
-import { PtoPolicyService, TYPE_BUCKET } from './pto-policy.service';
+import { PastBalanceSplit, splitByYear } from './past-balance-split';
+import { PtoBalance, PtoPolicyService, TYPE_BUCKET } from './pto-policy.service';
 
 interface Dates {
   employeeId: string;
   startDate: Date;
   endDate: Date;
   isHalfDay: boolean;
+}
+
+/// One policy year's share of a request, and what it does to that year's
+/// allowance (November 2026: each year is judged on its own).
+export interface TimeOffYear {
+  policyYear: number;
+  /// Its first and last day inside the request, and the days it takes there.
+  from: string;
+  to: string;
+  days: number;
+  /// Left of that year's allowance before this request (others waiting
+  /// counted), and after it. Null for a kind that draws on none.
+  remaining: number | null;
+  after: number | null;
 }
 
 /// What a request would do to its allowance, before it is sent.
@@ -36,6 +50,11 @@ export interface TimeOffPreview {
   /// and after it. Null for a kind that draws on none.
   remaining: number | null;
   after: number | null;
+  /// Each policy year it falls in, in order: one for most requests, two for
+  /// one across the turn of the year.
+  years: TimeOffYear[];
+  /// More than is left in any of those years.
+  pastBalance: boolean;
 }
 
 /**
@@ -70,10 +89,11 @@ export class TimeOffDaysService {
 
   /**
    * What approving each request would do past the balance (November 2026):
-   * how many of its days stay paid and how many become Unpaid, or null when
-   * it fits, draws on no allowance, or runs into another policy year. "Left"
-   * is what has been approved against it, not what others are waiting for:
-   * another request still waiting may yet be declined. In the order given.
+   * which of its days stay paid and which become Unpaid, or null when it
+   * fits or draws on no allowance. Each policy year it falls in is judged on
+   * that year's balance. "Left" is what has been approved against it, not
+   * what others are waiting for: another request still waiting may yet be
+   * declined. In the order given.
    */
   async approvalSplits(
     requests: (Dates & { type: PtoType })[],
@@ -82,22 +102,47 @@ export class TimeOffDaysService {
     if (drawing.length === 0) return requests.map(() => null);
     const [closedByPerson, balances] = await Promise.all([
       this.closedByPerson(drawing),
-      this.policy.balancesOn(
-        drawing.map((request) => ({ employeeId: request.employeeId, day: request.startDate })),
-      ),
+      this.balancesAcross(drawing),
     ]);
     const splits = new Map(
       drawing.map((request, index) => {
         const bucket = TYPE_BUCKET[request.type]!;
-        const balance = balances[index];
-        if (isoDate(request.endDate) > balance.yearEnd) return [request, null] as const;
-        const allowance = balance[bucket];
-        const left = allowance.available - allowance.used;
         const dates = countedDateList(request, closedByPerson.get(request.employeeId) ?? new Set());
-        return [request, splitPastBalance(request, dates, left)] as const;
+        const parts = balances[index].map((balance) => ({
+          countedDates: inYear(dates, balance),
+          left: balance[bucket].available - balance[bucket].used,
+        }));
+        return [request, splitByYear(request, parts)] as const;
       }),
     );
     return requests.map((request) => splits.get(request) ?? null);
+  }
+
+  /**
+   * The balance of every policy year each request falls in, in order: the
+   * year of its first day, then the next while it runs on past the year's
+   * end. Read for every request together, a year at a time.
+   */
+  async balancesAcross(requests: Dates[]): Promise<PtoBalance[][]> {
+    const result: PtoBalance[][] = requests.map(() => []);
+    let asked = requests.map((request, index) => ({ index, day: request.startDate }));
+    // A request runs into a handful of years at most; this stops a wrong
+    // date from going on for ever.
+    for (let round = 0; round < 5 && asked.length > 0; round += 1) {
+      const balances = await this.policy.balancesOn(
+        asked.map(({ index, day }) => ({ employeeId: requests[index].employeeId, day })),
+      );
+      const next: typeof asked = [];
+      asked.forEach(({ index }, at) => {
+        const balance = balances[at];
+        result[index].push(balance);
+        if (isoDate(requests[index].endDate) > balance.yearEnd) {
+          next.push({ index, day: addUtcDays(toUtcDate(balance.yearEnd), 1) });
+        }
+      });
+      asked = next;
+    }
+    return result;
   }
 
   /// The days each person need not take off, from one read for everybody.
@@ -130,27 +175,44 @@ export class TimeOffDaysService {
     return closedByPerson;
   }
 
-  /// What a request would take, and leave.
+  /// What a request would take, and leave, in each policy year it falls in.
   async preview(request: Dates & { type: PtoType }): Promise<TimeOffPreview> {
-    const [count, closed] = await Promise.all([
-      this.counterFor([request]),
+    const [closed, [balances]] = await Promise.all([
       this.closedForPerson(request),
+      this.balancesAcross([request]),
     ]);
-    const days = count(request);
+    const dates = countedDateList(request, closed);
+    const days = countedDays(request, closed);
+    const halfDay = request.isHalfDay && dates.length === 1;
     const skipped = skippedDays(request, closed);
     const bucket = TYPE_BUCKET[request.type];
-    const balance = await this.policy.balanceOn(request.employeeId, request.startDate);
-    const inOneYear = isoDate(request.endDate) <= balance.yearEnd;
-    const remaining = bucket ? balance[bucket].remaining : null;
+    const start = isoDate(request.startDate);
+    const end = isoDate(request.endDate);
+    const years: TimeOffYear[] = balances.map((balance) => {
+      const own = inYear(dates, balance);
+      const yearDays = halfDay ? days : own.length;
+      const remaining = bucket ? balance[bucket].remaining : null;
+      return {
+        policyYear: balance.policyYear,
+        from: start > balance.yearStart ? start : balance.yearStart,
+        to: end < balance.yearEnd ? end : balance.yearEnd,
+        days: yearDays,
+        remaining,
+        after: remaining === null ? null : Math.round((remaining - yearDays) * 10) / 10,
+      };
+    });
+    const first = years[0];
     return {
       days,
       weekendDays: skipped.weekend,
       closedDays: skipped.closed,
       bucket,
-      policyYear: balance.policyYear,
-      inOneYear,
-      remaining,
-      after: remaining === null ? null : Math.round((remaining - days) * 10) / 10,
+      policyYear: first.policyYear,
+      inOneYear: years.length === 1,
+      remaining: first.remaining,
+      after: first.remaining === null ? null : Math.round((first.remaining - days) * 10) / 10,
+      years,
+      pastBalance: years.some((year) => year.after !== null && year.days > 0 && year.after < 0),
     };
   }
 
@@ -167,4 +229,9 @@ export class TimeOffDaysService {
       offices.map((row) => row.locationId),
     );
   }
+}
+
+/// The days that fall inside one policy year's balance.
+function inYear(dates: string[], balance: { yearStart: string; yearEnd: string }): string[] {
+  return dates.filter((date) => date >= balance.yearStart && date <= balance.yearEnd);
 }

@@ -307,7 +307,14 @@ export interface PtoRequest {
   splitFrom?: PtoRequestPart | null;
   splitParts?: PtoRequestPart[];
   /// Still waiting: what approving it would split off past the balance.
-  approvalSplit?: { paidDays: number; unpaidDays: number; unpaidFrom: string } | null;
+  approvalSplit?: {
+    paidDays: number;
+    unpaidDays: number;
+    unpaidFrom: string;
+    /// Each unpaid stretch: one inside a year, two across the turn of the
+    /// year when both years run short.
+    unpaid: { startDate: string; endDate: string; days: number }[];
+  } | null;
   /// Every change a manager or admin made to it, newest first.
   changes?: PtoChange[];
 }
@@ -341,8 +348,9 @@ export interface PastBalanceFix {
   isHalfDay: boolean;
   paidDays: number;
   unpaidDays: number;
-  paid: { startDate: string; endDate: string } | null;
-  unpaid: { startDate: string; endDate: string };
+  /// What it becomes, in date order: paid stretches stay as asked, the others
+  /// become Unpaid (more than two only across the turn of the year).
+  segments: { startDate: string; endDate: string; paid: boolean; days: number }[];
 }
 
 /// A change made to somebody's time off, and who made it.
@@ -363,6 +371,20 @@ export interface TimeOffPreview {
   bucket: 'vacation' | 'sick' | null;
   policyYear: number;
   inOneYear: boolean;
+  remaining: number | null;
+  after: number | null;
+  /// Each policy year it falls in, judged on its own (November 2026): one for
+  /// most requests, two across the turn of the year.
+  years: TimeOffYear[];
+  /// More than is left in any of those years.
+  pastBalance: boolean;
+}
+
+export interface TimeOffYear {
+  policyYear: number;
+  from: string;
+  to: string;
+  days: number;
   remaining: number | null;
   after: number | null;
 }

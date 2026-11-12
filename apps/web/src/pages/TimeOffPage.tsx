@@ -616,9 +616,19 @@ function RequestForm({
   const otherYear =
     preview && balance && preview.policyYear !== balance.policyYear ? preview.policyYear : null;
   const remainingAfter = preview?.after ?? 0;
+  // Across the turn of the year each year is judged on its own (November
+  // 2026, Dominguez): its days against that year's balance.
+  const years = preview?.years ?? [];
+  const overYears = showOtherYearNote
+    ? years.filter((year) => year.after !== null && year.days > 0 && year.after < 0)
+    : [];
   // More than is left: still asked for, once they say they understand the
   // rest may be unpaid (October 2026, Dominguez).
-  const overBalance = showBalance && remainingAfter < 0;
+  const overBalance = (showBalance && remainingAfter < 0) || overYears.length > 0;
+  // The days past it: inside one year, or in each year that runs short.
+  const overDays = showBalance
+    ? Math.abs(remainingAfter)
+    : overYears.reduce((sum, year) => sum + Math.min(year.days, -(year.after ?? 0)), 0);
   // "weekends don't count", "Thu, Dec 25: office closed".
   const skipNote = preview
     ? [
@@ -831,10 +841,25 @@ function RequestForm({
 
         {showOtherYearNote && preview && (
           <p className="text-sm text-slate-600" data-testid="time-off-days">
-            {plural(preview.days, '{n} day', '{n} days')} ·{' '}
-            {t('falls outside the {year} policy year, so it does not come off the balance above.', {
-              year: preview.policyYear,
-            })}
+            {plural(preview.days, '{n} day', '{n} days')}
+            {skipNote.length > 0 && ` (${skipNote.join('; ')})`} ·{' '}
+            {years
+              .filter((year) => year.days > 0)
+              .map((year) =>
+                // Past the balance, the box below says what is left instead.
+                overBalance
+                  ? t('{n} in {year}', {
+                      n: plural(year.days, '{n} day', '{n} days'),
+                      year: year.policyYear,
+                    })
+                  : t('{n} in {year}, {left} left afterwards', {
+                      n: plural(year.days, '{n} day', '{n} days'),
+                      year: year.policyYear,
+                      left: Math.max(0, year.after ?? 0),
+                    }),
+              )
+              .join('; ')}
+            . {t('Each year’s days come off that year’s balance.')}
           </p>
         )}
 
@@ -862,32 +887,61 @@ function RequestForm({
             data-testid="past-balance"
             className="space-y-2 rounded-lg bg-amber-50 px-3 py-3 text-sm text-amber-950 ring-1 ring-inset ring-amber-300"
           >
-            <p className="font-semibold">
-              {forName
-                ? t(
-                    bucket === 'sick'
-                      ? '{name} has {left} sick days left - this asks for {days}.'
-                      : '{name} has {left} PTO days left - this asks for {days}.',
-                    {
-                      name: forName,
-                      left: Math.max(0, preview.remaining ?? 0),
-                      days: plural(preview.days, '{n} day', '{n} days'),
-                    },
-                  )
-                : t(
-                    bucket === 'sick'
-                      ? 'You have {left} sick days left - this asks for {days}.'
-                      : 'You have {left} PTO days left - this asks for {days}.',
-                    {
-                      left: Math.max(0, preview.remaining ?? 0),
-                      days: plural(preview.days, '{n} day', '{n} days'),
-                    },
-                  )}
-            </p>
+            {showOtherYearNote ? (
+              overYears.map((year) => (
+                <p key={year.policyYear} className="font-semibold">
+                  {forName
+                    ? t(
+                        bucket === 'sick'
+                          ? '{name} has {left} sick days left in {year} - this asks for {days} that year.'
+                          : '{name} has {left} PTO days left in {year} - this asks for {days} that year.',
+                        {
+                          name: forName,
+                          left: Math.max(0, year.remaining ?? 0),
+                          year: year.policyYear,
+                          days: plural(year.days, '{n} day', '{n} days'),
+                        },
+                      )
+                    : t(
+                        bucket === 'sick'
+                          ? 'You have {left} sick days left in {year} - this asks for {days} that year.'
+                          : 'You have {left} PTO days left in {year} - this asks for {days} that year.',
+                        {
+                          left: Math.max(0, year.remaining ?? 0),
+                          year: year.policyYear,
+                          days: plural(year.days, '{n} day', '{n} days'),
+                        },
+                      )}
+                </p>
+              ))
+            ) : (
+              <p className="font-semibold">
+                {forName
+                  ? t(
+                      bucket === 'sick'
+                        ? '{name} has {left} sick days left - this asks for {days}.'
+                        : '{name} has {left} PTO days left - this asks for {days}.',
+                      {
+                        name: forName,
+                        left: Math.max(0, preview.remaining ?? 0),
+                        days: plural(preview.days, '{n} day', '{n} days'),
+                      },
+                    )
+                  : t(
+                      bucket === 'sick'
+                        ? 'You have {left} sick days left - this asks for {days}.'
+                        : 'You have {left} PTO days left - this asks for {days}.',
+                      {
+                        left: Math.max(0, preview.remaining ?? 0),
+                        days: plural(preview.days, '{n} day', '{n} days'),
+                      },
+                    )}
+              </p>
+            )}
             <p>
               {t(
                 'The {over} past it may be unpaid. You can still ask - a manager decides, and sees that you knew.',
-                { over: plural(Math.abs(remainingAfter), '{n} day', '{n} days') },
+                { over: plural(overDays, '{n} day', '{n} days') },
               )}
             </p>
             <label className="flex items-start gap-2 font-medium">

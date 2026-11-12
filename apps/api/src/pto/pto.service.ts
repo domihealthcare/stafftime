@@ -12,6 +12,7 @@ import { PRACTICE_ZONE, practiceToday, zonedTimeToUtc } from '../common/util/zon
 import { NotificationsService } from '../email/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { describeDates, describeSplit, TIME_OFF_KIND } from './describe-time-off';
+import { splitWrites } from './split-writes';
 import { loadTimeOffClashes } from './time-off-clashes';
 import { applyShiftChoice } from './apply-shift-choice';
 import { ProviderDayOffService } from './provider-day-off.service';
@@ -120,10 +121,12 @@ export class PtoService {
       endDate,
       isHalfDay: dto.isHalfDay ?? false,
     });
-    const pastBalance = preview.after !== null && preview.inOneYear && preview.after < 0;
+    // Each policy year it falls in is judged on its own (November 2026).
+    const pastBalance = preview.pastBalance;
     if (pastBalance && !dto.acknowledgedUnpaid) {
+      const over = preview.years.find((year) => year.after !== null && year.after < 0)!;
       throw new BadRequestException(
-        `That is more ${preview.bucket === 'sick' ? 'sick time' : 'PTO'} than is left (${preview.remaining} left, ${preview.days} asked for). Tick that you understand the days past it may be unpaid, then send it again.`,
+        `That is more ${preview.bucket === 'sick' ? 'sick time' : 'PTO'} than is left${preview.years.length > 1 ? ` in ${over.policyYear}` : ''} (${Math.max(0, over.remaining ?? 0)} left, ${over.days} asked for). Tick that you understand the days past it may be unpaid, then send it again.`,
       );
     }
 
@@ -476,40 +479,13 @@ export class PtoService {
           include: REQUEST_INCLUDE,
         });
       } else {
-        const unpaidPart = split.paid
-          ? [
-              this.prisma.ptoRequest.create({
-                data: {
-                  employeeId: request.employeeId,
-                  type: PtoType.UNPAID,
-                  status: PtoStatus.APPROVED,
-                  startDate: split.unpaid.startDate,
-                  endDate: split.unpaid.endDate,
-                  isHalfDay: split.unpaid.isHalfDay,
-                  reviewedById: actor.id,
-                  reviewedAt,
-                  splitFromId: id,
-                  unpaidPastBalanceOf: request.type,
-                },
-                select: { id: true },
-              }),
-            ]
-          : [];
         const [first] = await this.prisma.$transaction([
-          this.prisma.ptoRequest.update({
-            where: { id, status: PtoStatus.PENDING },
-            data: split.paid
-              ? { ...decided, endDate: split.paid.endDate }
-              : // Nothing left at all: the whole request is unpaid.
-                {
-                  ...decided,
-                  type: PtoType.UNPAID,
-                  unpaidPastBalanceOf: request.type,
-                  pastBalance: false,
-                },
-            select: { id: true },
+          ...splitWrites(this.prisma, request, split, {
+            where: { status: PtoStatus.PENDING },
+            data: decided,
+            reviewedById: actor.id,
+            reviewedAt,
           }),
-          ...unpaidPart,
           this.prisma.ptoChange.create({
             data: {
               requestId: id,
@@ -875,7 +851,16 @@ export class PtoService {
           ? {
               paidDays: split.paidDays,
               unpaidDays: split.unpaidDays,
-              unpaidFrom: isoDate(split.unpaid.startDate),
+              unpaidFrom: isoDate(split.segments.find((segment) => !segment.paid)!.startDate),
+              /// Each unpaid stretch: one inside a year, two across the
+              /// turn of the year when both run short.
+              unpaid: split.segments
+                .filter((segment) => !segment.paid)
+                .map((segment) => ({
+                  startDate: isoDate(segment.startDate),
+                  endDate: isoDate(segment.endDate),
+                  days: segment.days,
+                })),
             }
           : null,
       };

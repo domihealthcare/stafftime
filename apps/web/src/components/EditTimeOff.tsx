@@ -228,7 +228,7 @@ export function TimeOffDetails({ request }: { request: PtoRequest }) {
           data-testid="unpaid-past-balance"
           className="mt-2 rounded bg-amber-50 px-2 py-1 text-xs font-medium text-amber-900 ring-1 ring-inset ring-amber-200"
         >
-          {request.splitFrom
+          {request.splitFrom && request.splitFrom.type !== 'UNPAID'
             ? t('Unpaid: past the {balance} balance. The paid part is {range}.', {
                 balance: balanceOf(request.unpaidPastBalanceOf),
                 range: partRange(request.splitFrom),
@@ -256,17 +256,32 @@ export function TimeOffDetails({ request }: { request: PtoRequest }) {
           data-testid="approval-split"
           className="mt-2 rounded bg-amber-50 px-2 py-1 text-xs font-medium text-amber-900 ring-1 ring-inset ring-amber-200"
         >
-          {request.approvalSplit.paidDays > 0
-            ? t(
-                'Past the balance: once approved, {paid} are paid as {kind} and {unpaid} are unpaid, from {date}.',
-                {
-                  paid: plural(request.approvalSplit.paidDays, '{n} day', '{n} days'),
-                  kind: ptoTypeLabel(request.type),
-                  unpaid: plural(request.approvalSplit.unpaidDays, '{n} day', '{n} days'),
-                  date: formatCalendarDate(request.approvalSplit.unpaidFrom, { year: false }),
-                },
-              )
-            : t('Past the balance: nothing is left, so once approved all of it is unpaid.')}
+          {request.approvalSplit.paidDays === 0
+            ? t('Past the balance: nothing is left, so once approved all of it is unpaid.')
+            : (request.approvalSplit.unpaid ?? []).length === 1 &&
+                request.approvalSplit.unpaid[0].endDate === request.endDate
+              ? t(
+                  'Past the balance: once approved, {paid} are paid as {kind} and {unpaid} are unpaid, from {date}.',
+                  {
+                    paid: plural(request.approvalSplit.paidDays, '{n} day', '{n} days'),
+                    kind: ptoTypeLabel(request.type),
+                    unpaid: plural(request.approvalSplit.unpaidDays, '{n} day', '{n} days'),
+                    date: formatCalendarDate(request.approvalSplit.unpaidFrom, { year: false }),
+                  },
+                )
+              : // Across the turn of the year, each year judged on its own:
+                // the unpaid days need not be at the end (November 2026).
+                t(
+                  'Past the balance: once approved, {paid} are paid as {kind} and {unpaid} are unpaid: {ranges}.',
+                  {
+                    paid: plural(request.approvalSplit.paidDays, '{n} day', '{n} days'),
+                    kind: ptoTypeLabel(request.type),
+                    unpaid: plural(request.approvalSplit.unpaidDays, '{n} day', '{n} days'),
+                    ranges: (request.approvalSplit.unpaid ?? [])
+                      .map((part) => partRange({ ...part, isHalfDay: false }))
+                      .join(t(' and ')),
+                  },
+                )}
         </p>
       )}
       {shownChanges.length > 0 && (

@@ -99,9 +99,14 @@ export function PastBalanceFixes({ onDone }: { onDone: () => void }) {
               · {PTO_TYPE_LABELS[fix.type]}, {range(fix.startDate, fix.endDate)}
             </span>
             <div className="text-amber-900">
-              {fix.paid
-                ? `${fix.paidDays} ${fix.paidDays === 1 ? 'day' : 'days'} ${PTO_TYPE_LABELS[fix.type]}, ${range(fix.paid.startDate, fix.paid.endDate)}; then ${fix.unpaidDays} ${fix.unpaidDays === 1 ? 'day' : 'days'} Unpaid, ${range(fix.unpaid.startDate, fix.unpaid.endDate)}`
-                : `All ${fix.unpaidDays} ${fix.unpaidDays === 1 ? 'day' : 'days'} Unpaid: nothing was left`}
+              {fix.paidDays === 0
+                ? `All ${fix.unpaidDays} ${fix.unpaidDays === 1 ? 'day' : 'days'} Unpaid: nothing was left`
+                : fix.segments
+                    .map(
+                      (segment) =>
+                        `${segment.days} ${segment.days === 1 ? 'day' : 'days'} ${segment.paid ? PTO_TYPE_LABELS[fix.type] : 'Unpaid'}, ${range(segment.startDate, segment.endDate)}`,
+                    )
+                    .join('; then ')}
             </div>
           </li>
         ))}
