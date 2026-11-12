@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { useConfirm } from '../components/ConfirmDialog';
 import { EmploymentHistoryCard, formatPay } from '../components/EmploymentHistoryCard';
 import { Modal } from '../components/Modal';
@@ -75,7 +75,20 @@ export function PayPage() {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<'current' | 'former'>('current');
   const [search, setSearch] = useState('');
-  const [openId, setOpenId] = useState<string | null>(null);
+  /// The person open, kept in the address (?person=) so a "read this note"
+  /// alert opens straight on them.
+  const [params, setParams] = useSearchParams();
+  const openId = params.get('person');
+  const setOpenId = (id: string | null) =>
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        if (id) next.set('person', id);
+        else next.delete('person');
+        return next;
+      },
+      { replace: true },
+    );
 
   const load = () =>
     api
@@ -108,6 +121,10 @@ export function PayPage() {
   }
 
   const raisesOpen = overview?.current.filter((person) => person.openRaise).length ?? 0;
+  const notesForMe = [...(overview?.current ?? []), ...(overview?.former ?? [])].reduce(
+    (sum, person) => sum + person.notesForMe,
+    0,
+  );
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -151,6 +168,11 @@ export function PayPage() {
           aria-label="Search"
           className={`${inputClass} max-w-xs`}
         />
+        {notesForMe > 0 && (
+          <span className="text-sm text-amber-800" data-testid="notes-for-me">
+            {notesForMe === 1 ? 'A note for you to read' : `${notesForMe} notes for you to read`}
+          </span>
+        )}
         {raisesOpen > 0 && (
           <span className="text-sm text-amber-800" data-testid="raises-open">
             {raisesOpen} raise{raisesOpen === 1 ? '' : 's'} still open
@@ -177,6 +199,15 @@ export function PayPage() {
                         {person.position?.value ?? (person.jobRoles.join(', ') || 'No job role')}
                         {person.noteCount > 0 && ` · ${notesCount(person.noteCount)}`}
                       </span>
+                      {person.notesForMe > 0 && (
+                        <span className="mt-1 block">
+                          <Badge tone="warning">
+                            {person.notesForMe === 1
+                              ? 'A note for you to read'
+                              : `${person.notesForMe} notes for you to read`}
+                          </Badge>
+                        </span>
+                      )}
                     </span>
                     <span className="text-sm">
                       {person.pay ? (
@@ -250,6 +281,9 @@ export function PayPage() {
                           {person.hireDate && ` · started ${formatCalendarDate(person.hireDate)}`}
                           {person.noteCount > 0 && ` · ${notesCount(person.noteCount)}`}
                         </p>
+                        {person.notesForMe > 0 && (
+                          <Badge tone="warning">A note for you to read</Badge>
+                        )}
                       </div>
                       <button
                         type="button"
@@ -298,7 +332,11 @@ export function PayPage() {
       {openId && (
         <PayPersonDialog
           employeeId={openId}
-          onClose={() => setOpenId(null)}
+          onClose={() => {
+            setOpenId(null);
+            // Opening somebody reads the notes left there for you.
+            void load();
+          }}
           onChanged={() => void load()}
         />
       )}
@@ -517,7 +555,9 @@ function PayNotesSection({
       {adding && (
         <div className="mt-3">
           <PayNoteForm
-            initial={{ body: '', notedOn: practiceDate() }}
+            initial={{ body: '', notedOn: practiceDate(), notify: [] }}
+            people={person.notifiable}
+            alreadyTold={[]}
             submitLabel="Save note"
             onCancel={() => setAdding(false)}
             onSave={async (input) => {
@@ -540,7 +580,9 @@ function PayNotesSection({
             >
               {editingId === note.id ? (
                 <PayNoteForm
-                  initial={{ body: note.body, notedOn: note.notedOn }}
+                  initial={{ body: note.body, notedOn: note.notedOn, notify: [] }}
+                  people={person.notifiable}
+                  alreadyTold={note.told.map((told) => told.id)}
                   submitLabel="Save changes"
                   onCancel={() => setEditingId(null)}
                   onSave={async (input) => {
@@ -589,6 +631,21 @@ function PayNotesSection({
                   <p className="mt-1 whitespace-pre-line break-words text-sm text-slate-800">
                     {note.body}
                   </p>
+                  {note.told.length > 0 && (
+                    <ul className="mt-2 flex flex-wrap gap-2 text-xs" aria-label="Asked to read it">
+                      {note.told.map((told) => (
+                        <li key={told.id} data-testid="pay-note-told">
+                          {told.readAt ? (
+                            <Badge tone="success">
+                              {told.name} read it, {formatPracticeDateTime(told.readAt)}
+                            </Badge>
+                          ) : (
+                            <Badge tone="warning">For {told.name}: not read yet</Badge>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </>
               )}
             </li>
@@ -601,17 +658,24 @@ function PayNotesSection({
 
 function PayNoteForm({
   initial,
+  people,
+  alreadyTold,
   submitLabel,
   onSave,
   onCancel,
 }: {
   initial: PayNoteInput;
+  /// Who can be told: everybody else who sees Pay & raises.
+  people: { id: string; name: string }[];
+  /// Told about this note already (an edit): shown ticked, not told again.
+  alreadyTold: string[];
   submitLabel: string;
   onSave: (input: PayNoteInput) => Promise<void>;
   onCancel: () => void;
 }) {
   const [body, setBody] = useState(initial.body);
   const [notedOn, setNotedOn] = useState(initial.notedOn ?? practiceDate());
+  const [notify, setNotify] = useState<string[]>(initial.notify);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
@@ -628,7 +692,7 @@ function PayNoteForm({
         setBusy(true);
         setProblem(null);
         try {
-          await onSave({ body: body.trim(), notedOn: notedOn || null });
+          await onSave({ body: body.trim(), notedOn: notedOn || null, notify });
         } catch (err) {
           setProblem(err instanceof ApiError ? err.message : 'Could not save that.');
         } finally {
@@ -663,6 +727,40 @@ function PayNoteForm({
           />
         )}
       </Field>
+      {people.length > 0 && (
+        <fieldset>
+          <legend className="text-sm font-medium text-slate-800">
+            Let someone know (optional)
+          </legend>
+          <p className="text-xs text-slate-600">
+            They are told on the bell and by email that you want them to read it, with whose pay it
+            is, never the note itself or an amount.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">
+            {people.map((someone) => {
+              const told = alreadyTold.includes(someone.id);
+              return (
+                <label key={someone.id} className="tap flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={told || notify.includes(someone.id)}
+                    disabled={told}
+                    onChange={(event) =>
+                      setNotify((current) =>
+                        event.target.checked
+                          ? [...current, someone.id]
+                          : current.filter((id) => id !== someone.id),
+                      )
+                    }
+                  />
+                  {someone.name}
+                  {told && <span className="text-xs text-slate-600">(told)</span>}
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+      )}
       {problem && <Alert>{problem}</Alert>}
       <FormButtons busy={busy} label={submitLabel} onCancel={onCancel} />
     </form>

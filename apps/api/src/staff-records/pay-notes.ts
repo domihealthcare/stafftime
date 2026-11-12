@@ -40,3 +40,23 @@ export function payNoteProblem(body: string, notedOn: string, today: string): st
   if (notedOn > today) return 'Pick the day it happened: today or earlier.';
   return null;
 }
+
+interface Named {
+  firstName: string;
+  lastName: string;
+  preferredName: string | null;
+}
+
+/// What somebody asked to read a pay note is told, on the bell and by email
+/// (November 2026, Dominguez: "kayla wants me to read the note"). Who wrote
+/// it and whose pay, never the words or an amount: an email and a phone
+/// notification go outside the app, and the note itself is behind the PIN.
+export function payNoteWords(writer: Named, subject: Named, subjectId: string) {
+  const writerName = `${writer.preferredName ?? writer.firstName} ${writer.lastName}`;
+  const subjectName = `${subject.preferredName ?? subject.firstName} ${subject.lastName}`;
+  return {
+    title: `${writerName} wants you to read a note`,
+    body: `A note on ${subjectName}'s pay, on Pay & raises. Your PIN is asked first.`,
+    link: `/pay?person=${subjectId}`,
+  };
+}

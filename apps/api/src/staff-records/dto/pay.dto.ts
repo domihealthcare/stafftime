@@ -1,5 +1,7 @@
 import { LeavingKind, PayRateUnit } from '@prisma/client';
 import {
+  ArrayMaxSize,
+  IsArray,
   IsBoolean,
   IsDateString,
   IsEnum,
@@ -8,6 +10,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   Max,
   MaxLength,
   Min,
@@ -116,4 +119,12 @@ export class PayNoteDto {
   @IsOptional()
   @IsDateString()
   notedOn?: string | null;
+
+  /// People on Pay & raises to tell about it ("Let someone know"). On an
+  /// edit, only the ones not told before are told.
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsUUID('all', { each: true })
+  notify?: string[];
 }

@@ -612,7 +612,8 @@ export interface AppNotification {
     | 'CME'
     | 'EXPENSE'
     | 'DOWNTIME'
-    | 'ACCOUNT';
+    | 'ACCOUNT'
+    | 'PAY';
   title: string;
   body: string | null;
   link: string | null;

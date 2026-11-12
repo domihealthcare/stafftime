@@ -634,7 +634,12 @@ describe('what this app deliberately does not store', () => {
         'employeeId',
         'id',
         'notedOn',
+        'recipients',
       ].sort(),
+    );
+    // Who was asked to read a pay note, and when they did: nothing else.
+    expect(fieldsOf('PayNoteRecipient')).toEqual(
+      ['employee', 'employeeId', 'note', 'noteId', 'readAt', 'toldAt'].sort(),
     );
     expect(fieldsOf('LeavingRecord')).toEqual(
       [
