@@ -84,3 +84,96 @@ export function meetingTitle(personName: string, actorName: string): string {
     ? `Check-in: ${personName}`
     : `Check-in: ${personName} and ${actorName}`;
 }
+
+// ------------------------------------------------------- telling about it
+
+/// The longest message written for the person with "Let them know".
+export const MAX_RAISE_MESSAGE_LENGTH = 1000;
+
+interface Named {
+  firstName: string;
+  lastName: string;
+  preferredName: string | null;
+}
+
+const nameOf = (person: Named) => `${person.preferredName ?? person.firstName} ${person.lastName}`;
+
+/// "Monday, Dec 1": the day a change starts, for the bell and the email.
+function dayWords(day: string): string {
+  const [year, month, date] = day.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, date)).toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
+/// Why an approved raise cannot be told to the person yet, or null.
+export function tellProblem(raise: {
+  status: PayRaiseStatus;
+  toldAt: Date | null;
+  payChangeKept: boolean;
+  message: string | null;
+}): string | null {
+  if (raise.status !== PayRaiseStatus.APPROVED) {
+    return 'Only an approved raise can be told to the person.';
+  }
+  if (raise.toldAt) return 'They have already been told about this raise.';
+  if (!raise.payChangeKept) {
+    return 'The pay change this raise made has been taken out of the history, so there is nothing to show them.';
+  }
+  if ((raise.message ?? '').trim().length > MAX_RAISE_MESSAGE_LENGTH) {
+    return `The message is at most ${MAX_RAISE_MESSAGE_LENGTH} characters.`;
+  }
+  return null;
+}
+
+/// What the person is told, on the bell and by email (November 2026, Kayla:
+/// "Typically, I will email the individual"). Never the amount: an email and
+/// a phone notification go outside the app, so the pay itself is read on
+/// Your pay, behind their PIN.
+export function raiseNoticeWords(
+  raise: { effectiveOn: string; newPosition: string | null },
+  today: string,
+) {
+  const what = raise.newPosition ? 'Your pay and position' : 'Your pay';
+  const when =
+    raise.effectiveOn > today
+      ? `change${raise.newPosition ? '' : 's'} from ${dayWords(raise.effectiveOn)}`
+      : `changed on ${dayWords(raise.effectiveOn)}`;
+  return {
+    title: 'Good news about your pay',
+    body: `${what} ${when}. See it under Your pay in Domi Staff; your PIN is asked first.`,
+    link: '/your-pay',
+  };
+}
+
+/// What whoever runs payroll is told: whose raise and from when, never the
+/// amount, which they read on Pay & raises behind their PIN.
+export function payrollNoticeWords(
+  subject: Named,
+  subjectId: string,
+  raise: { effectiveOn: string },
+  today: string,
+) {
+  const when =
+    raise.effectiveOn > today
+      ? `starts ${dayWords(raise.effectiveOn)}`
+      : `started ${dayWords(raise.effectiveOn)}`;
+  return {
+    title: `Update ADP: a raise for ${nameOf(subject)}`,
+    body: `Their new pay ${when}. Domi Staff does not change ADP. See it on Pay & raises; your PIN is asked first.`,
+    link: `/pay?person=${subjectId}`,
+  };
+}
+
+/// The pay changes the person may see on Your pay: every change in their
+/// history except one made by an approved raise they have not been told
+/// about yet (so the screen never gets ahead of Kayla's conversation).
+export function visibleToPerson<T extends { id: string }>(
+  changes: T[],
+  untoldChangeIds: Set<string>,
+): T[] {
+  return changes.filter((change) => !untoldChangeIds.has(change.id));
+}

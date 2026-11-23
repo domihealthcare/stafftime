@@ -49,6 +49,7 @@ import type { AuthenticationResponseJSON } from '@simplewebauthn/server';
 import { PasskeyResponseDto } from '../passkeys/dto';
 import { requireSite } from '../passkeys/passkey-site';
 import { PasskeysService } from '../passkeys/passkeys.service';
+import { hasOwnPay } from '../staff-records/own-pay';
 
 @Controller('auth')
 export class AuthController {
@@ -327,6 +328,10 @@ export class AuthController {
       (await this.prisma.productivityStatement.count({
         where: { employeeId, publishedAt: { not: null } },
       })) > 0;
+    // Your pay (November 2026): in the account menu once there is pay on
+    // file they may see. Their own, like productivity, so kept while an admin
+    // is viewing as somebody.
+    const hasPay = await hasOwnPay(this.prisma, employeeId);
     // Somebody with no tablet PIN yet, at an office with a working time clock, is
     // reminded on Home until they choose one (Dominguez, October 2026). Only
     // whether a PIN is set is asked; the hash never leaves the database.
@@ -388,6 +393,7 @@ export class AuthController {
           }
         : null,
       hasProductivity,
+      hasPay,
       /// Their offices with a paired time clock, while they have no PIN for it;
       /// empty once they have one.
       tabletPinOffices,

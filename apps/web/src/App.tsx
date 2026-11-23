@@ -95,6 +95,7 @@ const RequiredPage = lazy(() =>
 const ProductivityPage = lazy(() =>
   import('./pages/ProductivityPage').then((m) => ({ default: m.ProductivityPage })),
 );
+const MyPayPage = lazy(() => import('./pages/MyPayPage').then((m) => ({ default: m.MyPayPage })));
 const MyProductivityPage = lazy(() =>
   import('./pages/MyProductivityPage').then((m) => ({ default: m.MyProductivityPage })),
 );
@@ -339,6 +340,14 @@ function Routed() {
             element={
               <PinGate what="provider productivity">
                 <ProductivityPage />
+              </PinGate>
+            }
+          />
+          <Route
+            path="your-pay"
+            element={
+              <PinGate what="your pay">
+                <MyPayPage />
               </PinGate>
             }
           />

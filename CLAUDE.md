@@ -110,7 +110,10 @@ Those same people (`Employee.canSeeRotaCost`, whatever their access level)
 also keep **Pay & raises** (23 October 2026, Dominguez: "i want to stop having
 to use this excel workflow"): everybody's pay, each raise's steps
 (`PayRaise`) and why somebody left (`LeavingRecord`), in `src/staff-records/`
-and pinned by the schema guard. Providers are left out for now. **Anything
+and pinned by the schema guard. Providers are left out for now. Since 23
+November 2026 (Dominguez) each person also reads **their own** pay now and
+the raises they have been told about, under **Your pay**, behind their PIN;
+never the history's comments or anybody else's. **Anything
 that shows pay asks for the person's PIN first** (or their password), even
 for those allowed to see it (`pay-lock/`). The census spreadsheet Dominguez
 shared was not imported, and its social security numbers were never read.
@@ -2588,6 +2591,32 @@ Beyond the phases, the parts worth knowing about before picking up work:
   out of the past-the-balance check (`inOneYear`; checked year by year since
   1.51.1, below), so no warning showed and it failed on `main` too; its dates now move on a week at a time
   until both ends are in one year (`LONG`).
+- **Telling somebody about their raise, and Your pay** (23 November 2026,
+  Kayla via Dominguez: "if notification of raise be made into a feature into
+  DomiStaff portal - that would be great. Typically, I will email the
+  individual"; his choices: **a button after approving**, **no amount in the
+  message**, **payroll told too**, and the person sees **their pay now** as
+  well as the raise; version 1.52.0). On Pay & raises an approved raise stays
+  in view, "not told yet", until **Let them know**: optional words for them,
+  then once, on the bell and by email, "Good news about your pay" with the day
+  it starts, **never the amount**. They read the new pay, any new title and
+  the words under **Your pay** (`/your-pay`, account menu once they have pay
+  on file, behind their own PIN): their pay and position now and each raise
+  they were told about, never the history's comments. Until told, a raise is
+  left off their Your pay, even once its day has come. **Tell payroll to
+  update ADP** asks any other rota-cost person (Angelica D, usually), each
+  once, with whose raise and from when, no amount; the card shows who was
+  asked. ADP is still never changed by the app. Providers and shared accounts
+  have no Your pay, as they have no Pay & raises. Raises approved before this
+  count as told. `PayRaise.toldAt` / `toldById` / `toldMessage` /
+  `payrollToldAt` / `payrollToldIds` (migration
+  `20261123010000_raise_notices`, pinned by the schema guard),
+  `tellProblem`, `raiseNoticeWords`, `payrollNoticeWords`, `visibleToPerson`
+  in `staff-records/pay.ts`, `MyPayController` (in `pay-routes.spec.ts`),
+  `staff-records/own-pay.ts`, `RaiseNotices` in `pages/PayPage.tsx`,
+  `pages/MyPayPage.tsx` (Spanish too, **needs a native speaker's read**);
+  Help in both guides; `tests/browser/pay.mjs`. Worth carrying to the EMR
+  module with Pay & raises.
 - **Time off over New Year, checked year by year** (12 November 2026,
   Dominguez, version 1.51.1; chosen over refusing such requests: "check each
   year separately"): a request across the end of the policy year had no

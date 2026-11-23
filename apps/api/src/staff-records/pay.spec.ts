@@ -2,10 +2,15 @@ import { PayRaiseStatus, PayRateUnit } from '@prisma/client';
 import {
   decisionProblem,
   isOpen,
+  MAX_RAISE_MESSAGE_LENGTH,
   meetingTitle,
+  payrollNoticeWords,
+  raiseNoticeWords,
   statusWithMeeting,
   statusWithoutMeeting,
+  tellProblem,
   upcomingOf,
+  visibleToPerson,
 } from './pay';
 import type { EmploymentChangeView } from './staff-records.service';
 
@@ -75,5 +80,61 @@ describe('raise rules', () => {
   it('says nothing about pay in the meeting title', () => {
     expect(meetingTitle('Frankie', 'Morgan')).toBe('Check-in: Frankie and Morgan');
     expect(meetingTitle('Frankie', 'Frankie')).toBe('Check-in: Frankie');
+  });
+});
+
+describe('telling somebody about their raise', () => {
+  const approved = {
+    status: PayRaiseStatus.APPROVED,
+    toldAt: null,
+    payChangeKept: true,
+    message: null,
+  };
+
+  it('tells only an approved raise, once, with its pay change still there', () => {
+    expect(tellProblem(approved)).toBeNull();
+    expect(tellProblem({ ...approved, status: PayRaiseStatus.OFFERED })).toMatch(/approved/);
+    expect(tellProblem({ ...approved, toldAt: new Date() })).toMatch(/already/);
+    expect(tellProblem({ ...approved, payChangeKept: false })).toMatch(/taken out/);
+    expect(tellProblem({ ...approved, message: 'x'.repeat(MAX_RAISE_MESSAGE_LENGTH + 1) })).toMatch(
+      /at most/,
+    );
+  });
+
+  it('never puts the amount on the bell or in the email', () => {
+    const words = raiseNoticeWords({ effectiveOn: '2026-12-01', newPosition: null }, '2026-11-23');
+    expect(words.title).toBe('Good news about your pay');
+    expect(words.body).toBe(
+      'Your pay changes from Tuesday, Dec 1. See it under Your pay in Domi Staff; your PIN is asked first.',
+    );
+    expect(words.link).toBe('/your-pay');
+    expect(JSON.stringify(words)).not.toMatch(/\$|\d+\.\d\d/);
+  });
+
+  it('says when a new title comes with it, and when the day has passed', () => {
+    expect(
+      raiseNoticeWords({ effectiveOn: '2026-12-01', newPosition: 'Lead MA' }, '2026-11-23').body,
+    ).toMatch(/^Your pay and position change from Tuesday, Dec 1\./);
+    expect(
+      raiseNoticeWords({ effectiveOn: '2026-11-15', newPosition: null }, '2026-11-23').body,
+    ).toMatch(/^Your pay changed on Sunday, Nov 15\./);
+  });
+
+  it('asks payroll to update ADP with the name and day, never the amount', () => {
+    const words = payrollNoticeWords(
+      { firstName: 'Selena', lastName: 'V', preferredName: null },
+      'abc',
+      { effectiveOn: '2026-12-01' },
+      '2026-11-23',
+    );
+    expect(words.title).toBe('Update ADP: a raise for Selena V');
+    expect(words.body).toMatch(/^Their new pay starts Tuesday, Dec 1\./);
+    expect(words.link).toBe('/pay?person=abc');
+  });
+
+  it('keeps a raise they have not been told about off their own pay', () => {
+    const changes = [change('2026-11-01', 20), change('2026-10-01', 18)];
+    expect(visibleToPerson(changes, new Set(['2026-11-01']))).toEqual([changes[1]]);
+    expect(visibleToPerson(changes, new Set())).toEqual(changes);
   });
 });

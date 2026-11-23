@@ -1662,6 +1662,33 @@ const EXPENSES: Section[] = [
   },
 ];
 
+const YOUR_PAY: Section[] = [
+  {
+    title: 'Your pay',
+    topics: [
+      {
+        question: 'Where do I see my pay, or a raise?',
+        answer: (
+          <>
+            <p>
+              <Screen>Your pay</Screen>, in the account menu, once the practice has your pay in Domi
+              Staff. It asks for your tablet PIN (or your password) first, like every screen with
+              pay. It shows your pay now and your position, and each raise you have been told about:
+              the new pay, the day it starts and any words from whoever told you.
+            </p>
+            <p>
+              When a raise is agreed you are told on the bell and by email, &ldquo;Good news about
+              your pay&rdquo;, without the amount, which you read on Your pay. Only you and the
+              people who look after pay can see it. Your paycheck still comes from ADP; if something
+              looks wrong, ask your manager.
+            </p>
+          </>
+        ),
+      },
+    ],
+  },
+];
+
 const PRODUCTIVITY: Section[] = [
   {
     title: 'Your productivity',
@@ -2918,7 +2945,8 @@ const MANAGERS: Section[] = [
               pay and the day it starts, past or still to come, and from that day the rota&rsquo;s
               cost uses it. <strong>Decline</strong>, <strong>Turned down</strong> and{' '}
               <strong>They withdrew it</strong> close it. ADP is not changed: enter the new pay
-              there too. Providers are left out for now.
+              there too, or press <strong>Tell payroll to update ADP</strong> (see below). Providers
+              are left out for now.
             </p>
             <p>
               <strong>Former staff</strong> lists everybody who has left, with their last day, last
@@ -2927,6 +2955,33 @@ const MANAGERS: Section[] = [
               Drive and the rest) starts by itself when somebody is marked as left; managers tick it
               off under <Screen>Manage → Staff → Onboarding & Offboarding</Screen> and can change
               its steps there.
+            </p>
+          </>
+        ),
+      },
+      {
+        question: 'How do I tell somebody about their raise?',
+        answer: (
+          <>
+            <p>
+              Once a raise is approved it stays in view on the person&rsquo;s Raise card, marked as
+              not told yet. When you are ready (often after you have spoken to them), press{' '}
+              <strong>Let them know</strong>, write a few words for them if you like, and press{' '}
+              <strong>Tell</strong>. They are told once, on the bell and by email: &ldquo;Good news
+              about your pay&rdquo;, with the day it starts and <strong>no amount</strong>. The new
+              pay, any new title and your words are under <strong>Your pay</strong> in their account
+              menu, after their PIN. The card then shows when they were told, and by whom.
+            </p>
+            <p>
+              Until they are told, their own Your pay does not show the raise, even once its day has
+              come, so the app never gets ahead of your conversation. Raises approved before this
+              existed count as already told.
+            </p>
+            <p>
+              <strong>Tell payroll to update ADP</strong> asks whoever runs payroll (anybody else
+              who sees Pay &amp; raises) to change it in ADP, which Domi Staff never does. They are
+              told whose raise and from which day, never the amount, and open the person here behind
+              their PIN. The card shows who was asked.
             </p>
           </>
         ),
@@ -3687,6 +3742,7 @@ function staffGuide(employee: Reader): Section[] {
     ...(employee && !employee.isSharedAccount ? EXPENSES : []),
     ...(employee && canUseCarePlan(employee) ? CARE_PLAN : []),
     ...(employee && canUseWellnessForm(employee) ? WELLNESS : []),
+    ...(employee && !employee.isSharedAccount && !employee.usesClinicalForms ? YOUR_PAY : []),
     ...(employee?.hasProductivity ? PRODUCTIVITY : []),
   ];
 }

@@ -26,6 +26,7 @@ import type {
   TimeOffDays,
   PayLockStatus,
   PayOverview,
+  MyPay,
   PayPerson,
   PayNoteInput,
   RaiseDecisionInput,
@@ -1811,6 +1812,17 @@ export const api = {
     request<PayPerson>(`/pay/raises/${id}/meeting`, { method: 'DELETE' }),
   decideRaise: (id: string, body: RaiseDecisionInput) =>
     request<PayPerson>(`/pay/raises/${id}/decide`, { method: 'POST', body: JSON.stringify(body) }),
+  tellRaise: (id: string, message: string | null) =>
+    request<PayPerson>(`/pay/raises/${id}/tell`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    }),
+  tellPayroll: (id: string, notify: string[]) =>
+    request<PayPerson>(`/pay/raises/${id}/tell-payroll`, {
+      method: 'POST',
+      body: JSON.stringify({ notify }),
+    }),
+  myPay: () => request<MyPay>('/my-pay'),
   withdrawRaise: (id: string) =>
     request<PayPerson>(`/pay/raises/${id}/withdraw`, { method: 'POST' }),
   removeRaise: (id: string) => request<PayPerson>(`/pay/raises/${id}`, { method: 'DELETE' }),

@@ -16,6 +16,7 @@ import {
   Min,
 } from 'class-validator';
 import { MAX_PAY_NOTE_LENGTH } from '../pay-notes';
+import { MAX_RAISE_MESSAGE_LENGTH } from '../pay';
 
 const RATE = { maxDecimalPlaces: 2 } as const;
 const RATE_MESSAGE = { message: 'Pay is an amount in dollars and cents.' };
@@ -127,4 +128,20 @@ export class PayNoteDto {
   @ArrayMaxSize(20)
   @IsUUID('all', { each: true })
   notify?: string[];
+}
+
+/// "Let them know": the words written for the person, optional.
+export class TellRaiseDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(MAX_RAISE_MESSAGE_LENGTH)
+  message?: string | null;
+}
+
+/// "Tell payroll to update ADP": who to ask, from the people on Pay & raises.
+export class TellPayrollDto {
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsUUID('all', { each: true })
+  notify!: string[];
 }

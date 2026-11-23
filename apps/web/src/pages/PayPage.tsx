@@ -778,7 +778,17 @@ function RaisesSection({
 }) {
   const confirm = useConfirm();
   const open = person.raises.find((raise) => OPEN.includes(raise.status)) ?? null;
-  const past = person.raises.filter((raise) => raise !== open);
+  // An approved raise the person has not been told about yet stays in view,
+  // with Let them know, rather than folded away with the earlier ones.
+  // One just told stays here too, showing it was, until the pop-up closes.
+  const [justTold, setJustTold] = useState<string[]>([]);
+  const toTell = person.raises.filter(
+    (raise) =>
+      raise.status === 'APPROVED' &&
+      raise.payChangeKept &&
+      (!raise.told || justTold.includes(raise.id)),
+  );
+  const past = person.raises.filter((raise) => raise !== open && !toTell.includes(raise));
   const [asking, setAsking] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
@@ -836,7 +846,32 @@ function RaisesSection({
           }}
         />
       )}
-      {!open && !asking && past.length === 0 && (
+      {toTell.map((raise) => (
+        <div
+          key={raise.id}
+          className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm"
+          data-testid="raise-to-tell"
+        >
+          <p className="text-emerald-900">
+            <strong>Approved</strong>
+            {raise.newRate !== null && raise.newUnit && (
+              <>: {formatPay(raise.newRate, raise.newUnit)}</>
+            )}
+            {raise.newPosition && <> as {raise.newPosition}</>}
+            {raise.effectiveOn && <> from {formatCalendarDate(raise.effectiveOn)}</>}.{' '}
+            {!raise.told && <>{person.name} has not been told in Domi Staff yet.</>}
+          </p>
+          <RaiseNotices
+            raise={raise}
+            person={person}
+            onChanged={(next) => {
+              setJustTold((ids) => (ids.includes(raise.id) ? ids : [...ids, raise.id]));
+              onChanged(next);
+            }}
+          />
+        </div>
+      ))}
+      {!open && !asking && past.length === 0 && toTell.length === 0 && (
         <p className="mt-2 text-sm text-slate-600">
           No raises recorded. When somebody asks for one, press <strong>+ Raise asked for</strong>,
           then set a meeting, and record the offer and the answer.
@@ -871,6 +906,9 @@ function RaisesSection({
                       The pay change it made has since been removed from the history.
                     </span>
                   )}
+                  {raise.status === 'APPROVED' && (
+                    <RaiseNotices raise={raise} person={person} onChanged={onChanged} />
+                  )}
                 </span>
                 <button
                   type="button"
@@ -893,6 +931,191 @@ function RaisesSection({
         </details>
       )}
     </Card>
+  );
+}
+
+/// Telling about an approved raise (November 2026, Kayla: "if notification
+/// of raise be made into a feature into DomiStaff portal - that would be
+/// great. Typically, I will email the individual"). Let them know tells the
+/// person, once, when Kayla chooses; Tell payroll asks whoever runs payroll
+/// to update ADP. Neither message carries the amount.
+function RaiseNotices({
+  raise,
+  person,
+  onChanged,
+}: {
+  raise: PayRaise;
+  person: PayPerson;
+  onChanged: (person: PayPerson) => void;
+}) {
+  const [form, setForm] = useState<'tell' | 'payroll' | null>(null);
+  const [message, setMessage] = useState('');
+  const [notify, setNotify] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+  const askable = person.notifiable;
+  const askedAlready = new Set(raise.payrollTold?.ids ?? []);
+
+  const send = async (call: () => Promise<PayPerson>) => {
+    setBusy(true);
+    setProblem(null);
+    try {
+      onChanged(await call());
+      setForm(null);
+      setMessage('');
+      setNotify([]);
+    } catch (err) {
+      setProblem(err instanceof ApiError ? err.message : 'Could not send that.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-2 space-y-2" data-testid="raise-notices">
+      {raise.told ? (
+        <p className="text-xs text-slate-700">
+          ✓ {person.name} was told {formatPracticeDateTime(raise.told.at)}
+          {raise.told.by && ` by ${raise.told.by}`}.
+          {raise.told.message && (
+            <span className="mt-1 block whitespace-pre-line text-slate-600">
+              “{raise.told.message}”
+            </span>
+          )}
+        </p>
+      ) : (
+        raise.payChangeKept &&
+        form !== 'tell' && (
+          <button
+            type="button"
+            className={buttonClass('primary', 'sm')}
+            onClick={() => setForm('tell')}
+          >
+            Let them know
+          </button>
+        )
+      )}
+      {raise.payrollTold && (
+        <p className="text-xs text-slate-700">
+          ✓ Asked to update ADP: {raise.payrollTold.names.join(', ')} (
+          {formatPracticeDateTime(raise.payrollTold.at)}).
+        </p>
+      )}
+      {askable.length > 0 && form !== 'payroll' && (
+        <button
+          type="button"
+          className={`${buttonClass('secondary', 'sm')} ${raise.told ? '' : 'ml-2'}`}
+          onClick={() => setForm('payroll')}
+        >
+          {raise.payrollTold ? 'Ask somebody else to update ADP' : 'Tell payroll to update ADP'}
+        </button>
+      )}
+
+      {problem && <Alert>{problem}</Alert>}
+
+      {form === 'tell' && (
+        <form
+          aria-label="Let them know"
+          className="space-y-3 rounded-lg border border-slate-200 bg-white p-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void send(() => api.tellRaise(raise.id, message.trim() || null));
+          }}
+        >
+          <p className="text-sm text-slate-700">
+            {person.name} is told on the bell and by email:{' '}
+            <strong>Good news about your pay</strong>, with the day it starts and{' '}
+            <strong>no amount</strong>. They see the new pay, and anything you write here, under{' '}
+            <strong>Your pay</strong> in their account menu, after their PIN. They are told once.
+          </p>
+          <Field
+            label="A few words for them (optional)"
+            hint="E.g. thank you for all your work on the front desk this year. They read it on Your pay."
+          >
+            {(props) => (
+              <textarea
+                {...props}
+                rows={3}
+                maxLength={1000}
+                value={message}
+                onChange={(event) => setMessage(event.target.value)}
+                className={inputClass}
+              />
+            )}
+          </Field>
+          <div className="flex flex-wrap gap-2">
+            <button type="submit" disabled={busy} className={buttonClass('primary', 'sm')}>
+              {busy ? 'Sending…' : `Tell ${person.name}`}
+            </button>
+            <button
+              type="button"
+              className={buttonClass('secondary', 'sm')}
+              onClick={() => setForm(null)}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {form === 'payroll' && (
+        <form
+          aria-label="Tell payroll"
+          className="space-y-3 rounded-lg border border-slate-200 bg-white p-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (notify.length === 0) {
+              setProblem('Pick who runs payroll.');
+              return;
+            }
+            void send(() => api.tellPayroll(raise.id, notify));
+          }}
+        >
+          <fieldset>
+            <legend className="text-sm font-medium text-slate-800">Who runs payroll?</legend>
+            <p className="text-xs text-slate-600">
+              Domi Staff does not change ADP. They are told on the bell and by email whose raise it
+              is and the day it starts, never the amount, which they read here.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">
+              {askable.map((someone) => {
+                const asked = askedAlready.has(someone.id);
+                return (
+                  <label key={someone.id} className="tap flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={asked || notify.includes(someone.id)}
+                      disabled={asked}
+                      onChange={(event) =>
+                        setNotify((current) =>
+                          event.target.checked
+                            ? [...current, someone.id]
+                            : current.filter((id) => id !== someone.id),
+                        )
+                      }
+                    />
+                    {someone.name}
+                    {asked && <span className="text-xs text-slate-500">(asked)</span>}
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+          <div className="flex flex-wrap gap-2">
+            <button type="submit" disabled={busy} className={buttonClass('primary', 'sm')}>
+              {busy ? 'Sending…' : 'Send'}
+            </button>
+            <button
+              type="button"
+              className={buttonClass('secondary', 'sm')}
+              onClick={() => setForm(null)}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
   );
 }
 

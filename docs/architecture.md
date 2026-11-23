@@ -5941,6 +5941,30 @@ press the bell, since the bell is outside the PIN. The overview counts each
 viewer's unread rows per person (`notesForMe`). The page keeps the open
 person in the address (`?person=`) so the alert's link lands on them.
 
+**Telling somebody about their raise, and Your pay** (November 2026, Kayla:
+"if notification of raise be made into a feature into DomiStaff portal - that
+would be great. Typically, I will email the individual"; Dominguez's choices:
+a button after approving, no amount in the message, payroll told too, and the
+person's pay now as well). An approved raise whose pay change is still in the
+history stays in view on the Raise card until **Let them know** is pressed
+(`PayService.tellPerson`): optional words (`toldMessage`, 1,000 characters),
+claimed by `toldAt` so it is told once. The alert goes through
+`NotificationsService.personal`, so `raiseNoticeWords` (`pay.ts`) says only
+"Good news about your pay" and the day; the amount and the words are read on
+**Your pay** (`/your-pay`, `MyPayController`, `GET /my-pay`), behind the PIN,
+whose person is taken from the session. It shows their pay and position now
+(`currentOf`) and their told raises, never the history's comments. A change
+made by an approved raise **not yet told** is left out of "now" too
+(`visibleToPerson`), so a back-dated raise does not show before Kayla has
+spoken to them; the migration `20261123010000_raise_notices` marks raises
+approved before it as told (they were told by email). Providers and shared
+accounts have no Your pay, as they have no Pay & raises. The menu link comes
+from `hasPay` on `/auth/me` (`staff-records/own-pay.ts`). **Tell payroll to
+update ADP** (`tellPayroll`) asks any of the other rota-cost people
+(`notifiable`, server-checked), each once (`payrollToldIds`), with
+`payrollNoticeWords`: whose raise and from when, never the amount. ADP is
+still never changed by the app.
+
 ## The exit checklist (October 2026)
 
 Dominguez asked for "an exit employee checklist for terminated employees (i.e.
