@@ -142,6 +142,18 @@ export function AccountMenu() {
                 {t('Expense reimbursements')}
               </NavLink>
             )}
+            {/* Your pay (November 2026): their own pay and the raises they
+                have been told about, once there is pay on file. */}
+            {employee?.hasPay && (
+              <NavLink
+                to="/your-pay"
+                role="menuitem"
+                className={item}
+                onClick={() => setOpen(false)}
+              >
+                {t('Your pay')}
+              </NavLink>
+            )}
             {employee?.hasProductivity && (
               <NavLink
                 to="/my-productivity"

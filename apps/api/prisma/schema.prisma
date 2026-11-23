@@ -433,6 +433,7 @@ model Employee {
   /// read only by the rota-cost people behind their PIN.
   payRaises                 PayRaise[]               @relation("PayRaiseSubject")
   recordedPayRaises         PayRaise[]               @relation("PayRaiseRecordedBy")
+  toldPayRaises             PayRaise[]               @relation("PayRaiseToldBy")
   leavingRecord             LeavingRecord?           @relation("LeavingRecordSubject")
   updatedLeavingRecords     LeavingRecord[]          @relation("LeavingRecordUpdatedBy")
   recordedPtoRequests       PtoRequest[]             @relation("PtoRecordedBy")
@@ -3136,8 +3137,9 @@ enum PayRaiseStatus {
 
 /// A raise, from the ask to the decision (October 2026, Dominguez: "stop
 /// having to use this excel workflow"). Kept by the rota-cost people
-/// (`Employee.canSeeRotaCost`) behind their PIN; the person it is about does
-/// not see it. Approving writes a PAY_CHANGE row in EmploymentChange on the
+/// (`Employee.canSeeRotaCost`) behind their PIN; the person it is about sees
+/// it only once approved and they have been told ("Let them know", November
+/// 2026), on Your pay behind their own PIN. Approving writes a PAY_CHANGE row in EmploymentChange on the
 /// day it takes effect (past or future), which is what the rota cost reads.
 ///
 /// `meetingEventId` and `payChangeId` are plain ids, not relations: the
@@ -3168,12 +3170,27 @@ model PayRaise {
 
   note String?
 
+  /// "Let them know" (November 2026, Kayla: "Typically, I will email the
+  /// individual"): when the person was told of an approved raise, by whom,
+  /// and the words written for them. Read by the person on Your pay, behind
+  /// their PIN. Raises approved before this were marked told by the
+  /// migration, as they had been told by email.
+  toldAt      DateTime?
+  toldById    String?   @db.Uuid
+  toldMessage String?
+
+  /// "Tell payroll to update ADP": when, and who was asked (people who see
+  /// Pay & raises). ADP itself is never changed by the app.
+  payrollToldAt  DateTime?
+  payrollToldIds String[]  @db.Uuid
+
   recordedById String?  @db.Uuid
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   employee   Employee  @relation("PayRaiseSubject", fields: [employeeId], references: [id], onDelete: Cascade)
   recordedBy Employee? @relation("PayRaiseRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+  toldBy     Employee? @relation("PayRaiseToldBy", fields: [toldById], references: [id], onDelete: SetNull)
 
   @@index([employeeId, requestedOn])
   @@index([status])

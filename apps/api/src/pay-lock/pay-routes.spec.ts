@@ -6,7 +6,7 @@ import { InvoiceAccessGuard } from '../invoices/invoice-access.service';
 import { InvoicesController } from '../invoices/invoices.controller';
 import { ProductivityController } from '../productivity/productivity.controller';
 import { ReimbursementsController } from '../reimbursements/reimbursements.controller';
-import { PayController } from '../staff-records/pay.controller';
+import { MyPayController, PayController } from '../staff-records/pay.controller';
 import { RotaCostController } from '../staff-records/rota-cost.controller';
 import { StaffRecordsController } from '../staff-records/staff-records.controller';
 import { StaffNotesController } from '../staff-notes/staff-notes.controller';
@@ -24,6 +24,7 @@ const guardsOn = (target: object): unknown[] => Reflect.getMetadata(GUARDS_METAD
 describe('the routes that show pay', () => {
   it.each([
     ['Pay & raises', PayController],
+    ['your own pay', MyPayController],
     ['staff profiles', StaffRecordsController],
     ['provider productivity', ProductivityController],
     ['the payroll export', ExportsController],

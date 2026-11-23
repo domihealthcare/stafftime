@@ -18,6 +18,8 @@ import {
   PayNoteDto,
   RaiseMeetingDto,
   RequestRaiseDto,
+  TellPayrollDto,
+  TellRaiseDto,
 } from './dto/pay.dto';
 import { EmploymentChangeDto } from './dto/staff-records.dto';
 import { PayService } from './pay.service';
@@ -94,6 +96,24 @@ export class PayController {
     return this.pay.decide(id, dto, user);
   }
 
+  @Post('raises/:id/tell')
+  tellPerson(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: TellRaiseDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.pay.tellPerson(id, dto, user);
+  }
+
+  @Post('raises/:id/tell-payroll')
+  tellPayroll(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: TellPayrollDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.pay.tellPayroll(id, dto, user);
+  }
+
   @Post('raises/:id/withdraw')
   withdraw(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
     return this.pay.withdraw(id, user);
@@ -134,5 +154,19 @@ export class PayController {
   @Delete('notes/:id')
   removeNote(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
     return this.pay.removeNote(id, user);
+  }
+}
+
+/// Your pay (November 2026): somebody's own pay now and the raises they have
+/// been told about. Who they are comes from the session, never the request;
+/// behind their PIN like every screen with pay.
+@UseGuards(PayLockGuard)
+@Controller('my-pay')
+export class MyPayController {
+  constructor(private readonly pay: PayService) {}
+
+  @Get()
+  mine(@CurrentUser() user: AuthUser) {
+    return this.pay.mine(user);
   }
 }

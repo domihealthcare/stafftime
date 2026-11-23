@@ -128,6 +128,9 @@ export interface Employee extends EmployeeSummary {
   /// Signed-in person only: a manager has published productivity numbers for
   /// them, so "Your productivity" appears in the account menu.
   hasProductivity?: boolean;
+  /// Signed-in person only: there is pay on file they may see, so "Your pay"
+  /// appears in the account menu (November 2026).
+  hasPay?: boolean;
   /// Signed-in person only: their offices with a working time clock while they
   /// have no tablet PIN - Home reminds them. Empty once they have one.
   tabletPinOffices?: string[];
@@ -2986,6 +2989,29 @@ export interface PayRaise {
   note: string | null;
   recordedBy: string | null;
   updatedAt: string;
+  /// "Let them know" (November 2026): when the person was told, by whom and
+  /// the words written for them.
+  told: { at: string; by: string | null; message: string | null } | null;
+  /// "Tell payroll to update ADP": when, and who was asked.
+  payrollTold: { at: string; ids: string[]; names: string[] } | null;
+}
+
+/// Your pay (November 2026): somebody's own pay now and the raises they have
+/// been told about.
+export interface MyPay {
+  name: string;
+  payType: string;
+  current: StaffRecord['current'];
+  raises: {
+    id: string;
+    newRate: number;
+    newUnit: PayRateUnit;
+    newPosition: string | null;
+    effectiveOn: string;
+    toldAt: string;
+    toldBy: string | null;
+    message: string | null;
+  }[];
 }
 
 export interface PayPerson extends PayPersonBasics {

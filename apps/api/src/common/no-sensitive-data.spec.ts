@@ -596,7 +596,9 @@ describe('what this app deliberately does not store', () => {
       ].sort(),
     );
     // Raises and leaving details (October 2026): the steps and the answer,
-    // and why somebody left - nothing more, and no documents.
+    // and why somebody left - nothing more, and no documents. Since November
+    // 2026 also when the person and payroll were told, and the words for the
+    // person ("Let them know").
     expect(fieldsOf('PayRaise')).toEqual(
       [
         'askedRate',
@@ -614,10 +616,16 @@ describe('what this app deliberately does not store', () => {
         'newUnit',
         'note',
         'payChangeId',
+        'payrollToldAt',
+        'payrollToldIds',
         'recordedBy',
         'recordedById',
         'requestedOn',
         'status',
+        'toldAt',
+        'toldBy',
+        'toldById',
+        'toldMessage',
         'updatedAt',
       ].sort(),
     );

@@ -30,6 +30,8 @@ import {
   PayNoteDto,
   RaiseMeetingDto,
   RequestRaiseDto,
+  TellPayrollDto,
+  TellRaiseDto,
 } from './dto/pay.dto';
 import { mayEditPayNote, mayRemovePayNote, payNoteProblem, payNoteWords } from './pay-notes';
 import { EmploymentChangeDto } from './dto/staff-records.dto';
@@ -38,7 +40,11 @@ import {
   isOpen,
   meetingTitle,
   OPEN_STATUSES,
+  payrollNoticeWords,
+  raiseNoticeWords,
   statusWithMeeting,
+  tellProblem,
+  visibleToPerson,
   statusWithoutMeeting,
   upcomingOf,
 } from './pay';
@@ -85,6 +91,32 @@ export interface RaiseView {
   note: string | null;
   recordedBy: string | null;
   updatedAt: string;
+  /// "Let them know": when the person was told, by whom, and the words.
+  told: { at: string; by: string | null; message: string | null } | null;
+  /// "Tell payroll to update ADP": when, and who was asked.
+  payrollTold: { at: string; ids: string[]; names: string[] } | null;
+}
+
+/// What somebody reads on Your pay: their pay now, and the raises they have
+/// been told about. Never a manager's comment on the history, never a raise
+/// still being decided.
+export interface MyPayView {
+  name: string;
+  payType: string;
+  current: {
+    position: { value: string; since: string } | null;
+    pay: { rate: number; unit: PayRateUnit; since: string } | null;
+  };
+  raises: {
+    id: string;
+    newRate: number;
+    newUnit: PayRateUnit;
+    newPosition: string | null;
+    effectiveOn: string;
+    toldAt: string;
+    toldBy: string | null;
+    message: string | null;
+  }[];
 }
 
 /**
@@ -213,7 +245,7 @@ export class PayService {
           orderBy: [{ effectiveOn: 'desc' }, { createdAt: 'desc' }],
         },
         payRaises: {
-          include: { recordedBy: PERSON_NAME },
+          include: { recordedBy: PERSON_NAME, toldBy: PERSON_NAME },
           orderBy: [{ requestedOn: 'desc' }, { createdAt: 'desc' }],
         },
         leavingRecord: { include: { updatedBy: PERSON_NAME } },
@@ -241,12 +273,15 @@ export class PayService {
     const changes = person.employmentChanges.map(viewOf);
     const changeIds = new Set(changes.map((change) => change.id));
     const checklist = person.checklists[0];
+    const payrollNames = await this.namesOf(
+      person.payRaises.flatMap((raise) => raise.payrollToldIds),
+    );
     return {
       ...personOf(person),
       changes,
       current: currentOf(changes, today),
       upcoming: upcomingOf(changes, today),
-      raises: person.payRaises.map((raise) => raiseOf(raise, changeIds)),
+      raises: person.payRaises.map((raise) => raiseOf(raise, changeIds, payrollNames)),
       leaving: {
         ...leavingOf(person.leavingRecord),
         updatedBy: person.leavingRecord?.updatedBy
@@ -452,6 +487,137 @@ export class PayService {
     return this.person(raise.employeeId, actor);
   }
 
+  /// "Let them know" (November 2026, Kayla: "if notification of raise be made
+  /// into a feature into DomiStaff portal - that would be great. Typically, I
+  /// will email the individual"). Pressed once a raise is approved, when the
+  /// person should hear (often after they have been told face to face). The
+  /// bell and email carry no amount; the pay and the message are on Your
+  /// pay, behind their own PIN.
+  async tellPerson(id: string, dto: TellRaiseDto, actor: AuthUser) {
+    await this.assertAllowed(actor);
+    const raise = await this.findRaise(id);
+    const payChangeKept =
+      raise.payChangeId !== null &&
+      (await this.prisma.employmentChange.count({ where: { id: raise.payChangeId } })) > 0;
+    const message = dto.message?.trim() || null;
+    const problem = tellProblem({ ...raise, payChangeKept, message });
+    if (problem) throw new BadRequestException(problem);
+    const subject = await this.prisma.employee.findUniqueOrThrow({
+      where: { id: raise.employeeId },
+      select: { employmentStatus: true },
+    });
+    if (subject.employmentStatus === EmploymentStatus.TERMINATED) {
+      throw new BadRequestException('They have left the practice, so Domi Staff cannot tell them.');
+    }
+    // Claimed by toldAt, so two people pressing at once tell them once.
+    const claimed = await this.prisma.payRaise.updateMany({
+      where: { id, toldAt: null, status: PayRaiseStatus.APPROVED },
+      data: { toldAt: new Date(), toldById: actor.id, toldMessage: message },
+    });
+    if (claimed.count === 0) {
+      throw new BadRequestException('They have already been told about this raise.');
+    }
+    await this.notifications.personal(
+      [raise.employeeId],
+      NotificationKind.PAY,
+      raiseNoticeWords(
+        { effectiveOn: isoDate(raise.effectiveOn!), newPosition: raise.newPosition },
+        isoDate(practiceToday()),
+      ),
+    );
+    this.logger.log(`Raise ${id}: the person told by ${actor.id}`);
+    return this.person(raise.employeeId, actor);
+  }
+
+  /// "Tell payroll to update ADP": the app never changes ADP, so whoever runs
+  /// payroll (Angelica D, usually) is asked to. Only people who see Pay &
+  /// raises can be picked; each is told once, with no amount.
+  async tellPayroll(id: string, dto: TellPayrollDto, actor: AuthUser) {
+    await this.assertAllowed(actor);
+    const raise = await this.findRaise(id);
+    if (raise.status !== PayRaiseStatus.APPROVED || !raise.effectiveOn) {
+      throw new BadRequestException('Only an approved raise goes to payroll.');
+    }
+    const wanted = [...new Set(dto.notify)];
+    if (wanted.length === 0) throw new BadRequestException('Pick who runs payroll.');
+    const allowed = new Set((await this.notifiable(actor)).map((person) => person.id));
+    if (wanted.some((person) => !allowed.has(person))) {
+      throw new BadRequestException('Only somebody else who sees Pay & raises can be asked.');
+    }
+    const fresh = wanted.filter((person) => !raise.payrollToldIds.includes(person));
+    if (fresh.length === 0) throw new BadRequestException('They have already been asked.');
+    await this.prisma.payRaise.update({
+      where: { id },
+      data: { payrollToldAt: new Date(), payrollToldIds: { push: fresh } },
+    });
+    const subject = await this.prisma.employee.findUniqueOrThrow({
+      where: { id: raise.employeeId },
+      select: { firstName: true, lastName: true, preferredName: true },
+    });
+    await this.notifications.personal(
+      fresh,
+      NotificationKind.PAY,
+      payrollNoticeWords(
+        subject,
+        raise.employeeId,
+        { effectiveOn: isoDate(raise.effectiveOn) },
+        isoDate(practiceToday()),
+      ),
+    );
+    this.logger.log(`Raise ${id}: ${fresh.length} asked to update ADP by ${actor.id}`);
+    return this.person(raise.employeeId, actor);
+  }
+
+  /// Somebody's own pay (November 2026, Dominguez: their pay now, as well as
+  /// the raises they are told about). Taken from the session, never the
+  /// request, behind their PIN. Providers are left out, as from Pay & raises;
+  /// a change made by a raise they have not been told about is left out too.
+  async mine(viewer: AuthUser): Promise<MyPayView> {
+    const person = await this.prisma.employee.findFirst({
+      where: { id: viewer.id, ...NOT_A_PROVIDER, ...A_PERSON },
+      select: {
+        firstName: true,
+        lastName: true,
+        preferredName: true,
+        payType: true,
+        employmentChanges: {
+          include: { recordedBy: PERSON_NAME },
+          orderBy: [{ effectiveOn: 'desc' }, { createdAt: 'desc' }],
+        },
+        payRaises: {
+          where: { status: PayRaiseStatus.APPROVED },
+          include: { toldBy: PERSON_NAME },
+          orderBy: [{ effectiveOn: 'desc' }, { createdAt: 'desc' }],
+        },
+      },
+    });
+    if (!person) throw new NotFoundException('There is no pay on file for you in Domi Staff.');
+    this.logger.log(`Own pay read by ${viewer.id}`);
+    const untold = new Set(
+      person.payRaises
+        .filter((raise) => !raise.toldAt && raise.payChangeId)
+        .map((raise) => raise.payChangeId!),
+    );
+    const changes = visibleToPerson(person.employmentChanges.map(viewOf), untold);
+    return {
+      name: `${person.preferredName ?? person.firstName} ${person.lastName}`,
+      payType: person.payType,
+      current: currentOf(changes),
+      raises: person.payRaises
+        .filter((raise) => raise.toldAt && raise.newRate && raise.newUnit && raise.effectiveOn)
+        .map((raise) => ({
+          id: raise.id,
+          newRate: raise.newRate!.toNumber(),
+          newUnit: raise.newUnit!,
+          newPosition: raise.newPosition,
+          effectiveOn: isoDate(raise.effectiveOn!),
+          toldAt: raise.toldAt!.toISOString(),
+          toldBy: raise.toldBy ? fullName(raise.toldBy) : null,
+          message: raise.toldMessage,
+        })),
+    };
+  }
+
   /// They no longer want it. A meeting still to come is taken off.
   async withdraw(id: string, actor: AuthUser) {
     await this.assertAllowed(actor);
@@ -616,6 +782,15 @@ export class PayService {
     return notedOn;
   }
 
+  private async namesOf(ids: string[]): Promise<Map<string, string>> {
+    if (ids.length === 0) return new Map();
+    const people = await this.prisma.employee.findMany({
+      where: { id: { in: [...new Set(ids)] } },
+      select: { id: true, firstName: true, lastName: true },
+    });
+    return new Map(people.map((person) => [person.id, fullName(person)]));
+  }
+
   private async findNote(id: string) {
     const note = await this.prisma.payNote.findFirst({
       where: { id, employee: NOT_A_PROVIDER },
@@ -778,8 +953,12 @@ function payNoteOf(
 }
 
 function raiseOf(
-  raise: PayRaise & { recordedBy: { firstName: string; lastName: string } | null },
+  raise: PayRaise & {
+    recordedBy: { firstName: string; lastName: string } | null;
+    toldBy: { firstName: string; lastName: string } | null;
+  },
   changeIds: Set<string>,
+  payrollNames: Map<string, string>,
 ): RaiseView {
   return {
     id: raise.id,
@@ -800,5 +979,21 @@ function raiseOf(
     note: raise.note,
     recordedBy: raise.recordedBy ? fullName(raise.recordedBy) : null,
     updatedAt: raise.updatedAt.toISOString(),
+    told: raise.toldAt
+      ? {
+          at: raise.toldAt.toISOString(),
+          by: raise.toldBy ? fullName(raise.toldBy) : null,
+          message: raise.toldMessage,
+        }
+      : null,
+    payrollTold: raise.payrollToldAt
+      ? {
+          at: raise.payrollToldAt.toISOString(),
+          ids: raise.payrollToldIds,
+          names: raise.payrollToldIds.map(
+            (id) => payrollNames.get(id) ?? 'Somebody no longer here',
+          ),
+        }
+      : null,
   };
 }

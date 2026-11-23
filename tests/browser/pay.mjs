@@ -191,7 +191,8 @@ await step('approving it from a day to come puts it in the history as coming up'
   await dialog().getByRole('button', { name: 'Accepted: approve it' }).click();
   await dialog().getByLabel('Starts on').fill(starts);
   await dialog().getByRole('button', { name: 'Approve', exact: true }).click();
-  await dialog().getByText('Earlier raises (1)').waitFor();
+  // Approved but not told yet: it stays in view with Let them know.
+  await dialog().getByTestId('raise-to-tell').waitFor();
   // Still paid the old rate until the day comes.
   await dialog().getByTestId('current-pay').filter({ hasText: '$20.00 an hour' }).waitFor();
   await dialog()
@@ -212,6 +213,94 @@ await step('approving it from a day to come puts it in the history as coming up'
     .filter({ hasText: 'Casey Paysuite' })
     .getByText(/Coming up/)
     .waitFor();
+});
+
+await step('the person is told about the raise only when Let them know is pressed', async () => {
+  sql(`update employees set "passwordHash" = (select "passwordHash" from employees where email = 'admin@domihealthcare.com'), "mustChangePassword" = false where id = '${casey.id}'`);
+  const person = await signIn('imp-casey@example.com');
+  const me = (await call(person, '/auth/me')).body;
+  if (!(me.employee ?? me).hasPay) throw new Error('Your pay is not in their menu with pay on file');
+  // Their own pay is behind their PIN too.
+  const locked = await call(person, '/my-pay');
+  if (locked.status !== 403 || locked.body?.code !== 'PIN_REQUIRED') {
+    throw new Error(`their own pay answered ${locked.status} without the PIN`);
+  }
+  await call(person, '/pay-lock/unlock', {
+    method: 'POST',
+    body: JSON.stringify({ password: 'shift-change-2026' }),
+  });
+  const before = await call(person, '/my-pay');
+  if (before.body.current.pay?.rate !== 20) throw new Error(`pay now read ${JSON.stringify(before.body.current)}`);
+  if (before.body.raises.length !== 0) throw new Error('the raise showed before they were told');
+  // Nor can they open anybody's pay, their own included, on Pay & raises.
+  if ((await call(person, `/pay/${casey.id}`)).status !== 403) throw new Error('they opened Pay & raises');
+
+  await admin.getByTestId('pay-row').filter({ hasText: 'Casey Paysuite' }).getByRole('button').click();
+  const box = dialog().getByTestId('raise-to-tell');
+  await box.getByText(/has not been told in Domi Staff yet/).waitFor();
+  await box.getByRole('button', { name: 'Let them know' }).click();
+  await box.getByLabel('A few words for them (optional)').fill('Thank you for all your work this year.');
+  await box.getByRole('button', { name: 'Tell Casey Paysuite' }).click();
+  // It stays in view, saying so, until the pop-up closes.
+  await box.getByText(/Casey Paysuite was told/).waitFor();
+  if (await box.getByText(/has not been told/).count()) throw new Error('still waiting to be told');
+
+  // The bell and email say when, never the amount.
+  const bell = await call(person, '/notifications');
+  const items = bell.body.items ?? bell.body.notifications ?? bell.body;
+  const notice = items.find((item) => item.kind === 'PAY');
+  if (!notice) throw new Error(`no PAY notification: ${JSON.stringify(bell.body).slice(0, 300)}`);
+  if (notice.title !== 'Good news about your pay') throw new Error(`title read "${notice.title}"`);
+  if (/\$|22|Thank you/.test(`${notice.title} ${notice.body}`)) throw new Error(`it carried the pay: ${notice.body}`);
+  if (notice.link !== '/your-pay') throw new Error(`link was ${notice.link}`);
+
+  // Twice is refused.
+  const raiseId = sql(`select id from pay_raises where "employeeId" = '${casey.id}' and status = 'APPROVED'`);
+  const again = await call(admin, `/pay/raises/${raiseId}/tell`, { method: 'POST', body: '{}' });
+  if (again.status !== 400) throw new Error(`telling twice answered ${again.status}`);
+
+  // They read it on Your pay, after the PIN, with the words written for them.
+  await person.goto(`${BASE}${notice.link}`, { waitUntil: 'networkidle' });
+  const raise = person.getByTestId('my-raise');
+  await raise.getByText('$22.50 an hour').waitFor();
+  await raise.getByText(/^Starts /).waitFor();
+  await raise.getByText('Thank you for all your work this year.').waitFor();
+  await person.getByTestId('my-pay-now').getByText('$20.00 an hour').waitFor();
+  await person.screenshot({ path: `${OUT}/pay-your-pay.png`, fullPage: true });
+  await person.context().close();
+});
+
+await step('payroll is asked to update ADP, with no amount', async () => {
+  const managerMe = (await call(manager, '/auth/me')).body;
+  const managerId = managerMe.employee?.id ?? managerMe.id;
+  await call(admin, `/rota-cost/access/${managerId}`, { method: 'PUT' });
+  await dialog().getByRole('button', { name: 'Close' }).click();
+  await admin.reload({ waitUntil: 'networkidle' });
+  await admin.getByTestId('pay-row').filter({ hasText: 'Casey Paysuite' }).getByRole('button').click();
+  // Told, it is now with the earlier raises.
+  await dialog().getByText(/Earlier raises/).click();
+  await dialog().getByRole('button', { name: 'Tell payroll to update ADP' }).click();
+  const form = dialog().getByRole('form', { name: 'Tell payroll' });
+  await form.getByRole('checkbox').first().check();
+  await form.getByRole('button', { name: 'Send' }).click();
+  await dialog().getByText(/Asked to update ADP:/).waitFor();
+
+  const bell = await call(manager, '/notifications');
+  const items = bell.body.items ?? bell.body.notifications ?? bell.body;
+  const notice = items.find((item) => item.title?.startsWith('Update ADP'));
+  if (!notice) throw new Error(`no ADP notification: ${JSON.stringify(bell.body).slice(0, 300)}`);
+  if (notice.title !== 'Update ADP: a raise for Casey Paysuite') throw new Error(`title read "${notice.title}"`);
+  if (/\$|22/.test(notice.body)) throw new Error(`it carried the pay: ${notice.body}`);
+
+  // Only somebody on Pay & raises can be asked.
+  const raiseId = sql(`select id from pay_raises where "employeeId" = '${casey.id}' and status = 'APPROVED'`);
+  const outsider = await call(admin, `/pay/raises/${raiseId}/tell-payroll`, {
+    method: 'POST',
+    body: JSON.stringify({ notify: [drew.id] }),
+  });
+  if (outsider.status !== 400) throw new Error(`asking somebody off the list answered ${outsider.status}`);
+  await call(admin, `/rota-cost/access/${managerId}`, { method: 'DELETE' });
+  await dialog().getByRole('button', { name: 'Close' }).click();
 });
 
 await step('notes and past raises: written, changed and removed on the person', async () => {
