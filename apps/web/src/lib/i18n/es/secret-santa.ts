@@ -75,8 +75,8 @@ export const SECRET_SANTA: Record<string, string> = {
   'You are in!': '¡Ya participas!',
   'You are told who you drew once the names are drawn. Meanwhile, add some gift ideas for whoever draws you.':
     'Te diremos a quién sacaste cuando se sorteen los nombres. Mientras tanto, añade algunas ideas de regalo para quien te saque.',
-  'Thanks for letting us know. You can still sign up later while sign-ups are open.':
-    'Gracias por avisarnos. Todavía puedes inscribirte más tarde mientras las inscripciones estén abiertas.',
+  'You will not take part. Thanks for letting us know. You can still sign up later while sign-ups are open.':
+    'No participarás. Gracias por avisarnos. Todavía puedes inscribirte más tarde mientras las inscripciones estén abiertas.',
   'Add my gift ideas': 'Añadir mis ideas de regalo',
   'Could not save your answer.': 'No se pudo guardar tu respuesta.',
   'You have been added to the Secret Santa. Would you like to take part?':
@@ -85,7 +85,9 @@ export const SECRET_SANTA: Record<string, string> = {
   'Everyone in it draws one colleague at random and secretly buys them a gift within the budget.':
     'Cada participante saca al azar el nombre de un compañero y le compra un regalo en secreto, dentro del presupuesto.',
   'Sign up by {day}.': 'Inscríbete antes del {day}.',
-  'Why or why not? (optional)': '¿Por qué sí o por qué no? (opcional)',
+  'Are you sure you will not take part?': '¿Seguro que no quieres participar?',
+  'Why not? (optional)': '¿Por qué no? (opcional)',
+  'Yes, I will not take part': 'Sí, no participaré',
   'Whoever organizes it reads this.': 'Quien lo organiza lo leerá.',
   'Count me in': 'Cuenta conmigo',
   'No thanks': 'No, gracias',

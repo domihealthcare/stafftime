@@ -140,14 +140,16 @@ await step('staff are told sign-ups are open, on the bell', async () => {
   if (!/Sign up/.test(told.body)) throw new Error(told.body);
 });
 
-await step('staff are asked when they sign in, and say yes with a reason', async () => {
+await step('staff are asked when they sign in, and say yes', async () => {
   await staff.reload({ waitUntil: 'networkidle' });
   const invite = staff.getByTestId('secret-santa-invite');
   await invite.waitFor({ timeout: 15000 });
   await invite.getByText(TITLE).waitFor();
   await invite.getByText('Day of the exchange still to be set').waitFor();
   await staff.screenshot({ path: `${OUT}/secret-santa-invite.png`, fullPage: false });
-  await invite.getByLabel('Why or why not? (optional)').fill('Love a Secret Santa!');
+  // No reason is asked for a yes.
+  if (await invite.getByLabel('Why not? (optional)').count())
+    throw new Error('why-not box shown first');
   await invite.getByRole('button', { name: /Count me in/ }).click();
   await invite.getByText('You are in!').waitFor({ timeout: 10000 });
   await invite.getByRole('link', { name: 'Add my gift ideas' }).click();
@@ -165,13 +167,22 @@ await step('staff are asked when they sign in, and say yes with a reason', async
   if (await staff.getByTestId('secret-santa-invite').count()) throw new Error('asked again');
 });
 
-await step('somebody can say no, with why, and is not asked again', async () => {
+await step('No thanks asks to confirm, with why not, and is not asked again', async () => {
   await admin.reload({ waitUntil: 'networkidle' });
   const invite = admin.getByTestId('secret-santa-invite');
   await invite.waitFor({ timeout: 15000 });
-  await invite.getByLabel('Why or why not? (optional)').fill('Away that week');
+  if (await invite.getByLabel('Why not? (optional)').count())
+    throw new Error('why-not box shown first');
+  // Go back undoes the first press.
   await invite.getByRole('button', { name: 'No thanks' }).click();
-  await invite.getByText('Thanks for letting us know').waitFor({ timeout: 10000 });
+  await invite.getByText('Are you sure you will not take part?').waitFor();
+  await invite.getByRole('button', { name: 'Go back' }).click();
+  await invite.getByRole('button', { name: /Count me in/ }).waitFor();
+  await invite.getByRole('button', { name: 'No thanks' }).click();
+  await invite.getByLabel('Why not? (optional)').fill('Away that week');
+  await admin.screenshot({ path: `${OUT}/secret-santa-decline.png`, fullPage: false });
+  await invite.getByRole('button', { name: 'Yes, I will not take part' }).click();
+  await invite.getByText('You will not take part').waitFor({ timeout: 10000 });
   await invite.getByRole('button', { name: 'Close', exact: true }).first().click();
   await admin.reload({ waitUntil: 'networkidle' });
   await admin.waitForTimeout(1500);
@@ -198,7 +209,7 @@ await step('the organizers see who answered and why', async () => {
   if (ada?.answer !== 'DECLINE' || ada.reason !== 'Away that week')
     throw new Error(JSON.stringify(ada));
   const frankie = answers.list.find((row) => row.name.startsWith(people.staff.firstName));
-  if (frankie?.answer !== 'JOIN' || frankie.reason !== 'Love a Secret Santa!')
+  if (frankie?.answer !== 'JOIN' || frankie.reason !== null)
     throw new Error(JSON.stringify(frankie));
   if (answers.waiting < 2) throw new Error(`waiting ${answers.waiting}`); // Morgan and Max
   await manager.goto(`${BASE}/secret-santa/${id}`, { waitUntil: 'networkidle' });
@@ -415,7 +426,13 @@ await step(
     const bell = (await call(admin, '/notifications')).body.items;
     const told = bell.find((item) => /your draw was looked up/.test(item.title));
     if (!told) throw new Error('Ada was not told');
-    if (told.body.includes(people[drew.admin].firstName)) throw new Error('the bell names who');
+    // It names the organizer who looked (who may be the very person drawn),
+    // and nothing else about anybody.
+    const organizer = `${people.manager.firstName} ${people.manager.lastName}`;
+    if (!told.body.startsWith(`${organizer} looked up who you are buying for`))
+      throw new Error(told.body);
+    if (told.body.slice(organizer.length).includes(people[drew.admin].firstName))
+      throw new Error('the bell names who');
 
     const listed = (await call(manager, `/secret-santa/${id}`)).body;
     if (listed.lookups.length !== 1) throw new Error(`${listed.lookups.length} look-ups listed`);

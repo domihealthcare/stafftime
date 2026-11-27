@@ -6627,8 +6627,11 @@ not"). `SecretSantaInvite`, mounted in `Layout`, asks for
 `GET /secret-santa/invitations` once per page load (a background request, so
 it never keeps a session awake) and shows a pop-up for each Secret Santa
 `shouldAsk` names: before the draw, not answered yet, and either added by an
-organizer (who may say no) or open to sign up to. **Count me in** /
-**No thanks**, an optional reason (300 characters), and **Decide later**,
+organizer (who may say no) or open to sign up to. **Count me in**, or
+**No thanks**, which then asks them to confirm they will not take part, with
+an optional "why not" (300 characters; Dominguez: "the why not only after
+they click no thanks (and it should confirm they will not participate)"; a
+yes keeps no reason), and **Decide later**,
 which hides it on that browser until tomorrow (`localStorage`, wrapped).
 `POST /secret-santa/:id/reply` keeps one `SecretSantaReply` per person
 (answer, reason, when; pinned by the schema guard): yes signs them up, no

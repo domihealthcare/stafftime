@@ -859,11 +859,11 @@ const STAFF: Section[] = [
           <>
             <p>
               When a Secret Santa is set up, you are asked when you sign in whether you would like
-              to take part: <strong>Count me in</strong> or <strong>No thanks</strong>, with a box
-              to say why or why not if you like (whoever organizes it reads it).{' '}
-              <strong>Decide later</strong> asks again tomorrow. You can also sign up from the card
-              on Home while sign-ups are open, and take yourself out again with{' '}
-              <strong>Take me out</strong> until the names are drawn.
+              to take part: <strong>Count me in</strong>, or <strong>No thanks</strong>, which asks
+              you to confirm you will not take part and lets you say why not if you like (whoever
+              organizes it reads it). <strong>Decide later</strong> asks again tomorrow. You can
+              also sign up from the card on Home while sign-ups are open, and take yourself out
+              again with <strong>Take me out</strong> until the names are drawn.
             </p>
             <p>
               Write some <strong>gift ideas</strong> for whoever draws you (things you like, or
@@ -3112,7 +3112,7 @@ const MANAGERS: Section[] = [
               anybody join from Home, with a last day to sign up if you want one. Everybody you add
               is told on the bell, and with sign-ups on so is everybody else. Each of them is also
               asked when they next sign in, <strong>Count me in</strong> or{' '}
-              <strong>No thanks</strong>, and can say why;{' '}
+              <strong>No thanks</strong> (confirmed, with an optional why not);{' '}
               <strong>Answers to the invitation</strong> on its page lists who said what and how
               many have not answered yet (somebody you added who says no is taken out). Add more
               people at any time under <strong>Add people</strong> on its page, or take them out.

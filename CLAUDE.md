@@ -2656,8 +2656,9 @@ Beyond the phases, the parts worth knowing about before picking up work:
   the bell. **Asked on signing in** (1.55.0: "all potential staff should be
   prompted when they sign into portal to either accept or deny participation
   ... and given an option to say why or why not"): a pop-up for everybody who
-  could take part and has not answered, **Count me in** / **No thanks** with
-  an optional reason the organizers read (**Answers to the invitation**),
+  could take part and has not answered, **Count me in**, or **No thanks**,
+  which asks them to confirm they will not take part with an optional "why
+  not" the organizers read (**Answers to the invitation**),
   **Decide later** until tomorrow (`SecretSantaReply`,
   `components/SecretSantaInvite.tsx`, migration
   `20261127050000_secret_santa_replies`). **Add people** works any time (1.54.0: "make sure there is a way

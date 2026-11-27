@@ -39,8 +39,11 @@ function putOff(id: string) {
  * November 2026, Dominguez: "all potential staff should be prompted when they
  * sign into portal to either accept or deny participation in the secret
  * santa - and given an option to say why or why not"). One at a time, until
- * each is answered: **Count me in** or **No thanks**, with an optional
- * reason the organizers read. **Decide later** puts it off until tomorrow.
+ * each is answered: **Count me in**, or **No thanks**, which then asks them
+ * to confirm they will not take part, with an optional "why not" the
+ * organizers read (Dominguez: "the why not only after they click no thanks
+ * (and it should confirm they will not participate)"). **Decide later** puts
+ * it off until tomorrow.
  * Not while an admin is viewing as somebody, and never for a shared account
  * (the server sends none).
  */
@@ -52,6 +55,8 @@ export function SecretSantaInvite() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ joined: boolean; id: string } | null>(null);
+  /// "No thanks" pressed: confirming, with the why-not box.
+  const [declining, setDeclining] = useState(false);
   const viewingAs = Boolean(employee?.viewingAs);
   const employeeId = employee?.id ?? null;
 
@@ -77,6 +82,7 @@ export function SecretSantaInvite() {
     setReason('');
     setError(null);
     setDone(null);
+    setDeclining(false);
   };
 
   if (done) {
@@ -98,7 +104,7 @@ export function SecretSantaInvite() {
           ) : (
             <p>
               {t(
-                'Thanks for letting us know. You can still sign up later while sign-ups are open.',
+                'You will not take part. Thanks for letting us know. You can still sign up later while sign-ups are open.',
               )}
             </p>
           )}
@@ -127,7 +133,11 @@ export function SecretSantaInvite() {
     setBusy(true);
     setError(null);
     try {
-      await api.replySecretSanta(current.id, choice, reason.trim() || null);
+      await api.replySecretSanta(
+        current.id,
+        choice,
+        choice === 'DECLINE' ? reason.trim() || null : null,
+      );
       setDone({ joined: choice === 'JOIN', id: current.id });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : translate('Could not save your answer.'));
@@ -195,53 +205,81 @@ export function SecretSantaInvite() {
           </p>
         )}
 
-        <label className="block">
-          <span className="block text-sm font-medium text-slate-700">
-            {t('Why or why not? (optional)')}
-          </span>
-          <textarea
-            rows={2}
-            maxLength={MAX_REASON}
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-            className={`mt-1 ${inputClass}`}
-          />
-          <span className="mt-1 block text-xs text-slate-600">
-            {t('Whoever organizes it reads this.')}
-          </span>
-        </label>
-
         {error && <Alert>{error}</Alert>}
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            className={buttonClass('primary', 'md')}
-            disabled={busy}
-            onClick={() => void answer('JOIN')}
-          >
-            <span aria-hidden="true">🎁 </span>
-            {t('Count me in')}
-          </button>
-          <button
-            type="button"
-            className={buttonClass('secondary', 'md')}
-            disabled={busy}
-            onClick={() => void answer('DECLINE')}
-          >
-            {t('No thanks')}
-          </button>
-          <button
-            type="button"
-            className="tap ml-auto text-sm font-medium text-slate-600 hover:text-slate-900"
-            onClick={() => {
-              putOff(current.id);
-              next();
-            }}
-          >
-            {t('Decide later')}
-          </button>
-        </div>
+        {declining ? (
+          <div className="space-y-3 rounded-lg bg-slate-50 p-4 ring-1 ring-slate-200">
+            <p className="text-sm font-semibold text-slate-900">
+              {t('Are you sure you will not take part?')}
+            </p>
+            <label className="block">
+              <span className="block text-sm font-medium text-slate-700">
+                {t('Why not? (optional)')}
+              </span>
+              <textarea
+                rows={2}
+                maxLength={MAX_REASON}
+                value={reason}
+                onChange={(event) => setReason(event.target.value)}
+                className={`mt-1 ${inputClass}`}
+              />
+              <span className="mt-1 block text-xs text-slate-600">
+                {t('Whoever organizes it reads this.')}
+              </span>
+            </label>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                className={buttonClass('primary', 'md')}
+                disabled={busy}
+                onClick={() => void answer('DECLINE')}
+              >
+                {t('Yes, I will not take part')}
+              </button>
+              <button
+                type="button"
+                className={buttonClass('secondary', 'md')}
+                disabled={busy}
+                onClick={() => {
+                  setDeclining(false);
+                  setReason('');
+                }}
+              >
+                {t('Go back')}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              className={buttonClass('primary', 'md')}
+              disabled={busy}
+              onClick={() => void answer('JOIN')}
+            >
+              <span aria-hidden="true">🎁 </span>
+              {t('Count me in')}
+            </button>
+            <button
+              type="button"
+              className={buttonClass('secondary', 'md')}
+              disabled={busy}
+              onClick={() => setDeclining(true)}
+            >
+              {t('No thanks')}
+            </button>
+            <button
+              type="button"
+              className="tap ml-auto text-sm font-medium text-slate-600 hover:text-slate-900"
+              onClick={() => {
+                putOff(current.id);
+                next();
+              }}
+            >
+              {t('Decide later')}
+            </button>
+          </div>
+        )}
       </div>
     </Modal>
   );

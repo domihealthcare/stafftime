@@ -510,7 +510,9 @@ export class SecretSantaService {
       );
     }
     const member = exchange.members.find((row) => row.employeeId === user.id);
-    const why = reason?.trim() || null;
+    // Only a "no" says why (Dominguez: "the why not only after they click no
+    // thanks").
+    const why = answer === 'DECLINE' ? reason?.trim() || null : null;
     if (answer === 'JOIN') {
       if (!member && !signUpOpen(this.state(exchange), today())) {
         throw new ConflictException(
