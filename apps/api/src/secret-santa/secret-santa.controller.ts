@@ -9,11 +9,13 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
+import { PayLockGuard } from '../pay-lock/pay-lock.guard';
 import {
   NewSecretSantaInput,
   SecretSantaInput,
@@ -32,6 +34,27 @@ export class SecretSantaController {
   @Get()
   list(@CurrentUser() user: AuthUser) {
     return this.santas.list(user);
+  }
+
+  /// Who you drew: behind your PIN.
+  @Get(':id/mine')
+  @UseGuards(PayLockGuard)
+  mine(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    return this.santas.mine(id, user);
+  }
+
+  /// In an emergency, who one person drew: organizers, behind their PIN,
+  /// logged, and the person told.
+  @Post(':id/look-up/:employeeId')
+  @Roles(Role.MANAGER)
+  @UseGuards(PayLockGuard)
+  @HttpCode(HttpStatus.OK)
+  lookUp(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('employeeId', ParseUUIDPipe) employeeId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.santas.lookUp(id, employeeId, user);
   }
 
   @Get(':id')

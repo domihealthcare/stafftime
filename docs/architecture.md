@@ -6585,17 +6585,35 @@ draw twice. Each person is then told:
   name is drawn", the budget and day, never the name;
 - by **email** (`NotificationsService.privately`): "You drew Casey Smith",
   with their gift ideas;
-- on the page: **Show who I drew** (hidden until pressed, as the page may be
-  on a shared screen), their gift ideas as they are now, and **Email it to me
-  again**.
+- on the page: **Show who I drew**, which asks for their **PIN** (27
+  November 2026, Dominguez: "to be able to show your secret santa it should
+  require a pin in the app for all users"): the same unlock as pay
+  (`PayLockGuard` on `GET /secret-santa/:id/mine`, `PinGate` on the page;
+  tablet PIN, password or Face ID, 10 minutes, per sign-in), then the name
+  and their gift ideas as they are now, and **Email it to me again**. The
+  ordinary page answer carries only `me.drawn`, never who.
 
-**Nobody sees who drew whom**, organizers and admins included.
-`SecretSantaMember.recipientId` is stored, so each person can look theirs
-up, but `shape()` only ever reads the caller's own row and the row of the
-person they drew; the member list carries names only, never gift ideas or
-draws; the browser suite fails if any response has a "recipient" field. A
-database constraint stops a self-draw. (Anybody with the database itself
-could read it; the app never shows it.)
+**Nobody sees who drew whom**, organizers and admins included, with one
+narrow exception. `SecretSantaMember.recipientId` is stored, so each person
+can look theirs up, but only `mine()` and `lookUp()` read somebody's
+recipient; the member list carries names only, never gift ideas or draws;
+the browser suite fails if any page answer has a "recipient" or "drew"
+field. A database constraint stops a self-draw. (Anybody with the database
+itself could read it; the app never lists it.)
+
+**The emergency look-up** (27 November 2026, Dominguez: "there should be
+someone who can (in an emergency i.e. during the exchange the person forgot
+who they had ...) see who that person had (though it should be limited to
+the question and not just a full list of everyone)"): a manager or admin,
+**from the day of the exchange**, chooses one person and presses **Look it
+up**, behind their own PIN (`POST /secret-santa/:id/look-up/:employeeId`,
+`PayLockGuard`). One person per request, never themselves, and no route
+answers for more than one. Each look-up is kept (`SecretSantaLookup`: who
+looked, whose, when, never the answer), listed for every organizer on the
+page, and the person is told on the bell ("Morgan looked up who you are
+buying for, to remind you"). An organizer looking people up one by one to
+find who drew them would leave a line for each, and each person would be
+told. Before the day the person has the app and the email.
 
 **Somebody dropping out afterwards.** An organizer presses **Take out**:
 because it is one circle, whoever drew them is given the person they had
@@ -6614,4 +6632,5 @@ sign-ups only: the names are still drawn by an organizer pressing Draw.
 `pages/SecretSantaPage.tsx`, `components/SecretSantaCard.tsx` (Home),
 `lib/i18n/es/secret-santa.ts` (staff parts; the organizer's tools are English),
 migrations `20261127010000_secret_santa_kind`, `20261127020000_secret_santa`,
-schema guard pins both tables; `tests/browser/secret-santa.mjs`.
+`20261127030000_secret_santa_lookups`, schema guard pins the three tables,
+`pay-routes.spec.ts` pins the PIN on `mine` and `lookUp`; `tests/browser/secret-santa.mjs`.

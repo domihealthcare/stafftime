@@ -34,12 +34,13 @@ export const SECRET_SANTA: Record<string, string> = {
   'Their gift ideas': 'Sus ideas de regalo',
   'None written yet. They will show here if {name} adds some.':
     'Todavía no hay ninguna. Aparecerán aquí si {name} añade alguna.',
-  'Keep it a secret: nobody else is told who you drew, not even whoever set it up.':
-    'Guarda el secreto: a nadie más se le dice a quién sacaste, ni siquiera a quien lo organizó.',
+  'Keep it a secret: nobody else is shown who you drew. If you forget on the day, an organizer can look it up for you, and you are told they did.':
+    'Guarda el secreto: a nadie más se le muestra a quién sacaste. Si lo olvidas el día del intercambio, quien lo organiza puede consultarlo por ti, y se te avisará.',
   'Hide it': 'Ocultarlo',
   'Email it to me again': 'Enviármelo otra vez por correo',
-  'The name is hidden in case somebody is looking at your screen.':
-    'El nombre está oculto por si alguien está mirando tu pantalla.',
+  'The name is kept behind your PIN, in case somebody else is using your screen.':
+    'El nombre está protegido con tu PIN, por si otra persona está usando tu pantalla.',
+  'Could not load who you drew.': 'No se pudo cargar a quién sacaste.',
   'Show who I drew': 'Mostrar a quién saqué',
   'Your gift ideas are saved.': 'Tus ideas de regalo están guardadas.',
   'Could not save your gift ideas.': 'No se pudieron guardar tus ideas de regalo.',

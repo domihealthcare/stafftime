@@ -871,11 +871,11 @@ const STAFF: Section[] = [
             <p>
               Once a manager draws the names you are told on the bell that yours is ready, and the
               email names the colleague you drew. On the Secret Santa page,{' '}
-              <strong>Show who I drew</strong> shows them with their gift ideas (the name is hidden
-              until you press it, in case somebody is looking at your screen), and{' '}
-              <strong>Email it to me again</strong> sends it once more. Nobody is ever shown who
-              drew whom, not even the managers who set it up: keep yours a secret, and stay within
-              the budget.
+              <strong>Show who I drew</strong> asks for your tablet PIN (or your password, or Face
+              ID), then shows them with their gift ideas, so nobody else using your screen can see
+              it. <strong>Email it to me again</strong> sends it once more. Nobody else is shown who
+              you drew: keep it a secret, and stay within the budget. If you forget on the day, a
+              manager can look yours up for you, and you are told on the bell that they did.
             </p>
           </>
         ),
@@ -3114,13 +3114,18 @@ const MANAGERS: Section[] = [
             <p>
               When everybody is in, press <strong>Draw the names</strong> (at least 3 people). That
               closes it: nobody else joins, and each person is told on the bell that their name is
-              ready and by email who they drew, with that person's gift ideas. The draw is one
-              circle, so nobody draws themselves. <strong>Nobody is shown who drew whom</strong>,
-              you and other admins included. If somebody has to drop out afterwards, press{' '}
-              <strong>Take out</strong> beside them: whoever drew them is given the person they had
-              drawn and told by email, and you still learn nothing. A change to the day, budget or
-              place tells everybody in it; <strong>Cancel this Secret Santa</strong> removes it and
-              tells them it will not go ahead.
+              ready and by email who they drew, with that person's gift ideas; in the app they see
+              it behind their PIN. The draw is one circle, so nobody draws themselves.{' '}
+              <strong>Nobody is shown who drew whom</strong>, you and other admins included, with
+              one exception: from the day of the exchange, if somebody has forgotten, choose them
+              under <strong>In an emergency: who did somebody draw?</strong> and press{' '}
+              <strong>Look it up</strong> (behind your PIN). It answers for that one person only;
+              every look-up is listed there for the other organizers, and the person is told on the
+              bell. If somebody has to drop out after the draw, press <strong>Take out</strong>{' '}
+              beside them: whoever drew them is given the person they had drawn and told by email. A
+              change to the day, budget or place tells everybody in it;{' '}
+              <strong>Cancel this Secret Santa</strong> removes it and tells them it will not go
+              ahead.
             </p>
           </>
         ),

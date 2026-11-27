@@ -491,29 +491,31 @@ model Employee {
 
   /// CME activities a provider asks to have approved, and their allowance
   /// (October 2026).
-  cmeRequests        CmeRequest[]       @relation("CmeRequestProvider")
-  cmeRequestsDecided CmeRequest[]       @relation("CmeRequestDecidedBy")
-  cmeAllowance       CmeAllowance?      @relation("CmeAllowanceProvider")
-  expenseRequests    ExpenseRequest[]   @relation("ExpenseRequester")
-  expensesDecided    ExpenseRequest[]   @relation("ExpenseDecidedBy")
-  staffNotesAbout    StaffNote[]        @relation("StaffNoteAbout")
-  staffNotesWritten  StaffNote[]        @relation("StaffNoteAuthor")
-  payNotesAbout      PayNote[]          @relation("PayNoteAbout")
-  payNotesWritten    PayNote[]          @relation("PayNoteAuthor")
-  payNotesForMe      PayNoteRecipient[]
+  cmeRequests          CmeRequest[]        @relation("CmeRequestProvider")
+  cmeRequestsDecided   CmeRequest[]        @relation("CmeRequestDecidedBy")
+  cmeAllowance         CmeAllowance?       @relation("CmeAllowanceProvider")
+  expenseRequests      ExpenseRequest[]    @relation("ExpenseRequester")
+  expensesDecided      ExpenseRequest[]    @relation("ExpenseDecidedBy")
+  staffNotesAbout      StaffNote[]         @relation("StaffNoteAbout")
+  staffNotesWritten    StaffNote[]         @relation("StaffNoteAuthor")
+  payNotesAbout        PayNote[]           @relation("PayNoteAbout")
+  payNotesWritten      PayNote[]           @relation("PayNoteAuthor")
+  payNotesForMe        PayNoteRecipient[]
   /// Face ID, Touch ID, a fingerprint or Windows Hello for signing in
   /// (November 2026). See `Passkey`.
-  passkeys           Passkey[]
+  passkeys             Passkey[]
   /// A provider's saved signature, and every time one was stamped on a PDF
   /// (November 2026). See `SavedSignature`.
-  savedSignature     SavedSignature?    @relation("SavedSignatureOwner")
-  signatureUsesOf    SignatureUse[]     @relation("SignatureUseOwner")
-  signatureUsesBy    SignatureUse[]     @relation("SignatureUseBy")
+  savedSignature       SavedSignature?     @relation("SavedSignatureOwner")
+  signatureUsesOf      SignatureUse[]      @relation("SignatureUseOwner")
+  signatureUsesBy      SignatureUse[]      @relation("SignatureUseBy")
   /// Secret Santa (November 2026): the exchanges somebody set up, the ones
   /// they are in, and the colleague they drew (never who drew them).
-  secretSantasSetUp  SecretSanta[]       @relation("SecretSantaOrganizer")
-  secretSantaMembers SecretSantaMember[] @relation("SecretSantaMember")
-  secretSantaDrawnBy SecretSantaMember[] @relation("SecretSantaRecipient")
+  secretSantasSetUp    SecretSanta[]       @relation("SecretSantaOrganizer")
+  secretSantaMembers   SecretSantaMember[] @relation("SecretSantaMember")
+  secretSantaDrawnBy   SecretSantaMember[] @relation("SecretSantaRecipient")
+  secretSantaLookupsBy SecretSantaLookup[] @relation("SecretSantaLookupBy")
+  secretSantaLookupsOf SecretSantaLookup[] @relation("SecretSantaLookupOf")
 
   /// Phones and computers that get the bell's notifications as push
   /// notifications (October 2026).
@@ -4962,6 +4964,7 @@ model SecretSanta {
   updatedAt     DateTime          @updatedAt
 
   members SecretSantaMember[]
+  lookups SecretSantaLookup[]
 
   @@map("secret_santas")
 }
@@ -4991,4 +4994,26 @@ model SecretSantaMember {
   @@unique([exchangeId, employeeId])
   @@unique([exchangeId, recipientId])
   @@map("secret_santa_members")
+}
+
+/// An organizer looking up who one person drew, in an emergency (27 November
+/// 2026, Dominguez: "during the exchange the person forgot who they had ...
+/// it should be limited to the question and not just a full list of
+/// everyone"). One person at a time, from the day of the exchange, behind the
+/// organizer's PIN. Kept so every organizer can see who looked up whose, and
+/// the person is told on the bell; never what the answer was.
+model SecretSantaLookup {
+  id           String      @id @default(uuid()) @db.Uuid
+  exchangeId   String      @db.Uuid
+  exchange     SecretSanta @relation(fields: [exchangeId], references: [id], onDelete: Cascade)
+  /// The organizer who looked it up.
+  lookedUpById String?     @db.Uuid
+  lookedUpBy   Employee?   @relation("SecretSantaLookupBy", fields: [lookedUpById], references: [id], onDelete: SetNull)
+  /// Whose draw was looked up.
+  employeeId   String      @db.Uuid
+  employee     Employee    @relation("SecretSantaLookupOf", fields: [employeeId], references: [id], onDelete: Cascade)
+  createdAt    DateTime    @default(now())
+
+  @@index([exchangeId, createdAt])
+  @@map("secret_santa_lookups")
 }

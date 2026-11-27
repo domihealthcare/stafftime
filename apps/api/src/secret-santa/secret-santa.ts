@@ -147,7 +147,7 @@ export function drawnEmail(
         : 'They have not written any gift ideas yet. Domi Staff will show them if they do.',
       '',
       details(exchange),
-      'Keep it a secret: nobody else is told who you drew, not even the organizers.',
+      'Keep it a secret: nobody else is shown who you drew. If you forget on the day, an organizer can look it up for you, and you are told they did.',
     ],
   };
 }
@@ -180,6 +180,15 @@ export function detailsChangedBell(exchange: ExchangeWords) {
   return {
     title: `${exchange.title}: details changed`,
     body: details(exchange),
+    link: `/secret-santa/${exchange.id}`,
+  };
+}
+
+/// To the person whose draw an organizer looked up: who did, never the name.
+export function lookedUpBell(exchange: ExchangeWords, organizer: string) {
+  return {
+    title: `${exchange.title}: your draw was looked up`,
+    body: `${organizer} looked up who you are buying for, to remind you. Nobody else was told.`,
     link: `/secret-santa/${exchange.id}`,
   };
 }

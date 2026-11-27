@@ -31,6 +31,7 @@ import {
   changedBell,
   closeOver,
   detailsChangedBell,
+  lookedUpBell,
   drawCircle,
   drawnBell,
   drawnEmail,
@@ -443,6 +444,75 @@ export class SecretSantaService {
     return { sent: true };
   }
 
+  /// Who you drew, with their gift ideas as they are now. The route is
+  /// behind the PIN (November 2026, Dominguez: "to be able to show your
+  /// secret santa it should require a pin in the app for all users").
+  async mine(id: string, user: AuthUser) {
+    const exchange = await this.require(id);
+    const mine = await this.prisma.secretSantaMember.findUnique({
+      where: { exchangeId_employeeId: { exchangeId: id, employeeId: user.id } },
+      select: { recipientId: true },
+    });
+    if (exchange.status !== SecretSantaStatus.DRAWN || !mine?.recipientId) {
+      throw new NotFoundException('You have nobody to buy for in this Secret Santa.');
+    }
+    const drew = await this.prisma.secretSantaMember.findUnique({
+      where: { exchangeId_employeeId: { exchangeId: id, employeeId: mine.recipientId } },
+      select: { wishes: true, employee: { select: PERSON } },
+    });
+    if (!drew) throw new NotFoundException('You have nobody to buy for in this Secret Santa.');
+    return { ...drew.employee, name: nameOf(drew.employee), wishes: drew.wishes };
+  }
+
+  /// An organizer, in an emergency, finding out who ONE person drew (27
+  /// November 2026, Dominguez: "during the exchange the person forgot who
+  /// they had ... limited to the question and not just a full list"). From
+  /// the day of the exchange on, never for themselves, behind their PIN;
+  /// every look-up is kept for the other organizers to see, and the person
+  /// is told on the bell. There is no route that answers for more than one.
+  async lookUp(id: string, employeeId: string, actor: AuthUser) {
+    const exchange = await this.require(id);
+    if (exchange.status !== SecretSantaStatus.DRAWN) {
+      throw new BadRequestException('The names are not drawn yet.');
+    }
+    if (this.state(exchange).exchangeOn > today()) {
+      throw new BadRequestException(
+        `Looking somebody up is for the day of the exchange, ${dayWords(exchange.exchangeOn)}, in an emergency. Until then they can see who they drew in Domi Staff, or press Email it to me again.`,
+      );
+    }
+    if (employeeId === actor.id) {
+      throw new BadRequestException('Look yours up on this page, behind your own PIN.');
+    }
+    const member = await this.prisma.secretSantaMember.findUnique({
+      where: { exchangeId_employeeId: { exchangeId: id, employeeId } },
+      select: { recipientId: true, employee: { select: PERSON } },
+    });
+    if (!member) throw new NotFoundException('They are not in this Secret Santa.');
+    if (!member.recipientId) throw new NotFoundException('They have nobody to buy for.');
+    const drew = await this.prisma.employee.findUniqueOrThrow({
+      where: { id: member.recipientId },
+      select: PERSON,
+    });
+    await this.prisma.secretSantaLookup.create({
+      data: { exchangeId: id, lookedUpById: actor.id, employeeId },
+    });
+    this.logger.log(`Secret Santa ${id}: ${actor.id} looked up who ${employeeId} drew`);
+
+    const organizer = await this.prisma.employee.findUnique({
+      where: { id: actor.id },
+      select: PERSON,
+    });
+    await this.inbox.notify([employeeId], {
+      kind: NotificationKind.SECRET_SANTA,
+      ...lookedUpBell(wordsOf(exchange), organizer ? nameOf(organizer) : 'An organizer'),
+    });
+    return {
+      who: nameOf(member.employee),
+      drew: { ...drew, name: nameOf(drew) },
+      lookups: await this.lookupsOf(id),
+    };
+  }
+
   // ------------------------------------------------------------- helpers
 
   /// The bell (no name) and the email (the name and their gift ideas).
@@ -494,15 +564,6 @@ export class SecretSantaService {
       where: { exchangeId_employeeId: { exchangeId: exchange.id, employeeId: user.id } },
       select: { wishes: true, recipientId: true },
     });
-    const drew =
-      mine?.recipientId && exchange.status === SecretSantaStatus.DRAWN
-        ? await this.prisma.secretSantaMember.findUnique({
-            where: {
-              exchangeId_employeeId: { exchangeId: exchange.id, employeeId: mine.recipientId },
-            },
-            select: { wishes: true, employee: { select: PERSON } },
-          })
-        : null;
     const state = this.state(exchange);
     const open = signUpOpen(state, today());
     // A shared account is not a person, so it never joins one.
@@ -536,9 +597,36 @@ export class SecretSantaService {
         wishes: mine?.wishes ?? null,
         canJoin: mine === null && open && !shared,
         canLeave: mine !== null && exchange.status === SecretSantaStatus.OPEN,
-        drew: drew ? { ...drew.employee, name: nameOf(drew.employee), wishes: drew.wishes } : null,
+        /// Whether they have somebody to buy for. Who it is comes from
+        /// `mine()`, behind their PIN.
+        drawn: Boolean(mine?.recipientId) && exchange.status === SecretSantaStatus.DRAWN,
       },
+      lookups: isManager(user) ? await this.lookupsOf(exchange.id) : [],
+      canLookUp:
+        isManager(user) &&
+        exchange.status === SecretSantaStatus.DRAWN &&
+        state.exchangeOn <= today(),
     };
+  }
+
+  /// Who looked up whose draw, and when: never the answer.
+  private async lookupsOf(exchangeId: string) {
+    const rows = await this.prisma.secretSantaLookup.findMany({
+      where: { exchangeId },
+      select: {
+        id: true,
+        createdAt: true,
+        lookedUpBy: { select: PERSON },
+        employee: { select: PERSON },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      at: row.createdAt,
+      by: row.lookedUpBy ? nameOf(row.lookedUpBy) : null,
+      whose: nameOf(row.employee),
+    }));
   }
 
   private state(exchange: Pick<Exchange, 'status' | 'selfSignUp' | 'signUpUntil' | 'exchangeOn'>) {

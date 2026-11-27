@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { Avatar } from '../components/Avatar';
 import { useConfirm } from '../components/ConfirmDialog';
+import { PinGate } from '../components/PinGate';
 import { InviteePicker, NOBODY, type InviteeSelection } from '../components/InviteePicker';
 import {
   Alert,
@@ -15,11 +16,18 @@ import {
   inputClass,
 } from '../components/ui';
 import { ApiError, api } from '../lib/api';
-import { formatCalendarDate } from '../lib/format';
+import { formatCalendarDate, formatDateTime } from '../lib/format';
 import { t as translate, useT } from '../lib/i18n';
 import { practiceDate } from '../lib/practice-time';
-import { useIsManager } from '../lib/session';
-import type { Employee, JobRole, Location, SecretSanta, SecretSantaInput } from '../lib/types';
+import { useIsManager, useSession } from '../lib/session';
+import type {
+  Employee,
+  JobRole,
+  Location,
+  SecretSanta,
+  SecretSantaDrawn,
+  SecretSantaInput,
+} from '../lib/types';
 
 /**
  * Secret Santa (November 2026, Dominguez): managers and admins set up a gift
@@ -314,7 +322,7 @@ function YourPart({
     }
   }
 
-  if (me.drew) {
+  if (me.drawn) {
     return (
       <Card className="border-emerald-200 bg-emerald-50/50 p-5" testId="secret-santa-drew">
         <h2 className="text-base font-semibold text-slate-900">
@@ -323,27 +331,9 @@ function YourPart({
         </h2>
         {shown ? (
           <div className="mt-3 space-y-3">
-            <div className="flex items-center gap-3">
-              <Avatar person={me.drew} size="lg" />
-              <p
-                className="text-xl font-semibold text-slate-900"
-                data-testid="secret-santa-drew-name"
-              >
-                {me.drew.name}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-700">{t('Their gift ideas')}</p>
-              <p className="mt-1 whitespace-pre-line text-sm text-slate-800">
-                {me.drew.wishes ??
-                  t('None written yet. They will show here if {name} adds some.', {
-                    name: me.drew.firstName,
-                  })}
-              </p>
-            </div>
-            <p className="text-xs text-slate-600">
-              {t('Keep it a secret: nobody else is told who you drew, not even whoever set it up.')}
-            </p>
+            <PinGate what="who you drew">
+              <WhoYouDrew exchangeId={exchange.id} />
+            </PinGate>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
@@ -365,7 +355,7 @@ function YourPart({
         ) : (
           <div className="mt-3 space-y-2">
             <p className="text-sm text-slate-700">
-              {t('The name is hidden in case somebody is looking at your screen.')}
+              {t('The name is kept behind your PIN, in case somebody else is using your screen.')}
             </p>
             <button
               type="button"
@@ -472,6 +462,53 @@ function YourPart({
   );
 }
 
+/// Who you drew, read only once the PIN is given.
+function WhoYouDrew({ exchangeId }: { exchangeId: string }) {
+  const t = useT();
+  const [drew, setDrew] = useState<SecretSantaDrawn | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .mySecretSanta(exchangeId)
+      .then((found) => !cancelled && setDrew(found))
+      .catch(
+        (err) => !cancelled && setError(errorOf(err, translate('Could not load who you drew.'))),
+      );
+    return () => {
+      cancelled = true;
+    };
+  }, [exchangeId]);
+
+  if (error) return <Alert>{error}</Alert>;
+  if (!drew) return <Spinner label={t('Loading Secret Santa')} />;
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-3">
+        <Avatar person={drew} size="lg" />
+        <p className="text-xl font-semibold text-slate-900" data-testid="secret-santa-drew-name">
+          {drew.name}
+        </p>
+      </div>
+      <div>
+        <p className="text-sm font-medium text-slate-700">{t('Their gift ideas')}</p>
+        <p className="mt-1 whitespace-pre-line text-sm text-slate-800">
+          {drew.wishes ??
+            t('None written yet. They will show here if {name} adds some.', {
+              name: drew.firstName,
+            })}
+        </p>
+      </div>
+      <p className="text-xs text-slate-600">
+        {t(
+          'Keep it a secret: nobody else is shown who you drew. If you forget on the day, an organizer can look it up for you, and you are told they did.',
+        )}
+      </p>
+    </div>
+  );
+}
+
 function WishesForm({
   exchange,
   wishes,
@@ -549,8 +586,9 @@ function Organizer({
             on the bell and by email who they drew.
           </p>
           <p className="mt-2">
-            Nobody is shown who drew whom, you included. If somebody has to drop out afterwards,
-            take them out here and whoever drew them is given their person.
+            Nobody is shown who drew whom, you included. On the day, if somebody forgets, you can
+            look up theirs alone, behind your PIN. If somebody has to drop out afterwards, take them
+            out here and whoever drew them is given their person.
           </p>
         </>
       ),
@@ -657,7 +695,7 @@ function Organizer({
                 ? `Staff can sign themselves up until ${formatCalendarDate(exchange.signUpUntil)}. The names are drawn when you press Draw the names.`
                 : 'Staff can sign themselves up until you press Draw the names.'
               : 'Only the people you add are in it. Staff cannot sign themselves up.'
-            : `Names drawn ${exchange.drawnAt ? formatCalendarDate(exchange.drawnAt.slice(0, 10)) : ''}. Nobody, you included, can see who drew whom.`}
+            : `Names drawn ${exchange.drawnAt ? formatCalendarDate(exchange.drawnAt.slice(0, 10)) : ''}. Nobody, you included, sees who drew whom, but for one person at a time in an emergency (below).`}
           {exchange.createdBy && ` Set up by ${exchange.createdBy}.`}
         </p>
       </div>
@@ -741,6 +779,14 @@ function Organizer({
         </div>
       )}
 
+      {!open && (
+        <EmergencyLookUp
+          exchange={exchange}
+          onLookups={(lookups) => onChange({ ...exchange, lookups })}
+          onError={onError}
+        />
+      )}
+
       <div className="flex flex-wrap gap-2 border-t border-slate-200 pt-4">
         <button
           type="button"
@@ -758,6 +804,116 @@ function Organizer({
         </button>
       </div>
     </Card>
+  );
+}
+
+/**
+ * In an emergency, who ONE person drew (27 November 2026, Dominguez: "during
+ * the exchange the person forgot who they had ... it should be limited to the
+ * question and not just a full list of everyone"). From the day of the
+ * exchange, behind the organizer's PIN; each look-up is listed for the other
+ * organizers and the person is told on the bell.
+ */
+function EmergencyLookUp({
+  exchange,
+  onLookups,
+  onError,
+}: {
+  exchange: SecretSanta;
+  onLookups: (lookups: SecretSanta['lookups']) => void;
+  onError: (message: string) => void;
+}) {
+  const { employee } = useSession();
+  const [personId, setPersonId] = useState('');
+  const [answer, setAnswer] = useState<{ who: string; drew: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const others = exchange.members.filter((member) => member.id !== employee?.id);
+
+  async function lookUp() {
+    setBusy(true);
+    setAnswer(null);
+    try {
+      const result = await api.lookUpSecretSanta(exchange.id, personId);
+      setAnswer({ who: result.who, drew: result.drew.name });
+      onLookups(result.lookups);
+    } catch (err) {
+      onError(errorOf(err, 'Could not look it up.'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div
+      className="rounded-lg bg-amber-50/60 p-4 ring-1 ring-amber-200"
+      data-testid="secret-santa-look-up"
+    >
+      <p className="text-sm font-medium text-slate-900">In an emergency: who did somebody draw?</p>
+      <p className="mt-1 text-sm text-slate-700">
+        For the day of the exchange, when somebody has forgotten. One person at a time, behind your
+        PIN. Every look-up is listed here for the other organizers, and the person is told on the
+        bell that you looked theirs up.
+      </p>
+      {exchange.canLookUp ? (
+        <div className="mt-3 space-y-3">
+          <Field label="Whose draw">
+            {(props) => (
+              <select
+                {...props}
+                value={personId}
+                onChange={(event) => {
+                  setPersonId(event.target.value);
+                  setAnswer(null);
+                }}
+                className={`${inputClass} sm:max-w-xs`}
+              >
+                <option value="">Choose somebody</option>
+                {others.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
+          {personId && (
+            <PinGate what="a look-up">
+              <button
+                type="button"
+                className={buttonClass('secondary', 'sm')}
+                disabled={busy}
+                onClick={() => void lookUp()}
+              >
+                Look it up
+              </button>
+            </PinGate>
+          )}
+          {answer && (
+            <p
+              className="text-sm text-slate-900"
+              data-testid="secret-santa-look-up-answer"
+              role="status"
+            >
+              <strong>{answer.who}</strong> is buying for <strong>{answer.drew}</strong>.
+            </p>
+          )}
+        </div>
+      ) : (
+        <p className="mt-2 text-sm text-slate-600">
+          Available from {formatCalendarDate(exchange.exchangeOn)}.
+        </p>
+      )}
+      {exchange.lookups.length > 0 && (
+        <ul className="mt-3 space-y-1 text-xs text-slate-700" aria-label="Look-ups so far">
+          {exchange.lookups.map((lookup) => (
+            <li key={lookup.id}>
+              {lookup.by ?? 'Somebody no longer here'} looked up who {lookup.whose} drew,{' '}
+              {formatDateTime(lookup.at)}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 

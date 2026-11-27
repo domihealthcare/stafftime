@@ -165,6 +165,7 @@ describe('what this app deliberately does not store', () => {
         'id',
         'location',
         'locationId',
+        'lookups',
         'members',
         'notes',
         'place',
@@ -187,6 +188,19 @@ describe('what this app deliberately does not store', () => {
         'recipientId',
         'signedUpSelf',
         'wishes',
+      ].sort(),
+    );
+    // An emergency look-up keeps who looked and whose, never the answer.
+    expect(fieldsOf('SecretSantaLookup')).toEqual(
+      [
+        'createdAt',
+        'employee',
+        'employeeId',
+        'exchange',
+        'exchangeId',
+        'id',
+        'lookedUpBy',
+        'lookedUpById',
       ].sort(),
     );
   });

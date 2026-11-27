@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
-import { goToManage } from './nav.mjs';
+import { goToManage, unlockPay } from './nav.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -27,8 +27,9 @@ const step = async (name, fn) => {
  * Morgan (manager) sets one up with sign-ups on; Frankie signs up from Home
  * and writes gift ideas; Morgan adds Ada, Max and themselves and draws. Then:
  * one circle, nobody told anybody else's draw, the bell never naming who was
- * drawn, taking Frankie out after the draw closing the circle, and cancelling
- * it. run-all.sh clears secret_santas.
+ * drawn, the name behind the PIN, an organizer's emergency look-up of one
+ * person on the day, taking Frankie out after the draw closing the circle,
+ * and cancelling it. run-all.sh clears secret_santas.
  */
 async function signIn(email, viewport = { width: 1280, height: 1000 }) {
   const ctx = await browser.newContext({ viewport });
@@ -128,7 +129,9 @@ if (!id) {
 
 await step('staff are told sign-ups are open, on the bell', async () => {
   const bell = (await call(staff, '/notifications')).body.items;
-  const told = bell.find((item) => item.kind === 'SECRET_SANTA' && item.link === `/secret-santa/${id}`);
+  const told = bell.find(
+    (item) => item.kind === 'SECRET_SANTA' && item.link === `/secret-santa/${id}`,
+  );
   if (!told) throw new Error('no bell');
   if (!/Sign up/.test(told.body)) throw new Error(told.body);
 });
@@ -186,16 +189,42 @@ await step('the manager draws the names', async () => {
 });
 
 const drew = {};
-await step('it is one circle, and nobody is sent anybody else’s draw', async () => {
+await step('who you drew is behind the PIN, and never in the page itself', async () => {
   for (const [key, page] of Object.entries(pages)) {
     const answer = await call(page, `/secret-santa/${id}`);
     if (answer.status !== 200) throw new Error(`${key}: ${answer.status}`);
     if (/recipient/i.test(answer.text)) throw new Error(`${key} was sent a recipient field`);
+    if ('drew' in answer.body.me) throw new Error(`${key} was sent who they drew without a PIN`);
+    if (!answer.body.me.drawn) throw new Error(`${key} has nobody`);
     for (const member of answer.body.members) {
       if ('wishes' in member) throw new Error(`${key} was sent somebody's gift ideas in the list`);
     }
-    const mine = answer.body.me.drew;
-    if (!mine) throw new Error(`${key} drew nobody`);
+    const locked = await call(page, `/secret-santa/${id}/mine`);
+    if (locked.status !== 403 || locked.body.code !== 'PIN_REQUIRED')
+      throw new Error(`${key} read it without a PIN: ${locked.status}`);
+  }
+});
+
+await step('the page asks for the PIN, then shows who you drew', async () => {
+  await manager.goto(`${BASE}/secret-santa/${id}`, { waitUntil: 'networkidle' });
+  const card = manager.getByTestId('secret-santa-drew');
+  if (await card.getByTestId('secret-santa-drew-name').count()) throw new Error('shown at once');
+  await card.getByRole('button', { name: 'Show who I drew' }).click();
+  await card.getByText(/Enter your PIN to see who you drew/).waitFor({ timeout: 10000 });
+  if (await card.getByTestId('secret-santa-drew-name').count())
+    throw new Error('shown before the PIN');
+  await manager.screenshot({ path: `${OUT}/secret-santa-pin.png`, fullPage: true });
+  await card.getByTestId('pay-pin').fill('7394');
+  await card.getByRole('button', { name: 'Show', exact: true }).click();
+  await card.getByTestId('secret-santa-drew-name').waitFor({ timeout: 10000 });
+  await manager.screenshot({ path: `${OUT}/secret-santa-drew.png`, fullPage: true });
+});
+
+await step('it is one circle, and nobody draws themselves', async () => {
+  for (const [key, page] of Object.entries(pages)) {
+    if (key !== 'manager' && (await unlockPay(page)) !== 200) throw new Error(`${key} unlock`);
+    const mine = (await call(page, `/secret-santa/${id}/mine`)).body;
+    if (!mine?.id) throw new Error(`${key} drew nobody`);
     if (mine.id === people[key].id) throw new Error(`${key} drew themselves`);
     drew[key] = keyOf(mine.id);
   }
@@ -203,16 +232,15 @@ await step('it is one circle, and nobody is sent anybody else’s draw', async (
   drew.ma = Object.keys(people).find((key) => !Object.values(drew).includes(key));
   // Each person once as a recipient, and one circle of four.
   if (new Set(Object.values(drew)).size !== 4) throw new Error(JSON.stringify(drew));
-  let at = 'manager';
-  for (let i = 0; i < 4; i += 1) at = drew[at];
-  if (at !== 'manager') throw new Error('not one circle');
   const seen = new Set();
-  at = 'manager';
+  let at = 'manager';
   for (let i = 0; i < 4; i += 1) {
     seen.add(at);
     at = drew[at];
   }
-  if (seen.size !== 4) throw new Error('two circles');
+  if (at !== 'manager' || seen.size !== 4) throw new Error('not one circle');
+  const shown = await manager.getByTestId('secret-santa-drew-name').innerText();
+  if (!shown.includes(people[drew.manager].firstName)) throw new Error(`page showed ${shown}`);
 });
 
 await step('the bell says the name is ready, never whose it is', async () => {
@@ -226,7 +254,7 @@ await step('the bell says the name is ready, never whose it is', async () => {
     throw new Error(`the bell names ${named.firstName}`);
 });
 
-await step('the page hides the name until asked, then shows it with their gift ideas', async () => {
+await step('whoever drew you sees your gift ideas', async () => {
   // Everybody signed in writes gift ideas, so whoever drew them sees them.
   for (const key of ['manager', 'admin']) {
     await call(pages[key], `/secret-santa/${id}/wishes`, {
@@ -243,19 +271,12 @@ await step('the page hides the name until asked, then shows it with their gift i
   for (const key of ['manager', 'admin', 'staff']) {
     const theirs = drew[key];
     if (!ideas[theirs]) continue; // Max wrote none
-    const answer = (await call(pages[key], `/secret-santa/${id}`)).body;
-    if (answer.me.drew.wishes !== ideas[theirs])
-      throw new Error(`${key} sees "${answer.me.drew.wishes}" for ${theirs}`);
+    const answer = (await call(pages[key], `/secret-santa/${id}/mine`)).body;
+    if (answer.wishes !== ideas[theirs])
+      throw new Error(`${key} sees "${answer.wishes}" for ${theirs}`);
     checked += 1;
   }
   if (checked < 2) throw new Error(`only ${checked} gift ideas checked`);
-
-  await manager.goto(`${BASE}/secret-santa/${id}`, { waitUntil: 'networkidle' });
-  const card = manager.getByTestId('secret-santa-drew');
-  if (await card.getByTestId('secret-santa-drew-name').count()) throw new Error('shown at once');
-  await card.getByRole('button', { name: 'Show who I drew' }).click();
-  await card.getByTestId('secret-santa-drew-name').getByText(people[drew.manager].firstName).waitFor();
-  await manager.screenshot({ path: `${OUT}/secret-santa-drew.png`, fullPage: true });
 });
 
 await step('nobody joins or leaves by themselves once drawn', async () => {
@@ -264,6 +285,68 @@ await step('nobody joins or leaves by themselves once drawn', async () => {
   const join = await call(staff, `/secret-santa/${id}/join`, { method: 'POST' });
   if (join.status !== 409) throw new Error(`join gave ${join.status}`);
 });
+
+await step(
+  'an emergency look-up is for organizers, from the day, one person at a time',
+  async () => {
+    const staffTry = await call(staff, `/secret-santa/${id}/look-up/${people.admin.id}`, {
+      method: 'POST',
+    });
+    if (staffTry.status !== 403) throw new Error(`staff gave ${staffTry.status}`);
+    const early = await call(manager, `/secret-santa/${id}/look-up/${people.admin.id}`, {
+      method: 'POST',
+    });
+    if (early.status !== 400 || !/day of the exchange/.test(early.body.message))
+      throw new Error(`before the day gave ${early.status}`);
+
+    // The exchange is today.
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(
+      new Date(),
+    );
+    const moved = await call(manager, `/secret-santa/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        title: TITLE,
+        exchangeOn: today,
+        budgetDollars: 30,
+        place: 'Break room',
+        selfSignUp: true,
+      }),
+    });
+    if (moved.status !== 200) throw new Error(`move ${moved.status}: ${moved.text}`);
+    if (!moved.body.canLookUp) throw new Error('cannot look up on the day');
+
+    const self = await call(manager, `/secret-santa/${id}/look-up/${people.manager.id}`, {
+      method: 'POST',
+    });
+    if (self.status !== 400) throw new Error(`own gave ${self.status}`);
+
+    await manager.goto(`${BASE}/secret-santa/${id}`, { waitUntil: 'networkidle' });
+    const box = manager.getByTestId('secret-santa-look-up');
+    await box
+      .getByLabel('Whose draw')
+      .selectOption({ label: people.admin.firstName + ' ' + people.admin.lastName });
+    await box.getByRole('button', { name: 'Look it up' }).click();
+    const answer = box.getByTestId('secret-santa-look-up-answer');
+    await answer.waitFor({ timeout: 10000 });
+    const said = await answer.innerText();
+    if (!said.includes(people[drew.admin].firstName)) throw new Error(`answered ${said}`);
+    await box.getByText(/looked up who Ada .* drew/).waitFor();
+    await manager.screenshot({ path: `${OUT}/secret-santa-look-up.png`, fullPage: true });
+
+    const bell = (await call(admin, '/notifications')).body.items;
+    const told = bell.find((item) => /your draw was looked up/.test(item.title));
+    if (!told) throw new Error('Ada was not told');
+    if (told.body.includes(people[drew.admin].firstName)) throw new Error('the bell names who');
+
+    const listed = (await call(manager, `/secret-santa/${id}`)).body;
+    if (listed.lookups.length !== 1) throw new Error(`${listed.lookups.length} look-ups listed`);
+    if (/drew"|recipient/.test(JSON.stringify(listed.lookups)))
+      throw new Error('the list carries the answer');
+    const notManager = (await call(admin, `/secret-santa/${id}`)).body;
+    if (!notManager.canManage && notManager.lookups.length) throw new Error('staff see look-ups');
+  },
+);
 
 await step('taking somebody out after the draw gives their Santa their person', async () => {
   // Somebody signed in here drew Frankie, unless it was Max: then it is
@@ -278,7 +361,7 @@ await step('taking somebody out after the draw gives their Santa their person', 
   for (const key of ['manager', 'admin']) {
     const now = (await call(pages[key], `/secret-santa/${id}`)).body;
     if (now.members.length !== 3) throw new Error('not three left');
-    left[key] = keyOf(now.me.drew?.id);
+    left[key] = keyOf((await call(pages[key], `/secret-santa/${id}/mine`)).body.id);
   }
   const frankie = (await call(staff, `/secret-santa/${id}`)).status;
   if (frankie !== 404) throw new Error(`Frankie can still open it: ${frankie}`);

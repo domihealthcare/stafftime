@@ -3379,10 +3379,26 @@ export interface SecretSanta {
     wishes: string | null;
     canJoin: boolean;
     canLeave: boolean;
-    /// Who they are buying for, once the names are drawn.
-    drew: (SecretSantaPerson & { wishes: string | null }) | null;
+    /// Whether they have somebody to buy for. Who comes from
+    /// `api.mySecretSanta`, behind their PIN.
+    drawn: boolean;
   };
+  /// Organizers only: who looked up whose draw in an emergency, and when.
+  lookups: SecretSantaLookup[];
+  /// Organizers, once drawn, from the day of the exchange.
+  canLookUp: boolean;
 }
+
+/// Who an organizer looked up, never the answer.
+export interface SecretSantaLookup {
+  id: string;
+  at: string;
+  by: string | null;
+  whose: string;
+}
+
+/// Who somebody is buying for, with their gift ideas.
+export type SecretSantaDrawn = SecretSantaPerson & { wishes: string | null };
 
 /// Whoever to add: everybody, or any mix of offices, job roles and people.
 export interface SecretSantaPeople {

@@ -11,7 +11,7 @@ import { Card } from './ui';
  * Secret Santa on Home (November 2026): one you can sign up to, one you are
  * in waiting for the draw, or the one where your name is drawn. Never the
  * name you drew, as Home is open on shared screens: that is behind "Show who
- * I drew" on the Secret Santa page. Nothing once the exchange day has passed,
+ * I drew" and the PIN on the Secret Santa page. Nothing once the exchange day has passed,
  * and it fails quietly like every Home card.
  */
 export function SecretSantaCard() {
@@ -52,7 +52,7 @@ export function SecretSantaCard() {
               to={`/secret-santa/${exchange.id}`}
               className="mt-1 inline-block font-medium text-brand-700 hover:text-brand-900"
             >
-              {exchange.me.drew
+              {exchange.me.drawn
                 ? t('See who you drew →')
                 : exchange.me.inIt
                   ? t('You are in. Add gift ideas →')

@@ -133,7 +133,10 @@ import type {
   Rep,
   RepInput,
   SecretSanta,
+  SecretSantaDrawn,
   SecretSantaInput,
+  SecretSantaLookup,
+  SecretSantaPerson,
   SecretSantaPeople,
   Student,
   StudentInput,
@@ -2005,6 +2008,14 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify({ wishes }),
     }),
+  /// Behind the PIN.
+  mySecretSanta: (id: string) => request<SecretSantaDrawn>(`/secret-santa/${id}/mine`),
+  /// An organizer, in an emergency, behind their PIN: one person at a time.
+  lookUpSecretSanta: (id: string, employeeId: string) =>
+    request<{ who: string; drew: SecretSantaPerson; lookups: SecretSantaLookup[] }>(
+      `/secret-santa/${id}/look-up/${employeeId}`,
+      { method: 'POST' },
+    ),
   emailMySecretSanta: (id: string) =>
     request<{ sent: boolean }>(`/secret-santa/${id}/email-me`, { method: 'POST' }),
 
