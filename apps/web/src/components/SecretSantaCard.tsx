@@ -40,7 +40,7 @@ export function SecretSantaCard() {
   return (
     <Card className="overflow-hidden border-rose-200" testId="home-secret-santa">
       <h2 className="bg-gradient-to-r from-emerald-800 to-rose-800 px-4 py-2 text-base font-semibold text-white">
-        <span aria-hidden="true">🎅</span> {t('Secret Santa')}{' '}
+        <span aria-hidden="true">🎅</span> {t('Domi Secret Santa')}{' '}
         <span aria-hidden="true" className="text-sm">
           ❄ 🎄 ❄
         </span>

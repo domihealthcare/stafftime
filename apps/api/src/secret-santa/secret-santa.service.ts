@@ -587,15 +587,11 @@ export class SecretSantaService {
     if (!row?.recipientId) return;
     const recipient = await this.prisma.secretSantaMember.findUnique({
       where: { exchangeId_employeeId: { exchangeId: id, employeeId: row.recipientId } },
-      select: { wishes: true, employee: { select: PERSON } },
+      select: { employee: { select: PERSON } },
     });
     if (!recipient) return;
     const words = wordsOf(row.exchange);
-    const email = drawnEmail(
-      words,
-      { name: nameOf(recipient.employee), wishes: recipient.wishes },
-      why === 'changed',
-    );
+    const email = drawnEmail(words, { name: nameOf(recipient.employee) }, why === 'changed');
     if (why !== 'again') {
       await this.notifications.privately(
         giverId,

@@ -1,3 +1,4 @@
+import { santaEmailHtml } from './secret-santa-email';
 import { randomInt } from 'node:crypto';
 
 /**
@@ -161,35 +162,34 @@ export function drawnBell(exchange: ExchangeWords) {
   };
 }
 
-/// The email: the name drawn, and their gift ideas if they wrote any.
-export function drawnEmail(
-  exchange: ExchangeWords,
-  recipient: { name: string; wishes: string | null },
-  changed = false,
-) {
+/// The email: the name drawn, once. Their gift ideas are not in it: they
+/// change through the season, so the page always has the latest (Dominguez,
+/// 27 November 2026).
+export function drawnEmail(exchange: ExchangeWords, recipient: { name: string }, changed = false) {
   return {
     subject: changed
       ? `${exchange.title}: you have a new person`
       : `${exchange.title}: who you drew`,
     lines: [
       changed
-        ? `Somebody has left ${exchange.title}, so you are now buying for ${recipient.name}.`
+        ? `The people in ${exchange.title} have changed, so you are now buying for ${recipient.name}.`
         : `You drew ${recipient.name}.`,
       '',
-      recipient.wishes
-        ? `Their gift ideas: ${recipient.wishes}`
-        : 'They have not written any gift ideas yet. Domi Staff will show them if they do.',
+      'Their gift ideas can change through the season, so look in Domi Staff for the latest: Secret Santa, Show who I drew.',
       '',
       details(exchange),
       'Keep it a secret: nobody else is shown who you drew. If you forget on the day, an organizer can look it up for you, and you are told they did.',
     ],
+    /// The same, laid out festively for mail clients that show HTML.
+    html: (to: { firstName: string; appUrl: string; link: string }) =>
+      santaEmailHtml({ exchange, recipient, changed, ...to }),
   };
 }
 
 export function changedBell(exchange: ExchangeWords) {
   return {
     title: `${exchange.title}: you have a new person`,
-    body: 'Somebody has left the Secret Santa, so who you are buying for has changed. Open it to see who.',
+    body: 'The people in the Secret Santa have changed, so who you are buying for has changed. Open it to see who.',
     link: `/secret-santa/${exchange.id}`,
   };
 }

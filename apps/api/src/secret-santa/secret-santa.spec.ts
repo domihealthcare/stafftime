@@ -190,10 +190,10 @@ describe('the words', () => {
     expect(drawnBell({ ...exchange, when: null }).body).toContain('still to be set');
   });
 
-  it('names them in the email, with their gift ideas', () => {
-    const email = drawnEmail(exchange, { name: 'Casey Smith', wishes: 'Coffee' });
+  it('names them in the email, and sends them to the page for their gift ideas', () => {
+    const email = drawnEmail(exchange, { name: 'Casey Smith' });
     expect(email.lines.join('\n')).toContain('You drew Casey Smith.');
-    expect(email.lines.join('\n')).toContain('Their gift ideas: Coffee');
+    expect(email.lines.join('\n')).toContain('look in Domi Staff for the latest');
     expect(email.lines.join('\n')).toContain('at North Bergen');
   });
 });

@@ -3,6 +3,7 @@
 /// English, like the other managers' tools.
 export const SECRET_SANTA: Record<string, string> = {
   'Secret Santa': 'Amigo secreto',
+  'Domi Secret Santa': 'Amigo secreto Domi',
   'Budget {amount}': 'Presupuesto {amount}',
   'Exchanging gifts {day}': 'Intercambio de regalos el {day}',
   'Day of the exchange still to be set': 'Día del intercambio por decidir',

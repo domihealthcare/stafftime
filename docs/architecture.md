@@ -6586,7 +6586,10 @@ draw twice. Each person is then told:
 - on the **bell** (and so a phone's lock screen, once push is on): "your
   name is drawn", the budget and day, never the name;
 - by **email** (`NotificationsService.privately`): "You drew Casey Smith",
-  with their gift ideas;
+  once, and never their gift ideas (27 November 2026, Dominguez: "the list
+  should be able to be updated throughout ... the email should just be once
+  of the person they drew"): the email points to the page, which always shows
+  the latest;
 - on the page: **Show who I drew**, which asks for their **PIN** (27
   November 2026, Dominguez: "to be able to show your secret santa it should
   require a pin in the app for all users"): the same unlock as pay
@@ -6630,7 +6633,15 @@ is told who they drew, and the organizer still learns nothing.
 banner with drifting snow and a tree on both screens, the details as chips,
 a wrapped present that unwraps on **Show who I drew**, and a festive Home
 card. The snow and the unwrapping stand still for anybody whose device asks
-for reduced motion (`.santa-snow`, `.santa-unwrap` in `index.css`).
+for reduced motion (`.santa-snow`, `.santa-unwrap` in `index.css`). The email
+that names who somebody drew is HTML too (`secret-santa-email.ts`, sent
+through `NotificationsService.privately` with `PrivateEmail.html`): the Domi
+mark, a festive header, the name on a gift tag, where to find their gift
+ideas (never the ideas themselves), the details, a button back and "Happy
+Holidays from Domi!". Branded "Domi", not Domi Healthcare (Dominguez:
+"take out healthcare - just Domi"): "Domi Secret Santa" on the screens and
+as the starting name. A Santa whose person changed is told "the people ...
+have changed", never that somebody left, as it may be somebody joining.
 
 **Somebody dropping out afterwards.** An organizer presses **Take out**:
 because it is one circle, whoever drew them is given the person they had

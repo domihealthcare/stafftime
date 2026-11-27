@@ -157,7 +157,7 @@ export function SecretSantaPage() {
 
   return (
     <div className="max-w-4xl space-y-6">
-      <FestiveBanner title={t('Secret Santa')}>
+      <FestiveBanner title={t('Domi Secret Santa')}>
         <p className="mt-2 max-w-2xl text-sm text-emerald-50">
           {t(
             'Everyone in it draws one colleague at random and secretly buys them a gift within the budget. Nobody is told who drew them, not even whoever set it up.',
@@ -1054,7 +1054,7 @@ function SecretSantaEditor({
   onCancel: () => void;
 }) {
   const year = practiceDate().slice(0, 4);
-  const [title, setTitle] = useState(exchange?.title ?? `Secret Santa ${year}`);
+  const [title, setTitle] = useState(exchange?.title ?? `Domi Secret Santa ${year}`);
   const [exchangeOn, setExchangeOn] = useState(exchange?.exchangeOn ?? '');
   const [budget, setBudget] = useState(String(exchange?.budgetDollars ?? 25));
   const [locationId, setLocationId] = useState(exchange?.location?.id ?? '');

@@ -86,7 +86,7 @@ people.ma = (await call(manager, '/employees')).body.find(
 );
 const keyOf = (id) => Object.keys(people).find((key) => people[key].id === id);
 
-const TITLE = 'Secret Santa suite';
+const TITLE = 'Domi Secret Santa';
 let id = null;
 
 await step('staff cannot set one up or draw names', async () => {

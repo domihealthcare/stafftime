@@ -2637,7 +2637,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
   **gift ideas** for whoever draws them. **Draw the names** (3 people at
   least) closes it: one random circle, nobody draws themselves, each told on
   the **bell without the name** (it reaches lock screens) and **by email with
-  the name** and their gift ideas; in the app **Show who I drew** asks for
+  the name**, once, never their gift ideas (they change through the season, so
+  only the page has them, always current); in the app **Show who I drew** asks for
   **their PIN** first (Dominguez: "it should require a pin in the app for all
   users"; the pay lock, `PayLockGuard` on `GET /secret-santa/:id/mine`),
   with **Email it to me again**. **Nobody sees who drew whom**, organizers
@@ -2663,7 +2664,12 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `20261127030000_secret_santa_lookups`,
   `20261127040000_secret_santa_date_optional`. **Festive** since 1.54.0 ("make
   it more festive"): green-to-red banner with snow (still under reduced
-  motion), a present that unwraps, a festive Home card;
+  motion), a present that unwraps, a festive Home card, and the email in
+  HTML: the Domi mark, a festive header, the name on a gift tag, a pointer to
+  the page for their gift ideas, "Happy Holidays from Domi!"
+  (`secret-santa-email.ts`). Branded **"Domi"**, not Domi Healthcare
+  (Dominguez): "Domi Secret Santa" on the screens, "Domi Secret Santa 2026"
+  as the starting name, "Happy holidays from Domi" in the email;
   `src/secret-santa/` (`secret-santa.ts` rules, pure),
   `pages/SecretSantaPage.tsx`, `components/SecretSantaCard.tsx`; staff parts
   in Spanish ("Amigo secreto", **needs a native speaker's read**); Help in

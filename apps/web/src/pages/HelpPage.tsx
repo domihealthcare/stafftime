@@ -865,8 +865,8 @@ const STAFF: Section[] = [
             </p>
             <p>
               Write some <strong>gift ideas</strong> for whoever draws you (things you like, or
-              would rather not get). Only the person who drew you sees them, and you can change them
-              any time.
+              would rather not get). Only the person who drew you sees them, always as they are now,
+              so change them as often as you like through the season.
             </p>
             <p>
               Once a manager draws the names you are told on the bell that yours is ready, and the
@@ -3115,8 +3115,9 @@ const MANAGERS: Section[] = [
             <p>
               When everybody is in and the day is set, press <strong>Draw the names</strong> (at
               least 3 people). That closes sign-ups, and each person is told on the bell that their
-              name is ready and by email who they drew, with that person's gift ideas; in the app
-              they see it behind their PIN. The draw is one circle, so nobody draws themselves.{' '}
+              name is ready and by email who they drew (just the name, once: gift ideas change
+              through the season, so they are only on the page, always up to date). In the app they
+              see it behind their PIN. The draw is one circle, so nobody draws themselves.{' '}
               <strong>Nobody is shown who drew whom</strong>, you and other admins included, with
               one exception: from the day of the exchange, if somebody has forgotten, choose them
               under <strong>In an emergency: who did somebody draw?</strong> and press{' '}
