@@ -1,10 +1,10 @@
-import type { ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { canUseCarePlan, canUseWellnessForm } from '../lib/clinical-access';
-import { textOf, type HelpTopicText } from '../lib/help-text';
+import { textOf, topicMatches, type HelpTopicText } from '../lib/help-text';
 import { useIsManager, useSession } from '../lib/session';
 import { PASSWORD_RULE } from '../lib/password';
-import { PageHeading } from '../components/ui';
+import { PageHeading, inputClass } from '../components/ui';
 import { VersionCard } from '../components/VersionCard';
 
 interface Topic {
@@ -854,30 +854,36 @@ const STAFF: Section[] = [
         ),
       },
       {
-        question: 'Secret Santa',
+        question: 'Taking part in Secret Santa',
         answer: (
           <>
             <p>
-              When a Secret Santa is set up, you are asked when you sign in whether you would like
-              to take part: <strong>Count me in</strong>, or <strong>No thanks</strong>, which asks
-              you to confirm you will not take part and lets you say why not if you like (whoever
-              organizes it reads it). <strong>Decide later</strong> asks again tomorrow. You can
-              also sign up from the card on Home while sign-ups are open, and take yourself out
-              again with <strong>Take me out</strong> until the names are drawn.
+              <strong>Joining.</strong> When a Secret Santa is set up, you are asked when you sign
+              in: <strong>Count me in</strong>, or <strong>No thanks</strong>, which asks you to
+              confirm you will not take part and lets you say why not if you like (whoever organizes
+              it reads it). <strong>Decide later</strong> asks again tomorrow. While sign-ups are
+              open you can also join from the Secret Santa card on Home, and leave again with{' '}
+              <strong>Take me out</strong> until the names are drawn.
             </p>
             <p>
-              Write some <strong>gift ideas</strong> for whoever draws you (things you like, or
-              would rather not get). Only the person who drew you sees them, always as they are now,
-              so change them as often as you like through the season.
+              <strong>Gift ideas.</strong> On the Secret Santa page, write some gift ideas for
+              whoever draws you (things you like, or would rather not get). Only the person who drew
+              you sees them, always as they are now, so change them as often as you like through the
+              season.
             </p>
             <p>
-              Once a manager draws the names you are told on the bell that yours is ready, and the
-              email names the colleague you drew. On the Secret Santa page,{' '}
-              <strong>Show who I drew</strong> asks for your tablet PIN (or your password, or Face
-              ID), then shows them with their gift ideas, so nobody else using your screen can see
-              it. <strong>Email it to me again</strong> sends it once more. Nobody else is shown who
-              you drew: keep it a secret, and stay within the budget. If you forget on the day, a
-              manager can look yours up for you, and you are told on the bell that they did.
+              <strong>Who you drew.</strong> Once the names are drawn, the bell tells you yours is
+              ready (it never shows the name) and an email names the colleague you drew. On the
+              Secret Santa page, <strong>Show who I drew</strong> asks for your tablet PIN (or your
+              password, or Face ID), then shows them with their latest gift ideas.{' '}
+              <strong>Email it to me again</strong> sends the name once more. If somebody joins or
+              leaves after the draw, your person may change, and you are told by email.
+            </p>
+            <p>
+              <strong>Keep it a secret.</strong> Nobody can see who drew whom, except in an
+              emergency: on the day of the exchange, if you forget who you have, a manager can look
+              up yours alone (with their PIN). It is logged and you get a notification saying they
+              checked. Stay within the budget.
             </p>
           </>
         ),
@@ -2697,7 +2703,8 @@ const MANAGERS: Section[] = [
               email; optional ones are only listed. Press <strong>Record it</strong> on one and the
               form starts on that person and license - when the license has a renewal interval, the
               date it was done is enough and the expiry is worked out. The same list is on the
-              person&rsquo;s card under <Screen>Staff → Edit</Screen>, and staff see their own.
+              person&rsquo;s card under <Screen>Manage → Staff → Staff</Screen> (Edit), and staff
+              see their own.
             </p>
           </>
         ),
@@ -2806,8 +2813,8 @@ const MANAGERS: Section[] = [
               Assets and paste its https link beside the message.{' '}
               <strong>Providers&rsquo; phones</strong> shows whose number cannot be dialled: fix it
               in <Screen>Your profile</Screen> (<strong>On-call number</strong>), or an admin can
-              set it under <Screen>Manage → Staff</Screen> → Edit. Setting the line up in Twilio,
-              Vercel and Weave is in <code>docs/call-routing-setup.md</code>.
+              set it under <Screen>Manage → Staff → Staff</Screen>, Edit on their card. Setting the
+              line up in Twilio, Vercel and Weave is in <code>docs/call-routing-setup.md</code>.
             </p>
           </>
         ),
@@ -3104,38 +3111,80 @@ const MANAGERS: Section[] = [
           <>
             <p>
               <Screen>Manage → Engagement → Secret Santa</Screen>, then{' '}
-              <strong>+ Set up a Secret Santa</strong>: a name and the budget in dollars, and
-              optionally the day of the exchange, an office, where exactly and a note. The day can
-              wait while people sign up, but it has to be set (<strong>Edit details</strong>) before
-              you can draw. Choose who is in it from the start (Everyone, or any mix of offices, job
-              roles and people), and tick <strong>Let staff sign themselves up</strong> to let
-              anybody join from Home, with a last day to sign up if you want one. Everybody you add
-              is told on the bell, and with sign-ups on so is everybody else. Each of them is also
-              asked when they next sign in, <strong>Count me in</strong> or{' '}
-              <strong>No thanks</strong> (confirmed, with an optional why not);{' '}
-              <strong>Answers to the invitation</strong> on its page lists who said what and how
-              many have not answered yet (somebody you added who says no is taken out). Add more
-              people at any time under <strong>Add people</strong> on its page, or take them out.
+              <strong>+ Set up a Secret Santa</strong>.
+            </p>
+            <ul>
+              <li>
+                <strong>The details:</strong> a name (it starts as Domi Secret Santa and the year)
+                and the budget in dollars. The day of the exchange, an office, where exactly and a
+                note are optional for now; the day has to be set (<strong>Edit details</strong>)
+                before you can draw.
+              </li>
+              <li>
+                <strong>Who is in it:</strong> Everyone, or any mix of offices, job roles and
+                people. Tick <strong>Let staff sign themselves up</strong> to let anybody join, with
+                a last day to sign up if you want one. Leave it unticked for only the people you
+                add.
+              </li>
+              <li>
+                <strong>The invitation:</strong> everybody who could take part is told on the bell
+                and asked when they next sign in, <strong>Count me in</strong> or{' '}
+                <strong>No thanks</strong> (confirmed, with an optional why not).{' '}
+                <strong>Answers to the invitation</strong> on its page lists who is in, who said no
+                thanks and why, and how many have not answered. Somebody you added who says no is
+                taken out.
+              </li>
+              <li>
+                <strong>Changing it:</strong> <strong>Add people</strong> or{' '}
+                <strong>Take out</strong> at any time. A change to the day, budget or place tells
+                everybody in it.
+              </li>
+            </ul>
+            <p>
+              <strong>Drawing the names:</strong> once the day is set and at least 3 people are in,
+              press <strong>Draw the names</strong>. That closes sign-ups. The draw is one circle,
+              so nobody draws themselves. Each person gets a bell notification (never the name) and
+              an email naming who they drew. Gift ideas are not in the email, as they change through
+              the season: they are on the page, behind each person's PIN.
             </p>
             <p>
-              When everybody is in and the day is set, press <strong>Draw the names</strong> (at
-              least 3 people). That closes sign-ups, and each person is told on the bell that their
-              name is ready and by email who they drew (just the name, once: gift ideas change
-              through the season, so they are only on the page, always up to date). In the app they
-              see it behind their PIN. The draw is one circle, so nobody draws themselves.{' '}
-              <strong>Nobody is shown who drew whom</strong>, you and other admins included, with
-              one exception: from the day of the exchange, if somebody has forgotten, choose them
-              under <strong>In an emergency: who did somebody draw?</strong> and press{' '}
-              <strong>Look it up</strong> (behind your PIN). It answers for that one person only;
-              every look-up is listed there for the other organizers, and the person is told on the
-              bell. If somebody has to drop out after the draw, press <strong>Take out</strong>{' '}
-              beside them: whoever drew them is given the person they had drawn and told by email.
-              Somebody added after the draw (a new hire, say) is slotted in: one person picked at
-              random is now buying for them and is told by email, and the newcomer is told who they
-              drew; nobody else changes. A change to the day, budget or place tells everybody in it;{' '}
-              <strong>Cancel this Secret Santa</strong> removes it and tells them it will not go
-              ahead.
+              <strong>Trying it first:</strong> leave <strong>Let staff sign themselves up</strong>{' '}
+              unticked, add just two or three people who know it is a test, then press{' '}
+              <strong>Cancel this Secret Santa</strong> when you are done. With sign-ups ticked,
+              everybody is asked when they sign in.
             </p>
+          </>
+        ),
+      },
+      {
+        question: 'Secret Santa: after the names are drawn',
+        answer: (
+          <>
+            <p>
+              <strong>Nobody can see who drew whom</strong>, you and other admins included, except
+              in an emergency: on the day of the exchange, if somebody forgets who they have, choose
+              them under <strong>In an emergency: who did somebody draw?</strong> and press{' '}
+              <strong>Look it up</strong> (with your PIN). It answers for that one person only. It
+              is logged on the page for the other organizers, and they get a notification saying you
+              checked.
+            </p>
+            <ul>
+              <li>
+                <strong>Somebody drops out:</strong> press <strong>Take out</strong> beside them.
+                Whoever drew them is given the person they had drawn and told by email. Nobody else
+                changes, and you still see no pairings.
+              </li>
+              <li>
+                <strong>Somebody joins late</strong> (a new hire, say): <strong>Add people</strong>{' '}
+                still works until the day has passed. They are slotted in: one person picked at
+                random now buys for them and is told by email, and the newcomer is told who they
+                drew.
+              </li>
+              <li>
+                <strong>Calling it off:</strong> <strong>Cancel this Secret Santa</strong> removes
+                it, with its draw and answers, and tells everybody in it that it will not go ahead.
+              </li>
+            </ul>
           </>
         ),
       },
@@ -3232,11 +3281,12 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             Providers save their own signature on <strong>Fill and sign a PDF</strong>. An admin
-            chooses which staff may stamp a provider&rsquo;s: <Screen>Manage → Staff</Screen> →{' '}
-            <strong>Edit</strong> → <strong>Can stamp a provider&rsquo;s signature</strong>. They
-            can then put any provider&rsquo;s saved signature on a PDF. Every stamp is logged: the
-            provider sees the stamps of theirs, and an admin sees all of them, on the same page. The
-            documents themselves never reach Domi Staff, so they are not listed.
+            chooses which staff may stamp a provider&rsquo;s:{' '}
+            <Screen>Manage → Staff → Staff</Screen>, <strong>Edit</strong> on their card, then{' '}
+            <strong>Can stamp a provider&rsquo;s signature</strong>. They can then put any
+            provider&rsquo;s saved signature on a PDF. Every stamp is logged: the provider sees the
+            stamps of theirs, and an admin sees all of them, on the same page. The documents
+            themselves never reach Domi Staff, so they are not listed.
           </p>
         ),
       },
@@ -3673,9 +3723,10 @@ const MANAGERS: Section[] = [
         question: 'Giving a provider the BrainCheck Care Plan',
         answer: (
           <p>
-            Add them to the <strong>Provider</strong> job role (<Screen>Staff</Screen> → Job roles)
-            - the role has &ldquo;clinical forms&rdquo; switched on. Then, in <Screen>Staff</Screen>{' '}
-            → <strong>Edit</strong>, fill in <strong>Letters after their name</strong> (MD, APN…) so
+            Add them to the <strong>Provider</strong> job role (
+            <Screen>Manage → Staff → Staff</Screen> → <strong>Job roles…</strong>) - the role has
+            &ldquo;clinical forms&rdquo; switched on. Then, in <Screen>Staff</Screen> →{' '}
+            <strong>Edit</strong>, fill in <strong>Letters after their name</strong> (MD, APN…) so
             the note shows their credentials.
           </p>
         ),
@@ -3724,6 +3775,55 @@ export function HelpPage() {
   const [params, setParams] = useSearchParams();
   const guide = isManager && params.get('guide') === 'managers' ? 'managers' : 'staff';
   const sections = guide === 'managers' ? managersGuide() : staffGuide(employee);
+  // Search (November 2026, Dominguez: "in the help section, is there a way you
+  // can search for things?"): every topic this person can read, both guides
+  // for a manager, kept in the address so Back returns to it.
+  const [query, setQuery] = useState(params.get('q') ?? '');
+  const searching = query.trim().length > 0;
+  const everything = useMemo(
+    () =>
+      [
+        ...staffGuide(employee),
+        // Labelled in the results, as both guides have sections of the same name.
+        ...(isManager
+          ? managersGuide().map((section) => ({
+              ...section,
+              title: `${section.title} · For managers`,
+            }))
+          : []),
+      ].map((section) => ({
+        ...section,
+        topics: section.topics.map((topic) => ({
+          ...topic,
+          text: textOf(topic.answer),
+        })),
+      })),
+    [employee, isManager],
+  );
+  const found = useMemo(() => {
+    if (!searching) return [];
+    const seen = new Set<string>();
+    return everything
+      .map((section) => ({
+        ...section,
+        topics: section.topics.filter((topic) => {
+          if (seen.has(topic.question)) return false;
+          if (!topicMatches({ question: topic.question, answer: topic.text }, query)) return false;
+          seen.add(topic.question);
+          return true;
+        }),
+      }))
+      .filter((section) => section.topics.length > 0);
+  }, [everything, query, searching]);
+  const foundCount = found.reduce((count, section) => count + section.topics.length, 0);
+
+  const search = (next: string) => {
+    setQuery(next);
+    const kept = new URLSearchParams(params);
+    if (next.trim()) kept.set('q', next);
+    else kept.delete('q');
+    setParams(kept, { replace: true });
+  };
 
   const tab = (key: 'staff' | 'managers', label: string) => (
     <button
@@ -3748,25 +3848,74 @@ export function HelpPage() {
         subtitle="How to do the everyday things. Stuck on something not covered here? Ask a manager."
       />
 
-      {isManager && (
+      <div className="mb-6">
+        <label htmlFor="help-search" className="sr-only">
+          Search Help
+        </label>
+        <div className="relative">
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400"
+          >
+            🔍
+          </span>
+          <input
+            id="help-search"
+            type="search"
+            value={query}
+            onChange={(event) => search(event.target.value)}
+            placeholder={
+              isManager ? 'Search both guides, e.g. secret santa' : 'Search Help, e.g. time off'
+            }
+            className={`${inputClass} pl-10`}
+            autoComplete="off"
+          />
+        </div>
+        {searching && (
+          <p className="mt-2 text-sm text-slate-600" role="status">
+            {foundCount === 0
+              ? `Nothing in Help matches “${query.trim()}”. Try fewer or different words, or ask a manager.`
+              : `${foundCount} ${foundCount === 1 ? 'topic matches' : 'topics match'}${
+                  isManager ? ', from both guides' : ''
+                }.`}{' '}
+            <button
+              type="button"
+              className="tap font-medium text-brand-700 hover:text-brand-900"
+              onClick={() => search('')}
+            >
+              Clear the search
+            </button>
+          </p>
+        )}
+      </div>
+
+      {isManager && !searching && (
         <div role="tablist" aria-label="Guide" className="mb-6 flex gap-2">
           {tab('staff', 'For everyone')}
           {tab('managers', 'For managers')}
         </div>
       )}
 
-      <div role={isManager ? 'tabpanel' : undefined} className="space-y-8">
-        {sections.map((section) => (
-          <section key={section.title} aria-labelledby={slug(section.title)}>
+      <div
+        role={isManager && !searching ? 'tabpanel' : undefined}
+        className="space-y-8"
+        data-testid={searching ? 'help-results' : undefined}
+      >
+        {(searching ? found : sections).map((section, index) => (
+          // Both guides can have a section of the same name when searching.
+          <section
+            key={`${index}-${section.title}`}
+            aria-labelledby={`${slug(section.title)}-${index}`}
+          >
             <h2
-              id={slug(section.title)}
+              id={`${slug(section.title)}-${index}`}
               className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500"
             >
               {section.title}
             </h2>
             <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
               {section.topics.map((topic) => (
-                <details key={topic.question} className="group">
+                <details key={topic.question} className="group" open={searching || undefined}>
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium text-slate-900 hover:bg-slate-50">
                     {topic.question}
                     <span
@@ -3831,6 +3980,24 @@ export function helpTopicsFor(employee: Reader, isManager: boolean): HelpTopicTe
       seen.add(topic.question);
       return [{ question: topic.question, answer: textOf(topic.answer) }];
     }),
+  );
+}
+
+/// Every topic in every guide, whoever it is for, as plain text: for the
+/// check that Help's directions match the app (`help-accuracy.test.ts`).
+export function allHelpTopics(): HelpTopicText[] {
+  return [
+    ...STAFF,
+    ...PROVIDERS,
+    ...CME,
+    ...EXPENSES,
+    ...CARE_PLAN,
+    ...WELLNESS,
+    ...YOUR_PAY,
+    ...PRODUCTIVITY,
+    ...MANAGERS,
+  ].flatMap((section) =>
+    section.topics.map((topic) => ({ question: topic.question, answer: textOf(topic.answer) })),
   );
 }
 

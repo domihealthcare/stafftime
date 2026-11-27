@@ -17,6 +17,11 @@ import { defineConfig } from 'vitest/config';
 process.env.TZ = 'America/New_York';
 
 export default defineConfig({
+  // What vite.config.ts writes in at build time, for code that reads it
+  // (the Help page's version card, imported by the Help accuracy check).
+  define: {
+    __BUILD__: JSON.stringify({ version: 'test', commit: null, builtAt: '2026-01-01T00:00:00Z' }),
+  },
   test: {
     include: ['src/**/*.test.ts'],
     environment: 'node',
