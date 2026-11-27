@@ -89,6 +89,12 @@ const QuizzesPage = lazy(() =>
 const QuizResultsPage = lazy(() =>
   import('./pages/QuizResultsPage').then((m) => ({ default: m.QuizResultsPage })),
 );
+const SecretSantaPage = lazy(() =>
+  import('./pages/SecretSantaPage').then((m) => ({ default: m.SecretSantaPage })),
+);
+const SecretSantaDetailPage = lazy(() =>
+  import('./pages/SecretSantaPage').then((m) => ({ default: m.SecretSantaDetailPage })),
+);
 const RequiredPage = lazy(() =>
   import('./pages/RequiredPage').then((m) => ({ default: m.RequiredPage })),
 );
@@ -319,6 +325,8 @@ function Routed() {
           <Route path="quizzes" element={<QuizzesPage />} />
           <Route path="quizzes/:id" element={<QuizPage />} />
           <Route path="quizzes/:id/results" element={<QuizResultsPage />} />
+          <Route path="secret-santa" element={<SecretSantaPage />} />
+          <Route path="secret-santa/:id" element={<SecretSantaDetailPage />} />
           <Route path="on-call" element={<OnCallPage />} />
           <Route path="on-call/routing" element={<Navigate to="/on-call#phone-line" replace />} />
           <Route path="on-call/calls" element={<Navigate to="/on-call#calls" replace />} />

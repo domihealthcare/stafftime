@@ -3341,3 +3341,82 @@ export interface ImportedLinksResult {
   added: number;
   skipped: { title: string; url: string; reason: string }[];
 }
+
+// ------------------------------------------------------------ Secret Santa
+
+/// Somebody in a Secret Santa (November 2026).
+export interface SecretSantaPerson {
+  id: string;
+  firstName: string;
+  preferredName: string | null;
+  lastName: string;
+  photoUpdatedAt: string | null;
+  name: string;
+}
+
+/// A Secret Santa as this person sees it: the details, who is in it, and
+/// their own part only. Nobody is ever sent who drew whom.
+export interface SecretSanta {
+  id: string;
+  title: string;
+  /// YYYY-MM-DD.
+  exchangeOn: string;
+  budgetDollars: number;
+  location: { id: string; name: string } | null;
+  place: string | null;
+  notes: string | null;
+  selfSignUp: boolean;
+  signUpUntil: string | null;
+  signUpOpen: boolean;
+  status: 'OPEN' | 'DRAWN';
+  drawnAt: string | null;
+  createdAt: string;
+  createdBy: string | null;
+  canManage: boolean;
+  members: (SecretSantaPerson & { signedUpSelf: boolean })[];
+  me: {
+    inIt: boolean;
+    wishes: string | null;
+    canJoin: boolean;
+    canLeave: boolean;
+    /// Whether they have somebody to buy for. Who comes from
+    /// `api.mySecretSanta`, behind their PIN.
+    drawn: boolean;
+  };
+  /// Organizers only: who looked up whose draw in an emergency, and when.
+  lookups: SecretSantaLookup[];
+  /// Organizers, once drawn, from the day of the exchange.
+  canLookUp: boolean;
+}
+
+/// Who an organizer looked up, never the answer.
+export interface SecretSantaLookup {
+  id: string;
+  at: string;
+  by: string | null;
+  whose: string;
+}
+
+/// Who somebody is buying for, with their gift ideas.
+export type SecretSantaDrawn = SecretSantaPerson & { wishes: string | null };
+
+/// Whoever to add: everybody, or any mix of offices, job roles and people.
+export interface SecretSantaPeople {
+  everyone?: boolean;
+  employeeIds?: string[];
+  jobRoleIds?: string[];
+  locationIds?: string[];
+}
+
+export interface SecretSantaInput {
+  title: string;
+  exchangeOn: string;
+  budgetDollars: number;
+  locationId?: string | null;
+  place?: string | null;
+  notes?: string | null;
+  selfSignUp: boolean;
+  signUpUntil?: string | null;
+  /// Only when setting one up.
+  people?: SecretSantaPeople;
+}

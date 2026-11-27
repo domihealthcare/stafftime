@@ -10,6 +10,7 @@ import { MyPayController, PayController } from '../staff-records/pay.controller'
 import { RotaCostController } from '../staff-records/rota-cost.controller';
 import { StaffRecordsController } from '../staff-records/staff-records.controller';
 import { StaffNotesController } from '../staff-notes/staff-notes.controller';
+import { SecretSantaController } from '../secret-santa/secret-santa.controller';
 import { VendorsController } from '../vendors/vendors.controller';
 import { PayLockGuard } from './pay-lock.guard';
 
@@ -46,6 +47,20 @@ describe('the routes that show pay', () => {
       expect(guardsOn(route)).not.toContain(PayLockGuard);
     }
     expect(guardsOn(RotaCostController)).not.toContain(PayLockGuard);
+  });
+
+  it('Secret Santa asks for the PIN before showing who somebody drew, and nowhere else', () => {
+    // November 2026, Dominguez: "to be able to show your secret santa it
+    // should require a pin in the app for all users".
+    expect(guardsOn(SecretSantaController.prototype.mine)).toContain(PayLockGuard);
+    expect(guardsOn(SecretSantaController.prototype.lookUp)).toContain(PayLockGuard);
+    for (const route of [
+      SecretSantaController.prototype.list,
+      SecretSantaController.prototype.get,
+      SecretSantaController.prototype.join,
+    ]) {
+      expect(guardsOn(route)).not.toContain(PayLockGuard);
+    }
   });
 
   it('invoices ask whether somebody is on the list before asking for the PIN', () => {

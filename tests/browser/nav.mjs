@@ -159,6 +159,7 @@ export const SECTION_OF = {
   Surveys: 'Surveys & reading',
   'Required reading': 'Surveys & reading',
   Quizzes: 'Surveys & reading',
+  'Secret Santa': 'Surveys & reading',
   Export: 'Finances',
   Reimbursements: 'Finances',
   'Vendor payments': 'Finances',

@@ -6554,3 +6554,83 @@ the old question) and, when `isProvider` and there are upcoming shifts, opens
   saying yes would release) as a plain amber line before the buttons.
 
 Checks: `lib/provider-day-off.test.ts`, `tests/browser/provider-day-off.mjs`.
+
+## Secret Santa (November 2026)
+
+Dominguez, 27 November 2026: "Admin/managers should be able to set it up
+(date, budget, location, members participating - but also can provide
+opportunity to allow staff to sign up them selves) once its 'closed' staff
+are told anonymously who they drew (can be via email)".
+
+**Setting it up.** Manage → Surveys & reading → Secret Santa
+(`/secret-santa`), managers and admins: a name, the day of the exchange, the
+budget in whole dollars, an optional office and "where exactly", a note,
+who is in it from the start (the same Everyone / offices / job roles /
+people box as events and required reading, worked out into names when
+saved), and **Let staff sign themselves up**, with an optional last day.
+Several can run at once (one per office, say). People added are told on the
+bell; with sign-ups on, everybody else is told they can join, and it is on
+their Home. Shared accounts and people who have left are never in one.
+
+**The draw.** **Draw the names** (at least `MIN_MEMBERS` = 3, as with two
+each knows who drew them) closes it: nobody joins, leaves or is added after.
+Everybody is shuffled (Fisher-Yates over `crypto.randomInt`) and each gives
+to the next, the last to the first: **one circle**, so nobody draws
+themselves and every circle is equally likely (`drawCircle` in
+`secret-santa/secret-santa.ts`; a spec checks the spread). The state change
+is claimed with `updateMany ... where status = OPEN`, so two presses cannot
+draw twice. Each person is then told:
+
+- on the **bell** (and so a phone's lock screen, once push is on): "your
+  name is drawn", the budget and day, never the name;
+- by **email** (`NotificationsService.privately`): "You drew Casey Smith",
+  with their gift ideas;
+- on the page: **Show who I drew**, which asks for their **PIN** (27
+  November 2026, Dominguez: "to be able to show your secret santa it should
+  require a pin in the app for all users"): the same unlock as pay
+  (`PayLockGuard` on `GET /secret-santa/:id/mine`, `PinGate` on the page;
+  tablet PIN, password or Face ID, 10 minutes, per sign-in), then the name
+  and their gift ideas as they are now, and **Email it to me again**. The
+  ordinary page answer carries only `me.drawn`, never who.
+
+**Nobody sees who drew whom**, organizers and admins included, with one
+narrow exception. `SecretSantaMember.recipientId` is stored, so each person
+can look theirs up, but only `mine()` and `lookUp()` read somebody's
+recipient; the member list carries names only, never gift ideas or draws;
+the browser suite fails if any page answer has a "recipient" or "drew"
+field. A database constraint stops a self-draw. (Anybody with the database
+itself could read it; the app never lists it.)
+
+**The emergency look-up** (27 November 2026, Dominguez: "there should be
+someone who can (in an emergency i.e. during the exchange the person forgot
+who they had ...) see who that person had (though it should be limited to
+the question and not just a full list of everyone)"): a manager or admin,
+**from the day of the exchange**, chooses one person and presses **Look it
+up**, behind their own PIN (`POST /secret-santa/:id/look-up/:employeeId`,
+`PayLockGuard`). One person per request, never themselves, and no route
+answers for more than one. Each look-up is kept (`SecretSantaLookup`: who
+looked, whose, when, never the answer), listed for every organizer on the
+page, and the person is told on the bell ("Morgan looked up who you are
+buying for, to remind you"). An organizer looking people up one by one to
+find who drew them would leave a line for each, and each person would be
+told. Before the day the person has the app and the email.
+
+**Somebody dropping out afterwards.** An organizer presses **Take out**:
+because it is one circle, whoever drew them is given the person they had
+drawn (`closeOver`) and told by email, and nobody else, so the organizer
+still learns nothing. Refused when fewer than three would be left; cancel it
+instead. Before the draw, anybody may take themselves out, and organizers
+add and remove freely.
+
+**Gift ideas** (`wishes`, 500 characters, optional) are written by each
+member for whoever draws them and shown only to that person. Changing the
+day, budget or place tells everybody in it; **Cancel this Secret Santa**
+deletes it and tells them. Sign-ups closing on their last day stop new
+sign-ups only: the names are still drawn by an organizer pressing Draw.
+
+`src/secret-santa/` (`secret-santa.ts` rules, pure; `secret-santa.service.ts`),
+`pages/SecretSantaPage.tsx`, `components/SecretSantaCard.tsx` (Home),
+`lib/i18n/es/secret-santa.ts` (staff parts; the organizer's tools are English),
+migrations `20261127010000_secret_santa_kind`, `20261127020000_secret_santa`,
+`20261127030000_secret_santa_lookups`, schema guard pins the three tables,
+`pay-routes.spec.ts` pins the PIN on `mine` and `lookUp`; `tests/browser/secret-santa.mjs`.

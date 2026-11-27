@@ -61,6 +61,8 @@ export const MANAGE_SECTIONS: ManageSection[] = [
       { to: '/required', label: 'Required reading', need: 'manager' },
       // Sent through Required reading, confirmed by passing (October 2026).
       { to: '/quizzes', label: 'Quizzes', need: 'manager' },
+      // A holiday gift exchange, set up and drawn by managers (November 2026).
+      { to: '/secret-santa', label: 'Secret Santa', need: 'manager' },
     ],
   },
   {

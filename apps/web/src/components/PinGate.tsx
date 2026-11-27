@@ -246,8 +246,8 @@ function PinPrompt({
           <span aria-hidden="true">🔒 </span>Enter your PIN to see {what}
         </h2>
         <p className="mt-1 text-sm text-slate-600">
-          Pay is locked whenever a screen has been left for a few minutes, in case somebody walks up
-          to a computer that is still signed in.
+          {what === 'pay' ? 'Pay' : 'This'} is locked whenever a screen has been left for a few
+          minutes, in case somebody walks up to a computer that is still signed in.
           {!hasPin &&
             ' You have no tablet PIN yet, so use your password, or choose a PIN on Your profile.'}
         </p>

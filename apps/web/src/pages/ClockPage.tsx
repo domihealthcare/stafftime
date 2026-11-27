@@ -31,6 +31,7 @@ import { MyStudents } from '../components/MyStudents';
 import { HomeDowntimeCheck } from '../components/DowntimeCheck';
 import { MyOfficeAdminDays } from '../components/MyOfficeAdminDays';
 import { SuggestionBoxCard } from '../components/SuggestionBox';
+import { SecretSantaCard } from '../components/SecretSantaCard';
 import { MyOvertimeNotice } from '../components/OvertimeAlerts';
 import { Alert, Badge, Card, Spinner } from '../components/ui';
 import { useConfirm } from '../components/ConfirmDialog';
@@ -562,6 +563,7 @@ export function ClockPage() {
         <MyOfficeAdminDays />
         <MyScheduleReviews />
         <MyStudents />
+        <SecretSantaCard />
         <OnCallNow />
         <BirthdaysThisWeek />
         <ComingUp />
