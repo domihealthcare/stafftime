@@ -1520,6 +1520,8 @@ const PROVIDERS: Section[] = [
               <li>
                 Work down A to K. Each section says what it still needs, and the bar at the top
                 ticks it off once it is complete. Names get their capitals when you leave the box.
+                The depression screen in F is optional: leave it out and the note simply has no
+                depression screen line, or choose one and finish it.
               </li>
               <li>
                 Anything missing is listed at the bottom; tap an item to jump to it. The PDFs can
@@ -1601,7 +1603,9 @@ const PROVIDERS: Section[] = [
             <p>
               Ticked goals and actions go on the handout in plain words, in <strong>English</strong>
               , or <strong>English and Spanish</strong> (English first, then the same in Spanish) -
-              choose under <strong>PDFs</strong>. Anything you type is printed as typed.
+              choose under <strong>PDFs</strong>. Anything you type is printed as typed. The handout
+              is headed <strong>Your Memory Care Plan</strong>, and its Spanish half{' '}
+              <strong>Su Plan de Cuidado de la Memoria</strong>.
             </p>
           </>
         ),

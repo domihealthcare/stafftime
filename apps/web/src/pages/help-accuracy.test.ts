@@ -51,6 +51,13 @@ describe('the Help guide', () => {
     expect(wrong).toEqual([]);
   });
 
+  it('says the BrainCheck Care Plan depression screen is optional, and names the handout', () => {
+    const all = topics.map((topic) => topic.answer).join('\n');
+    expect(all).toContain('The depression screen in F is optional');
+    expect(all).toContain('Your Memory Care Plan');
+    expect(all).toContain('Su Plan de Cuidado de la Memoria');
+  });
+
   it('covers Secret Santa for staff and for managers', () => {
     const questions = topics.map((topic) => topic.question);
     expect(questions).toContain('Taking part in Secret Santa');

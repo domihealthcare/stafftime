@@ -3429,6 +3429,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
   (Dominguez: "the spanish one should be as a title too"). CPT 99483 expects a standardized depression screen as part of
   the neuropsychiatric evaluation, so leaving it out is the provider's call.
   `cognitive-assessment/validate.test.ts`; `tests/browser/clinical.mjs`.
+  Help says both (version 1.56.2): *Where is it, and how does it work?* and
+  *Building the care plan*, pinned by `pages/help-accuracy.test.ts`.
 - **"CCM care plan" is now "APCM Care Plan"** (October 2026, Dominguez — the
   practice uses it for **APCM** as well as CCM; first renamed "Care plan",
   then "APCM Care Plan" the same week): on Resources → Forms, the page
