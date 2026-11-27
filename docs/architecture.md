@@ -6563,8 +6563,10 @@ opportunity to allow staff to sign up them selves) once its 'closed' staff
 are told anonymously who they drew (can be via email)".
 
 **Setting it up.** Manage → Surveys & reading → Secret Santa
-(`/secret-santa`), managers and admins: a name, the day of the exchange, the
-budget in whole dollars, an optional office and "where exactly", a note,
+(`/secret-santa`), managers and admins: a name, the budget in whole dollars,
+the day of the exchange (optional until the draw: 27 November 2026,
+Dominguez, "the date should be left optional initially but has to be put to
+close the drawing"; `drawProblem` refuses without it), an optional office and "where exactly", a note,
 who is in it from the start (the same Everyone / offices / job roles /
 people box as events and required reading, worked out into names when
 saved), and **Let staff sign themselves up**, with an optional last day.
@@ -6615,6 +6617,21 @@ buying for, to remind you"). An organizer looking people up one by one to
 find who drew them would leave a line for each, and each person would be
 told. Before the day the person has the app and the email.
 
+**Somebody added afterwards** (27 November 2026, Dominguez: "make sure
+there is a way to add people even after setting it up"). **Add people** on
+the organizer's card works before the draw and after it, until the day has
+passed. After the draw each newcomer is slotted into the circle
+(`spliceIn`): a person picked at random (`crypto.randomInt`) now gives to
+them and they give to whoever that person had, so it stays one circle and
+only that Santa's person changes; the Santa is told by email, the newcomer
+is told who they drew, and the organizer still learns nothing.
+
+**Looking festive** (same day, "make it more festive"): a green-to-holly-red
+banner with drifting snow and a tree on both screens, the details as chips,
+a wrapped present that unwraps on **Show who I drew**, and a festive Home
+card. The snow and the unwrapping stand still for anybody whose device asks
+for reduced motion (`.santa-snow`, `.santa-unwrap` in `index.css`).
+
 **Somebody dropping out afterwards.** An organizer presses **Take out**:
 because it is one circle, whoever drew them is given the person they had
 drawn (`closeOver`) and told by email, and nobody else, so the organizer
@@ -6632,5 +6649,6 @@ sign-ups only: the names are still drawn by an organizer pressing Draw.
 `pages/SecretSantaPage.tsx`, `components/SecretSantaCard.tsx` (Home),
 `lib/i18n/es/secret-santa.ts` (staff parts; the organizer's tools are English),
 migrations `20261127010000_secret_santa_kind`, `20261127020000_secret_santa`,
-`20261127030000_secret_santa_lookups`, schema guard pins the three tables,
+`20261127030000_secret_santa_lookups`, `20261127040000_secret_santa_date_optional`,
+schema guard pins the three tables,
 `pay-routes.spec.ts` pins the PIN on `mine` and `lookUp`; `tests/browser/secret-santa.mjs`.

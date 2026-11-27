@@ -4942,8 +4942,9 @@ enum SecretSantaStatus {
 model SecretSanta {
   id            String            @id @default(uuid()) @db.Uuid
   title         String
-  /// The day the gifts are exchanged.
-  exchangeOn    DateTime          @db.Date
+  /// The day the gifts are exchanged. May be left to decide while people
+  /// sign up; it has to be set before the names are drawn.
+  exchangeOn    DateTime?         @db.Date
   /// The spending limit, in whole dollars.
   budgetDollars Int
   /// The office it is held at, if one.

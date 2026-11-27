@@ -3103,27 +3103,30 @@ const MANAGERS: Section[] = [
           <>
             <p>
               <Screen>Manage → Surveys & reading → Secret Santa</Screen>, then{' '}
-              <strong>+ Set up a Secret Santa</strong>: a name, the day of the exchange, the budget
-              in dollars, and optionally an office, where exactly and a note. Choose who is in it
-              from the start (Everyone, or any mix of offices, job roles and people), and tick{' '}
-              <strong>Let staff sign themselves up</strong> to let anybody join from Home, with a
-              last day to sign up if you want one. Everybody you add is told on the bell, and with
-              sign-ups on so is everybody else. You can add or take people out until the names are
-              drawn.
+              <strong>+ Set up a Secret Santa</strong>: a name and the budget in dollars, and
+              optionally the day of the exchange, an office, where exactly and a note. The day can
+              wait while people sign up, but it has to be set (<strong>Edit details</strong>) before
+              you can draw. Choose who is in it from the start (Everyone, or any mix of offices, job
+              roles and people), and tick <strong>Let staff sign themselves up</strong> to let
+              anybody join from Home, with a last day to sign up if you want one. Everybody you add
+              is told on the bell, and with sign-ups on so is everybody else. Add more people at any
+              time under <strong>Add people</strong> on its page, or take them out.
             </p>
             <p>
-              When everybody is in, press <strong>Draw the names</strong> (at least 3 people). That
-              closes it: nobody else joins, and each person is told on the bell that their name is
-              ready and by email who they drew, with that person's gift ideas; in the app they see
-              it behind their PIN. The draw is one circle, so nobody draws themselves.{' '}
+              When everybody is in and the day is set, press <strong>Draw the names</strong> (at
+              least 3 people). That closes sign-ups, and each person is told on the bell that their
+              name is ready and by email who they drew, with that person's gift ideas; in the app
+              they see it behind their PIN. The draw is one circle, so nobody draws themselves.{' '}
               <strong>Nobody is shown who drew whom</strong>, you and other admins included, with
               one exception: from the day of the exchange, if somebody has forgotten, choose them
               under <strong>In an emergency: who did somebody draw?</strong> and press{' '}
               <strong>Look it up</strong> (behind your PIN). It answers for that one person only;
               every look-up is listed there for the other organizers, and the person is told on the
               bell. If somebody has to drop out after the draw, press <strong>Take out</strong>{' '}
-              beside them: whoever drew them is given the person they had drawn and told by email. A
-              change to the day, budget or place tells everybody in it;{' '}
+              beside them: whoever drew them is given the person they had drawn and told by email.
+              Somebody added after the draw (a new hire, say) is slotted in: one person picked at
+              random is now buying for them and is told by email, and the newcomer is told who they
+              drew; nobody else changes. A change to the day, budget or place tells everybody in it;{' '}
               <strong>Cancel this Secret Santa</strong> removes it and tells them it will not go
               ahead.
             </p>

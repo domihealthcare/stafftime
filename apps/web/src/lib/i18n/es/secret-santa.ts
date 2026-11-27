@@ -5,6 +5,8 @@ export const SECRET_SANTA: Record<string, string> = {
   'Secret Santa': 'Amigo secreto',
   'Budget {amount}': 'Presupuesto {amount}',
   'Exchanging gifts {day}': 'Intercambio de regalos el {day}',
+  'Day of the exchange still to be set': 'Día del intercambio por decidir',
+  'day to be set': 'día por decidir',
   'Names drawn': 'Nombres sorteados',
   'Sign-ups open': 'Inscripciones abiertas',
   'Names not drawn yet': 'Nombres aún sin sortear',

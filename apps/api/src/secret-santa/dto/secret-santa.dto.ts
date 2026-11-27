@@ -51,9 +51,11 @@ export class SecretSantaInput {
   @MaxLength(120)
   title!: string;
 
+  /// Optional while people sign up; needed to draw the names.
+  @IsOptional()
   @IsString()
-  @Matches(DAY, { message: 'Choose the day of the exchange.' })
-  exchangeOn!: string;
+  @Matches(DAY, { message: 'That day is not a date.' })
+  exchangeOn?: string | null;
 
   @IsInt()
   @Min(1)

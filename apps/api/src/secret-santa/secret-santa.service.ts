@@ -25,12 +25,14 @@ import {
   SecretSantaPeopleInput,
 } from './dto/secret-santa.dto';
 import {
-  MIN_MEMBERS,
   addedBell,
   cancelledBell,
   changedBell,
   closeOver,
   detailsChangedBell,
+  drawProblem,
+  lateJoinBell,
+  spliceIn,
   lookedUpBell,
   drawCircle,
   drawnBell,
@@ -102,7 +104,7 @@ function wordsOf(
     id: exchange.id,
     title: exchange.title,
     budgetDollars: exchange.budgetDollars,
-    when: dayWords(exchange.exchangeOn),
+    when: exchange.exchangeOn ? dayWords(exchange.exchangeOn) : null,
     where: where || null,
   };
 }
@@ -147,7 +149,7 @@ export class SecretSantaService {
             ],
           },
       select: EXCHANGE,
-      orderBy: [{ exchangeOn: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [{ exchangeOn: { sort: 'desc', nulls: 'first' } }, { createdAt: 'desc' }],
     });
     return Promise.all(exchanges.map((exchange) => this.shape(exchange, user)));
   }
@@ -201,6 +203,9 @@ export class SecretSantaService {
   /// day, the budget or the place moves.
   async update(id: string, dto: SecretSantaInput, actor: AuthUser) {
     const before = await this.require(id);
+    if (before.status === SecretSantaStatus.DRAWN && !dto.exchangeOn) {
+      throw new BadRequestException('The names are drawn, so the day of the exchange stays set.');
+    }
     const fields = await this.check(dto, before.exchangeOn);
     const opensSignUp =
       before.status === SecretSantaStatus.OPEN && !before.selfSignUp && fields.selfSignUp;
@@ -259,13 +264,11 @@ export class SecretSantaService {
   /// Adds people before the draw. Anybody already in it is left as they are.
   async addPeople(id: string, dto: SecretSantaPeopleInput, actor: AuthUser) {
     const exchange = await this.require(id);
-    if (exchange.status !== SecretSantaStatus.OPEN) {
-      throw new ConflictException(
-        'The names are already drawn, so nobody can be added. Cancel it and set up a new one to start again.',
-      );
-    }
     const already = new Set(exchange.members.map((member) => member.employeeId));
     const people = (await this.peopleFor(dto)).filter((employeeId) => !already.has(employeeId));
+    if (exchange.status === SecretSantaStatus.DRAWN) {
+      return this.addAfterDraw(exchange, people, actor);
+    }
     if (people.length > 0) {
       await this.prisma.secretSantaMember.createMany({
         data: people.map((employeeId) => ({ exchangeId: id, employeeId })),
@@ -278,6 +281,54 @@ export class SecretSantaService {
     }
     this.logger.log(`Secret Santa ${id}: ${people.length} added by ${actor.id}`);
     return { added: people.length, exchange: await this.shape(await this.require(id), actor) };
+  }
+
+  /// Somebody added after the names are drawn (27 November 2026, Dominguez):
+  /// each goes into the circle after a random person, who is now buying for
+  /// them and is told; they are told who they drew. Nobody else changes.
+  private async addAfterDraw(exchange: Exchange, people: string[], actor: AuthUser) {
+    const day = this.state(exchange).exchangeOn;
+    if (day && day < today()) {
+      throw new ConflictException('The exchange has happened, so nobody can be added now.');
+    }
+    const changedSantas = new Set<string>();
+    await this.prisma.$transaction(async (tx) => {
+      for (const joining of people) {
+        const rows = await tx.secretSantaMember.findMany({
+          where: { exchangeId: exchange.id },
+          select: { employeeId: true, recipientId: true },
+        });
+        const pairs = new Map(
+          rows.flatMap((row) =>
+            row.recipientId ? [[row.employeeId, row.recipientId] as const] : [],
+          ),
+        );
+        const { santa, joinerGives } = spliceIn(pairs, joining);
+        // The Santa takes the newcomer first, so their old person is free.
+        await tx.secretSantaMember.update({
+          where: { exchangeId_employeeId: { exchangeId: exchange.id, employeeId: santa } },
+          data: { recipientId: joining },
+        });
+        await tx.secretSantaMember.create({
+          data: { exchangeId: exchange.id, employeeId: joining, recipientId: joinerGives },
+        });
+        changedSantas.add(santa);
+      }
+    });
+    this.logger.log(
+      `Secret Santa ${exchange.id}: ${people.length} added after the draw by ${actor.id}`,
+    );
+    // A Santa who was then given to somebody added later is told once, of
+    // whoever they have at the end; a newcomer who became a Santa too is
+    // told only as a newcomer.
+    for (const joining of people) await this.tellWhoTheyDrew(exchange.id, joining, 'joined');
+    for (const santa of changedSantas) {
+      if (!people.includes(santa)) await this.tellWhoTheyDrew(exchange.id, santa, 'changed');
+    }
+    return {
+      added: people.length,
+      exchange: await this.shape(await this.require(exchange.id), actor),
+    };
   }
 
   /// Takes somebody out. After the draw, whoever drew them is given the
@@ -318,7 +369,7 @@ export class SecretSantaService {
       return closed;
     });
     this.logger.log(`Secret Santa ${id}: a member taken out after the draw by ${actor.id}`);
-    if (santa) await this.tellWhoTheyDrew(id, santa.santa, true);
+    if (santa) await this.tellWhoTheyDrew(id, santa.santa, 'changed');
     return this.shape(await this.require(id), actor);
   }
 
@@ -338,13 +389,8 @@ export class SecretSantaService {
       select: { id: true },
     });
     const ids = here.map((person) => person.id);
-    if (ids.length < MIN_MEMBERS) {
-      throw new BadRequestException(
-        `A Secret Santa needs at least ${MIN_MEMBERS} people, so nobody can work out who drew them. ${
-          ids.length === 1 ? 'There is 1' : `There are ${ids.length}`
-        } in it.`,
-      );
-    }
+    const problem = drawProblem(this.state(exchange).exchangeOn, ids.length);
+    if (problem) throw new BadRequestException(problem);
     const pairs = drawCircle(ids);
 
     await this.prisma.$transaction(async (tx) => {
@@ -440,7 +486,7 @@ export class SecretSantaService {
     if (exchange.status !== SecretSantaStatus.DRAWN || !mine?.recipientId) {
       throw new BadRequestException('The names are not drawn yet.');
     }
-    await this.tellWhoTheyDrew(id, user.id, false, false);
+    await this.tellWhoTheyDrew(id, user.id, 'again');
     return { sent: true };
   }
 
@@ -475,9 +521,10 @@ export class SecretSantaService {
     if (exchange.status !== SecretSantaStatus.DRAWN) {
       throw new BadRequestException('The names are not drawn yet.');
     }
-    if (this.state(exchange).exchangeOn > today()) {
+    const day = this.state(exchange).exchangeOn;
+    if (!day || !exchange.exchangeOn || day > today()) {
       throw new BadRequestException(
-        `Looking somebody up is for the day of the exchange, ${dayWords(exchange.exchangeOn)}, in an emergency. Until then they can see who they drew in Domi Staff, or press Email it to me again.`,
+        `Looking somebody up is for the day of the exchange${exchange.exchangeOn ? `, ${dayWords(exchange.exchangeOn)},` : ''} in an emergency. Until then they can see who they drew in Domi Staff, or press Email it to me again.`,
       );
     }
     if (employeeId === actor.id) {
@@ -516,7 +563,11 @@ export class SecretSantaService {
   // ------------------------------------------------------------- helpers
 
   /// The bell (no name) and the email (the name and their gift ideas).
-  private async tellWhoTheyDrew(id: string, giverId: string, changed = false, bell = true) {
+  private async tellWhoTheyDrew(
+    id: string,
+    giverId: string,
+    why: 'drawn' | 'changed' | 'joined' | 'again' = 'drawn',
+  ) {
     const row = await this.prisma.secretSantaMember.findUnique({
       where: { exchangeId_employeeId: { exchangeId: id, employeeId: giverId } },
       select: {
@@ -543,13 +594,17 @@ export class SecretSantaService {
     const email = drawnEmail(
       words,
       { name: nameOf(recipient.employee), wishes: recipient.wishes },
-      changed,
+      why === 'changed',
     );
-    if (bell) {
+    if (why !== 'again') {
       await this.notifications.privately(
         giverId,
         NotificationKind.SECRET_SANTA,
-        changed ? changedBell(words) : drawnBell(words),
+        why === 'changed'
+          ? changedBell(words)
+          : why === 'joined'
+            ? lateJoinBell(words)
+            : drawnBell(words),
         email,
       );
     } else {
@@ -605,6 +660,7 @@ export class SecretSantaService {
       canLookUp:
         isManager(user) &&
         exchange.status === SecretSantaStatus.DRAWN &&
+        state.exchangeOn !== null &&
         state.exchangeOn <= today(),
     };
   }
@@ -634,7 +690,7 @@ export class SecretSantaService {
       status: exchange.status,
       selfSignUp: exchange.selfSignUp,
       signUpUntil: exchange.signUpUntil ? isoDate(exchange.signUpUntil) : null,
-      exchangeOn: isoDate(exchange.exchangeOn),
+      exchangeOn: exchange.exchangeOn ? isoDate(exchange.exchangeOn) : null,
     };
   }
 
@@ -646,7 +702,7 @@ export class SecretSantaService {
 
   /// The checked fields to save. A change keeps an exchange day already
   /// past (it can still be edited after the party), but a new one cannot be.
-  private async check(dto: SecretSantaInput, savedDay?: Date) {
+  private async check(dto: SecretSantaInput, savedDay?: Date | null) {
     const day = today();
     const problem = setUpProblem(
       {
@@ -655,7 +711,7 @@ export class SecretSantaService {
         budgetDollars: dto.budgetDollars,
         signUpUntil: dto.signUpUntil,
       },
-      savedDay && isoDate(savedDay) === dto.exchangeOn ? dto.exchangeOn : day,
+      savedDay && dto.exchangeOn && isoDate(savedDay) === dto.exchangeOn ? dto.exchangeOn : day,
     );
     if (problem) throw new BadRequestException(problem);
     if (dto.locationId) {
@@ -664,7 +720,7 @@ export class SecretSantaService {
     }
     return {
       title: dto.title.trim(),
-      exchangeOn: toUtcDate(dto.exchangeOn),
+      exchangeOn: dto.exchangeOn ? toUtcDate(dto.exchangeOn) : null,
       budgetDollars: dto.budgetDollars,
       locationId: dto.locationId || null,
       place: dto.place?.trim() || null,
