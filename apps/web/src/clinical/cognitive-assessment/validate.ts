@@ -192,7 +192,8 @@ export function validate(form: AssessmentForm, today: string): Problem[] {
 
   if (today_('F')) {
     need(F.symptoms.length > 0, 'F', 'F.symptoms', 'Tick the symptoms, or None.');
-    need(!blank(F.depressionScreen), 'F', 'F.depressionScreen', 'Choose the depression screen.');
+    // The depression screen is optional (27 November 2026, Dominguez: "dont
+    // require the depression screen"). One that is chosen is still finished.
   }
   if (F.depressionScreen === 'other') {
     need(

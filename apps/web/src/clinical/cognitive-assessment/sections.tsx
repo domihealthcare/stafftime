@@ -866,8 +866,7 @@ function ElementF({ form, update, required }: ElementProps) {
       <Grid>
         <Select
           path="F.depressionScreen"
-          label="Depression screen"
-          required={required}
+          label="Depression screen (optional)"
           options={DEPRESSION_SCREENS}
           value={F.depressionScreen}
           onChange={(value) =>

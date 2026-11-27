@@ -466,7 +466,7 @@ await step('the handout is in plain English, with the plan and nothing clinical'
   await download.saveAs(path);
   const pages = await pdfPages(path);
   const all = pages.join(' ');
-  for (const piece of ['Your memory care plan', 'Prepared by', 'Care partner John Testhistorian, son', 'Our goals', 'Things to try', 'Small changes at home make a big difference', 'Remove tripping hazards', 'Planning ahead', 'Financial power of attorney Not yet', 'Support group', '1-800-272-3900', 'Safety tips', 'Your next visit', 'In 3 months', 'We recommend repeating the BrainCheck memory assessment in 6 to 12 months', 'Confidential', '201-528-3664', 'Signature', 'Electronically signed by Frankie', 'APN-C on']) {
+  for (const piece of ['Your Memory Care Plan', 'Prepared by', 'Care partner John Testhistorian, son', 'Our goals', 'Things to try', 'Small changes at home make a big difference', 'Remove tripping hazards', 'Planning ahead', 'Financial power of attorney Not yet', 'Support group', '1-800-272-3900', 'Safety tips', 'Your next visit', 'In 3 months', 'We recommend repeating the BrainCheck memory assessment in 6 to 12 months', 'Confidential', '201-528-3664', 'Signature', 'Electronically signed by Frankie', 'APN-C on']) {
     if (!all.includes(piece)) throw new Error(`the handout lacks "${piece}"`);
   }
   for (const clinical of ['FAST', 'PHQ-9', 'Katz', 'MRN', 'modifier', 'Stage 4']) {
@@ -497,8 +497,8 @@ await step('and in English and Spanish, with a "not yet checked" note on the for
   const all = pages.join(' ');
   // English first, then the Spanish starting on a page of its own.
   const spanishStarts = pages.findIndex((text) => text.includes('Su plan de cuidado de la memoria'));
-  if (spanishStarts < 1 || !pages[0].includes('Your memory care plan')) throw new Error(`Spanish starts on page ${spanishStarts + 1}`);
-  for (const piece of ['Your memory care plan', 'Our goals', 'Su plan de cuidado de la memoria', 'Preparado por', 'Nuestras metas', 'Qué puede hacer', 'Planificar con anticipación', 'Consejos de seguridad', 'En 3 meses', 'Le recomendamos repetir la evaluación de memoria BrainCheck', 'Confidencial', 'al 201-528-3664', 'Electronically signed by Frankie', 'Firmado electrónicamente por Frankie']) {
+  if (spanishStarts < 1 || !pages[0].includes('Your Memory Care Plan')) throw new Error(`Spanish starts on page ${spanishStarts + 1}`);
+  for (const piece of ['Your Memory Care Plan', 'Our goals', 'Su plan de cuidado de la memoria', 'Preparado por', 'Nuestras metas', 'Qué puede hacer', 'Planificar con anticipación', 'Consejos de seguridad', 'En 3 meses', 'Le recomendamos repetir la evaluación de memoria BrainCheck', 'Confidencial', 'al 201-528-3664', 'Electronically signed by Frankie', 'Firmado electrónicamente por Frankie']) {
     if (!all.includes(piece)) throw new Error(`the Spanish handout lacks "${piece}"`);
   }
   if (all.includes('native speaker') || all.includes('not yet been checked')) throw new Error('the review note is on the handout');

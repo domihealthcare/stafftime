@@ -1570,6 +1570,7 @@ const PROVIDERS: Section[] = [
               right there: tap an answer for each and the score is worked out for you. Katz and
               Lawton also tick the ADL and IADL lists as you go. In F, a positive answer on the
               self-harm question shows a warning and suggests the 988 crisis line in the care plan.
+              The depression screen in F is optional; once you choose one, finish it.
             </p>
             <p>
               Done on paper? Press <strong>Enter the total only</strong> and type the score instead.
