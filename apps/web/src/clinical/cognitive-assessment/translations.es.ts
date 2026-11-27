@@ -21,7 +21,7 @@ export { longDate } from '../common/dates';
 /// The handout's own words.
 export const HANDOUT_STRINGS = {
   en: {
-    title: 'Your memory care plan',
+    title: 'Your Memory Care Plan',
     preparedFor: (name: string, date: string, provider: string) =>
       `Prepared for ${name} on ${date} by ${provider}.`,
     intro:
@@ -53,10 +53,10 @@ export const HANDOUT_STRINGS = {
     notYet: 'Not yet',
     header: (name: string, dob: string, date: string) =>
       `${name}  |  Date of birth: ${dob}  |  Visit: ${date}`,
-    footer: 'Domi Healthcare - memory care plan',
+    footer: 'Domi Healthcare - Memory Care Plan',
   },
   es: {
-    title: 'Su plan de cuidado de la memoria',
+    title: 'Su Plan de Cuidado de la Memoria',
     preparedFor: (name: string, date: string, provider: string) =>
       `Preparado para ${name} el ${date} por ${provider}.`,
     intro:
@@ -89,7 +89,7 @@ export const HANDOUT_STRINGS = {
     notYet: 'Todavía no',
     header: (name: string, dob: string, date: string) =>
       `${name}  |  Fecha de nacimiento: ${dob}  |  Visita: ${date}`,
-    footer: 'Domi Healthcare - plan de cuidado de la memoria',
+    footer: 'Domi Healthcare - Plan de Cuidado de la Memoria',
   },
 };
 

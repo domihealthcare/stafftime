@@ -3417,6 +3417,18 @@ Beyond the phases, the parts worth knowing about before picking up work:
   clinical forms: the first tap in a section was lost when the sections above
   it turned amber (`useActivity`). `tests/browser/clinical.mjs`. Worth
   carrying to the EMR module's clinical side.
+- **BrainCheck Care Plan: the depression screen is optional, and the
+  handout's title capitalized** (27 November 2026, Dominguez: "for the memory
+  care plan -- can that be capitalized on the PDF and dont require the
+  depression screen", version 1.56.1): section F no longer requires a
+  depression screen (`validate.ts`; the field reads "Depression screen
+  (optional)", on the downtime paper form too); one that is chosen must
+  still be finished, and with none the note leaves the line out. The
+  handout's English title and footer read **Your Memory Care Plan**, like its
+  file name, and the Spanish half's **Su Plan de Cuidado de la Memoria**
+  (Dominguez: "the spanish one should be as a title too"). CPT 99483 expects a standardized depression screen as part of
+  the neuropsychiatric evaluation, so leaving it out is the provider's call.
+  `cognitive-assessment/validate.test.ts`; `tests/browser/clinical.mjs`.
 - **"CCM care plan" is now "APCM Care Plan"** (October 2026, Dominguez — the
   practice uses it for **APCM** as well as CCM; first renamed "Care plan",
   then "APCM Care Plan" the same week): on Resources → Forms, the page

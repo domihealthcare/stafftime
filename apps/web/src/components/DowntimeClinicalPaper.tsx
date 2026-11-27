@@ -260,7 +260,7 @@ export function BrainCheckPaper() {
           <TickGrid choices={labels(NEUROPSYCHIATRIC_SYMPTOMS)} columns={4} />
         </Part>
         <div className="dt-row">
-          <Ticks label="Depression screen:" options={labels(DEPRESSION_SCREENS)} />
+          <Ticks label="Depression screen (optional):" options={labels(DEPRESSION_SCREENS)} />
           <Blank label="Score" width={110} />
         </div>
         <Blank label="Details" />
