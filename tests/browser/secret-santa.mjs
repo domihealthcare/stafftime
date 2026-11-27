@@ -86,7 +86,7 @@ people.ma = (await call(manager, '/employees')).body.find(
 );
 const keyOf = (id) => Object.keys(people).find((key) => people[key].id === id);
 
-const TITLE = 'Secret Santa suite';
+const TITLE = 'Domi Secret Santa';
 let id = null;
 
 await step('staff cannot set one up or draw names', async () => {
@@ -102,12 +102,11 @@ await step('staff cannot set one up or draw names', async () => {
   if (made.status !== 403) throw new Error(`gave ${made.status}`);
 });
 
-await step('a manager sets one up from Manage, with sign-ups on', async () => {
+await step('a manager sets one up from Manage, with sign-ups on and no day yet', async () => {
   await goToManage(manager, 'Secret Santa');
   await manager.getByRole('button', { name: '+ Set up a Secret Santa' }).click();
   const form = manager.getByTestId('secret-santa-editor');
   await form.getByLabel('Name', { exact: true }).fill(TITLE);
-  await form.getByLabel('Day of the exchange').fill(inThreeWeeks);
   await form.getByLabel('Budget ($)').fill('30');
   await form.getByLabel('Where exactly').fill('Break room');
   if (!(await form.getByLabel(/Let staff sign themselves up/).isChecked()))
@@ -117,6 +116,10 @@ await step('a manager sets one up from Manage, with sign-ups on', async () => {
   id = manager.url().split('/secret-santa/')[1];
   if (!/^[0-9a-f-]{36}$/.test(id ?? '')) throw new Error(`landed on ${manager.url()}`);
   await manager.getByText('Budget $30').waitFor();
+  await manager
+    .getByTestId('secret-santa-banner')
+    .getByText('Day of the exchange still to be set')
+    .waitFor();
   await manager.screenshot({ path: `${OUT}/secret-santa-organizer.png`, fullPage: true });
 });
 // Everything after needs it; stop here rather than time out step by step.
@@ -179,6 +182,24 @@ await step('the manager adds Ada, Max and themselves', async () => {
   // Frankie was in already.
   if (added.body.added !== 3) throw new Error(`added ${added.body.added}`);
   if (added.body.exchange.members.length !== 4) throw new Error('not four in it');
+});
+
+await step('the names cannot be drawn until the day is set', async () => {
+  const early = await call(manager, `/secret-santa/${id}/draw`, { method: 'POST' });
+  if (early.status !== 400 || !/Set the day/.test(early.body.message))
+    throw new Error(`gave ${early.status}: ${early.text}`);
+  await manager.reload({ waitUntil: 'networkidle' });
+  await manager.getByText('Set the day of the exchange first').waitFor();
+  if (await manager.getByRole('button', { name: /Draw the names/ }).isEnabled())
+    throw new Error('Draw is pressable with no day');
+  await manager.getByRole('button', { name: 'Edit details' }).click();
+  const form = manager.getByTestId('secret-santa-editor');
+  await form.getByLabel('Day of the exchange').fill(inThreeWeeks);
+  await form.getByRole('button', { name: 'Save changes' }).click();
+  await manager
+    .getByTestId('secret-santa-banner')
+    .getByText('Exchanging gifts')
+    .waitFor({ timeout: 10000 });
 });
 
 await step('the manager draws the names', async () => {
@@ -383,6 +404,54 @@ await step('it refuses to leave fewer than three', async () => {
     method: 'DELETE',
   });
   if (out.status !== 400) throw new Error(`gave ${out.status}`);
+});
+
+await step('somebody added after the draw is slotted into the circle', async () => {
+  const before = {};
+  for (const key of ['manager', 'admin'])
+    before[key] = keyOf((await call(pages[key], `/secret-santa/${id}/mine`)).body.id);
+
+  await manager.goto(`${BASE}/secret-santa/${id}`, { waitUntil: 'networkidle' });
+  const box = manager.getByLabel('Add people');
+  await box.fill('Frankie');
+  await manager
+    .getByRole('option', { name: /Frankie/ })
+    .first()
+    .click();
+  await manager.getByRole('button', { name: 'Add them' }).click();
+  await manager.getByRole('button', { name: 'Yes, add them' }).click();
+  await manager.getByText('1 added to the draw').waitFor({ timeout: 15000 });
+
+  // Frankie has somebody, and it is still one circle of four.
+  const now = {};
+  for (const key of ['manager', 'admin', 'staff']) {
+    const mine = await call(pages[key], `/secret-santa/${id}/mine`);
+    if (mine.status !== 200) throw new Error(`${key}: ${mine.status}`);
+    now[key] = keyOf(mine.body.id);
+    if (now[key] === key) throw new Error(`${key} drew themselves`);
+  }
+  now.ma = Object.keys(people).find((key) => !Object.values(now).includes(key));
+  if (new Set(Object.values(now)).size !== 4) throw new Error(JSON.stringify(now));
+  const seen = new Set();
+  let at = 'manager';
+  for (let i = 0; i < 4; i += 1) {
+    seen.add(at);
+    at = now[at];
+  }
+  if (at !== 'manager' || seen.size !== 4) throw new Error('not one circle');
+  // Exactly one Santa gives to Frankie now, and only they changed.
+  const santa = Object.keys(now).find((key) => now[key] === 'staff');
+  for (const key of ['manager', 'admin'])
+    if (key !== santa && now[key] !== before[key]) throw new Error(`${key}'s person changed`);
+
+  const bell = (await call(staff, '/notifications')).body.items;
+  if (!bell.some((item) => /added after the names were drawn/.test(item.body)))
+    throw new Error('Frankie was not told');
+  if (santa !== 'ma') {
+    const theirs = (await call(pages[santa], '/notifications')).body.items;
+    if (theirs.filter((item) => /you have a new person/.test(item.title)).length < 1)
+      throw new Error(`${santa} was not told`);
+  }
 });
 
 await step('the Secret Santa page fits a phone', async () => {

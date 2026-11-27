@@ -17,6 +17,14 @@ import { EMAIL_SENDER, EmailResult, EmailSender } from './email-sender';
 import { InboxService } from './inbox.service';
 import { type WelcomeDetails, welcomeEmail } from './welcome-email';
 
+/// An email for one person only (Secret Santa, November 2026): the plain
+/// text lines, and optionally HTML made once their first name is known.
+export interface PrivateEmail {
+  subject: string;
+  lines: string[];
+  html?: (to: { firstName: string; appUrl: string; link: string }) => string;
+}
+
 /**
  * The messages this app actually sends, and who gets them.
  *
@@ -43,11 +51,16 @@ export class NotificationsService {
   }
 
   /// Sends and waits; failures are logged, never thrown.
-  private async dispatch(to: string, subject: string, body: string[]): Promise<void> {
+  private async dispatch(
+    to: string,
+    subject: string,
+    body: string[],
+    html?: string,
+  ): Promise<void> {
     const text = [...body, '', '-', 'Domi Staff', this.appUrl].join('\n');
 
     try {
-      await this.email.send({ to, subject: this.prefixed(subject), text });
+      await this.email.send({ to, subject: this.prefixed(subject), text, html });
     } catch (error: unknown) {
       this.logger.error(
         `Notification to ${to} failed: ${error instanceof Error ? error.message : error}`,
@@ -288,30 +301,26 @@ export class NotificationsService {
     employeeId: string,
     kind: NotificationKind,
     bell: { title: string; body: string; link: string },
-    email: { subject: string; lines: string[] },
+    email: PrivateEmail,
   ): Promise<void> {
     await this.inbox.notify([employeeId], { kind, ...bell });
     await this.emailOnly(employeeId, email, bell.link);
   }
 
   /// The email part of `privately` alone: "Email it to me again".
-  async emailOnly(
-    employeeId: string,
-    email: { subject: string; lines: string[] },
-    link: string,
-  ): Promise<void> {
+  async emailOnly(employeeId: string, email: PrivateEmail, link: string): Promise<void> {
     const person = await this.prisma.employee.findFirst({
       where: { id: employeeId, employmentStatus: EmploymentStatus.ACTIVE },
       select: { email: true, firstName: true, preferredName: true },
     });
     if (!person) return;
-    await this.dispatch(person.email, email.subject, [
-      `Hello ${person.preferredName ?? person.firstName},`,
-      '',
-      ...email.lines,
-      '',
-      `${this.appUrl}${link}`,
-    ]);
+    const firstName = person.preferredName ?? person.firstName;
+    await this.dispatch(
+      person.email,
+      email.subject,
+      [`Hello ${firstName},`, '', ...email.lines, '', `${this.appUrl}${link}`],
+      email.html?.({ firstName, appUrl: this.appUrl, link }),
+    );
   }
 
   /// Somebody asked for a correction to their hours: on the bell of the

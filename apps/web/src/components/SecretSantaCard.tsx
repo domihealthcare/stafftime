@@ -31,22 +31,29 @@ export function SecretSantaCard() {
 
   const today = practiceDate();
   const shown = (items ?? []).filter(
-    (exchange) => exchange.exchangeOn >= today && (exchange.me.inIt || exchange.me.canJoin),
+    (exchange) =>
+      (!exchange.exchangeOn || exchange.exchangeOn >= today) &&
+      (exchange.me.inIt || exchange.me.canJoin),
   );
   if (shown.length === 0) return null;
 
   return (
-    <Card className="border-rose-200 p-4" testId="home-secret-santa">
-      <h2 className="text-base font-semibold text-slate-900">
-        <span aria-hidden="true">🎅</span> {t('Secret Santa')}
+    <Card className="overflow-hidden border-rose-200" testId="home-secret-santa">
+      <h2 className="bg-gradient-to-r from-emerald-800 to-rose-800 px-4 py-2 text-base font-semibold text-white">
+        <span aria-hidden="true">🎅</span> {t('Domi Secret Santa')}{' '}
+        <span aria-hidden="true" className="text-sm">
+          ❄ 🎄 ❄
+        </span>
       </h2>
-      <ul className="mt-2 space-y-3 text-sm">
+      <ul className="space-y-3 bg-gradient-to-b from-rose-50/60 to-white p-4 text-sm">
         {shown.map((exchange) => (
           <li key={exchange.id}>
             <p className="font-medium text-slate-900">{exchange.title}</p>
             <p className="text-slate-600">
               {t('Budget {amount}', { amount: `$${exchange.budgetDollars}` })} ·{' '}
-              {formatCalendarDate(exchange.exchangeOn, { year: false })}
+              {exchange.exchangeOn
+                ? formatCalendarDate(exchange.exchangeOn, { year: false })
+                : t('day to be set')}
             </p>
             <Link
               to={`/secret-santa/${exchange.id}`}

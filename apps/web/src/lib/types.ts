@@ -3359,8 +3359,8 @@ export interface SecretSantaPerson {
 export interface SecretSanta {
   id: string;
   title: string;
-  /// YYYY-MM-DD.
-  exchangeOn: string;
+  /// YYYY-MM-DD; null while still to be set (it must be set to draw).
+  exchangeOn: string | null;
   budgetDollars: number;
   location: { id: string; name: string } | null;
   place: string | null;
@@ -3410,7 +3410,7 @@ export interface SecretSantaPeople {
 
 export interface SecretSantaInput {
   title: string;
-  exchangeOn: string;
+  exchangeOn?: string | null;
   budgetDollars: number;
   locationId?: string | null;
   place?: string | null;

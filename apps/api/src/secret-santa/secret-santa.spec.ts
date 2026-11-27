@@ -1,6 +1,8 @@
 import {
   closeOver,
   drawCircle,
+  drawProblem,
+  spliceIn,
   drawnBell,
   drawnEmail,
   setUpProblem,
@@ -96,12 +98,50 @@ describe('closeOver', () => {
   });
 });
 
+describe('spliceIn', () => {
+  const pairs = new Map([
+    ['a', 'b'],
+    ['b', 'c'],
+    ['c', 'a'],
+  ]);
+
+  it('puts them into the circle after a random person', () => {
+    expect(spliceIn(pairs, 'd', () => 1)).toEqual({ santa: 'b', joinerGives: 'c' });
+    const after = new Map(pairs);
+    after.set('b', 'd');
+    after.set('d', 'c');
+    expect(walk(after).sort()).toEqual(['a', 'b', 'c', 'd']);
+  });
+
+  it('can land after anybody', () => {
+    const santas = new Set<string>();
+    for (let run = 0; run < 200; run += 1) santas.add(spliceIn(pairs, 'd').santa);
+    expect(santas).toEqual(new Set(['a', 'b', 'c']));
+  });
+
+  it('refuses somebody already in it', () => {
+    expect(() => spliceIn(pairs, 'a')).toThrow('already');
+  });
+});
+
+describe('drawProblem', () => {
+  it('needs the day and three people', () => {
+    expect(drawProblem(null, 5)).toContain('Set the day');
+    expect(drawProblem('2026-12-18', 2)).toContain('at least 3');
+    expect(drawProblem('2026-12-18', 3)).toBeNull();
+  });
+});
+
 describe('setUpProblem', () => {
   const today = '2026-11-27';
   const fine = { title: 'Secret Santa 2026', exchangeOn: '2026-12-18', budgetDollars: 25 };
 
-  it('takes a sensible one', () => {
+  it('takes a sensible one, with or without the day', () => {
     expect(setUpProblem(fine, today)).toBeNull();
+    expect(setUpProblem({ ...fine, exchangeOn: null }, today)).toBeNull();
+    expect(
+      setUpProblem({ ...fine, exchangeOn: null, signUpUntil: '2026-12-10' }, today),
+    ).toBeNull();
     expect(setUpProblem({ ...fine, signUpUntil: '2026-12-18' }, today)).toBeNull();
   });
 
@@ -146,10 +186,14 @@ describe('the words', () => {
     expect(bell.link).toBe('/secret-santa/x1');
   });
 
-  it('names them in the email, with their gift ideas', () => {
-    const email = drawnEmail(exchange, { name: 'Casey Smith', wishes: 'Coffee' });
+  it('says the day is still to be set when it is', () => {
+    expect(drawnBell({ ...exchange, when: null }).body).toContain('still to be set');
+  });
+
+  it('names them in the email, and sends them to the page for their gift ideas', () => {
+    const email = drawnEmail(exchange, { name: 'Casey Smith' });
     expect(email.lines.join('\n')).toContain('You drew Casey Smith.');
-    expect(email.lines.join('\n')).toContain('Their gift ideas: Coffee');
+    expect(email.lines.join('\n')).toContain('look in Domi Staff for the latest');
     expect(email.lines.join('\n')).toContain('at North Bergen');
   });
 });

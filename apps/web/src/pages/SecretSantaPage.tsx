@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { Avatar } from '../components/Avatar';
 import { useConfirm } from '../components/ConfirmDialog';
@@ -10,7 +10,6 @@ import {
   Card,
   EmptyState,
   Field,
-  PageHeading,
   Spinner,
   buttonClass,
   inputClass,
@@ -43,22 +42,87 @@ const MAX_WISHES = 500;
 const errorOf = (err: unknown, fallback: string) =>
   err instanceof ApiError ? err.message : fallback;
 
-/// "🎁 $25 · 📅 Fri, Dec 18 · 📍 North Bergen, break room"
-function Details({ exchange }: { exchange: SecretSanta }) {
+/// Where each snowflake starts across the banner, how long it takes to fall
+/// and how late it sets off: fixed, so the page looks the same each time.
+const SNOW = [
+  [4, 9, 0],
+  [13, 12, 3],
+  [22, 8, 6],
+  [31, 11, 1],
+  [42, 10, 4],
+  [53, 13, 7],
+  [61, 9, 2],
+  [72, 12, 5],
+  [81, 8, 0.5],
+  [90, 11, 3.5],
+  [96, 10, 6.5],
+] as const;
+
+/**
+ * The festive top of the Secret Santa screens (27 November 2026, Dominguez:
+ * "make it more festive"): deep green into holly red, snow drifting down
+ * (hidden for anybody whose device asks for less motion), and the page's
+ * heading in white, which reads at well above 4.5:1 on both colours.
+ */
+function FestiveBanner({ title, children }: { title: string; children?: ReactNode }) {
+  return (
+    <div
+      className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-900 via-emerald-800 to-rose-800 px-5 py-6 text-white shadow-md sm:px-7"
+      data-testid="secret-santa-banner"
+    >
+      {SNOW.map(([left, seconds, delay]) => (
+        <span
+          key={left}
+          aria-hidden="true"
+          className="santa-snow text-sm"
+          style={{
+            left: `${left}%`,
+            animationDuration: `${seconds}s`,
+            animationDelay: `${delay}s`,
+          }}
+        >
+          ❄
+        </span>
+      ))}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-2 -top-3 select-none text-7xl opacity-25 sm:text-8xl"
+      >
+        🎄
+      </span>
+      <div className="relative">
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+          <span aria-hidden="true">🎅 </span>
+          {title}
+        </h1>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/// "🎁 $25 · 📅 Fri, Dec 18 · 📍 North Bergen, break room", as white chips
+/// on the banner or plain on a card.
+function Details({ exchange, onBanner = false }: { exchange: SecretSanta; onBanner?: boolean }) {
   const t = useT();
   const where = [exchange.location?.name, exchange.place].filter(Boolean).join(', ');
+  const chip = onBanner ? 'rounded-full bg-white/15 px-3 py-1 ring-1 ring-inset ring-white/25' : '';
   return (
-    <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-700">
-      <li>
+    <ul
+      className={`flex flex-wrap gap-y-2 text-sm ${onBanner ? 'gap-x-2 text-white' : 'gap-x-4 text-slate-700'}`}
+    >
+      <li className={chip}>
         <span aria-hidden="true">🎁 </span>
         {t('Budget {amount}', { amount: `$${exchange.budgetDollars}` })}
       </li>
-      <li>
+      <li className={chip}>
         <span aria-hidden="true">📅 </span>
-        {t('Exchanging gifts {day}', { day: formatCalendarDate(exchange.exchangeOn) })}
+        {exchange.exchangeOn
+          ? t('Exchanging gifts {day}', { day: formatCalendarDate(exchange.exchangeOn) })
+          : t('Day of the exchange still to be set')}
       </li>
       {where && (
-        <li>
+        <li className={chip}>
           <span aria-hidden="true">📍 </span>
           {where}
         </li>
@@ -93,12 +157,13 @@ export function SecretSantaPage() {
 
   return (
     <div className="max-w-4xl space-y-6">
-      <PageHeading
-        title={t('Secret Santa')}
-        subtitle={t(
-          'Everyone in it draws one colleague at random and secretly buys them a gift within the budget. Nobody is told who drew them, not even whoever set it up.',
-        )}
-      />
+      <FestiveBanner title={t('Domi Secret Santa')}>
+        <p className="mt-2 max-w-2xl text-sm text-emerald-50">
+          {t(
+            'Everyone in it draws one colleague at random and secretly buys them a gift within the budget. Nobody is told who drew them, not even whoever set it up.',
+          )}
+        </p>
+      </FestiveBanner>
       {error && <Alert>{error}</Alert>}
 
       {isManager &&
@@ -200,23 +265,23 @@ export function SecretSantaDetailPage() {
 
   return (
     <div className="max-w-4xl space-y-6">
-      <div>
+      <div className="space-y-3">
         <Link to="/secret-santa" className="text-sm font-medium text-brand-700">
           {t('← All Secret Santas')}
         </Link>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-semibold text-slate-900">
-            <span aria-hidden="true">🎅 </span>
-            {exchange.title}
-          </h1>
-          <StatusBadge exchange={exchange} />
-        </div>
-        <div className="mt-2">
-          <Details exchange={exchange} />
-        </div>
-        {exchange.notes && (
-          <p className="mt-2 whitespace-pre-line text-sm text-slate-700">{exchange.notes}</p>
-        )}
+        <FestiveBanner title={exchange.title}>
+          <div className="mt-2">
+            <StatusBadge exchange={exchange} />
+          </div>
+          <div className="mt-4">
+            <Details exchange={exchange} onBanner />
+          </div>
+          {exchange.notes && (
+            <p className="mt-3 max-w-2xl whitespace-pre-line text-sm text-emerald-50">
+              {exchange.notes}
+            </p>
+          )}
+        </FestiveBanner>
       </div>
       {error && <Alert>{error}</Alert>}
       {notice && <Alert tone="success">{notice}</Alert>}
@@ -324,13 +389,16 @@ function YourPart({
 
   if (me.drawn) {
     return (
-      <Card className="border-emerald-200 bg-emerald-50/50 p-5" testId="secret-santa-drew">
-        <h2 className="text-base font-semibold text-slate-900">
+      <Card
+        className="border-2 border-rose-200 bg-gradient-to-br from-rose-50 via-white to-emerald-50 p-5"
+        testId="secret-santa-drew"
+      >
+        <h2 className="text-base font-semibold text-rose-900">
           <span aria-hidden="true">🎁 </span>
           {t('Who you are buying for')}
         </h2>
         {shown ? (
-          <div className="mt-3 space-y-3">
+          <div className="santa-unwrap mt-3 space-y-3">
             <PinGate what="who you drew">
               <WhoYouDrew exchangeId={exchange.id} />
             </PinGate>
@@ -353,17 +421,22 @@ function YourPart({
             </div>
           </div>
         ) : (
-          <div className="mt-3 space-y-2">
-            <p className="text-sm text-slate-700">
-              {t('The name is kept behind your PIN, in case somebody else is using your screen.')}
-            </p>
-            <button
-              type="button"
-              className={buttonClass('primary', 'sm')}
-              onClick={() => setShown(true)}
-            >
-              {t('Show who I drew')}
-            </button>
+          <div className="mt-3 flex items-center gap-4">
+            <span aria-hidden="true" className="select-none text-5xl">
+              🎁
+            </span>
+            <div className="space-y-2">
+              <p className="text-sm text-slate-700">
+                {t('The name is kept behind your PIN, in case somebody else is using your screen.')}
+              </p>
+              <button
+                type="button"
+                className={buttonClass('primary', 'sm')}
+                onClick={() => setShown(true)}
+              >
+                {t('Show who I drew')}
+              </button>
+            </div>
           </div>
         )}
         <WishesForm
@@ -572,8 +645,11 @@ function Organizer({
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [who, setWho] = useState<InviteeSelection>(NOBODY);
-  const lists = usePickerLists(exchange.status === 'OPEN');
   const open = exchange.status === 'OPEN';
+  // People can be added before the draw, and after it until the day has
+  // passed: each is slotted into the circle (27 November 2026, Dominguez).
+  const canAdd = open || !exchange.exchangeOn || exchange.exchangeOn >= practiceDate();
+  const lists = usePickerLists(canAdd);
   const count = exchange.members.length;
 
   async function draw() {
@@ -582,8 +658,8 @@ function Organizer({
       body: (
         <>
           <p>
-            This closes {exchange.title}: nobody else can sign up or be added. Each person is told
-            on the bell and by email who they drew.
+            Staff can no longer sign themselves up, though you can still add people: each is slotted
+            into the draw. Everybody is told on the bell and by email who they drew.
           </p>
           <p className="mt-2">
             Nobody is shown who drew whom, you included. On the day, if somebody forgets, you can
@@ -600,7 +676,7 @@ function Organizer({
     try {
       onChange(
         await api.drawSecretSanta(exchange.id),
-        `Names drawn. ${count} people have been told who they drew.`,
+        `🎉 Names drawn. ${count} people have been told who they drew.`,
       );
     } catch (err) {
       onError(errorOf(err, 'Could not draw the names.'));
@@ -610,6 +686,15 @@ function Organizer({
   }
 
   async function add() {
+    if (!open) {
+      const sure = await confirm({
+        title: 'Add them now the names are drawn?',
+        body: 'Each is slotted into the draw: somebody already in it, picked at random, is now buying for them instead, and is told who by email. The newcomer is told who they drew. Nobody else changes, and you still do not see who drew whom.',
+        confirmLabel: 'Yes, add them',
+        cancelLabel: 'Not now',
+      });
+      if (!sure) return;
+    }
     setBusy(true);
     try {
       const result = await api.addSecretSantaPeople(exchange.id, who);
@@ -618,7 +703,9 @@ function Organizer({
         result.exchange,
         result.added === 0
           ? 'Everybody chosen was already in it.'
-          : `${result.added} added. Each is told on the bell.`,
+          : open
+            ? `${result.added} added. Each is told on the bell.`
+            : `${result.added} added to the draw. They have been told who they drew.`,
       );
     } catch (err) {
       onError(errorOf(err, 'Could not add them.'));
@@ -695,34 +782,38 @@ function Organizer({
                 ? `Staff can sign themselves up until ${formatCalendarDate(exchange.signUpUntil)}. The names are drawn when you press Draw the names.`
                 : 'Staff can sign themselves up until you press Draw the names.'
               : 'Only the people you add are in it. Staff cannot sign themselves up.'
-            : `Names drawn ${exchange.drawnAt ? formatCalendarDate(exchange.drawnAt.slice(0, 10)) : ''}. Nobody, you included, sees who drew whom, but for one person at a time in an emergency (below).`}
+            : `Names drawn ${exchange.drawnAt ? formatCalendarDate(exchange.drawnAt.slice(0, 10)) : ''}. Nobody, you included, sees who drew whom, but for one person at a time in an emergency (below).${canAdd ? ' You can still add people.' : ''}`}
           {exchange.createdBy && ` Set up by ${exchange.createdBy}.`}
         </p>
       </div>
 
       {open && (
-        <div className="rounded-lg bg-slate-50 p-4 ring-1 ring-slate-200">
-          <p className="text-sm font-medium text-slate-900">Ready?</p>
-          <p className="mt-1 text-sm text-slate-600">
-            {count < 3
-              ? `At least 3 people are needed, so nobody can work out who drew them. There ${count === 1 ? 'is 1' : `are ${count}`} so far.`
-              : `${count} people are in it. Drawing closes it and tells everybody who they drew.`}
+        <div className="rounded-lg bg-emerald-50 p-4 ring-1 ring-emerald-200">
+          <p className="text-sm font-medium text-emerald-950">
+            <span aria-hidden="true">🎄 </span>Ready to draw?
+          </p>
+          <p className="mt-1 text-sm text-slate-700">
+            {!exchange.exchangeOn
+              ? 'Set the day of the exchange first (Edit details), so everybody knows when to bring their gift.'
+              : count < 3
+                ? `At least 3 people are needed, so nobody can work out who drew them. There ${count === 1 ? 'is 1' : `are ${count}`} so far.`
+                : `${count} people are in it. Drawing closes sign-ups and tells everybody who they drew.`}
           </p>
           <button
             type="button"
             className={`mt-3 ${buttonClass('primary', 'sm')}`}
-            disabled={busy || count < 3}
+            disabled={busy || count < 3 || !exchange.exchangeOn}
             onClick={() => void draw()}
           >
-            🎲 Draw the names
+            🎅 Draw the names
           </button>
         </div>
       )}
 
-      {open && lists && (
+      {canAdd && lists && (
         <div>
           <label htmlFor="secret-santa-add" className="block text-sm font-medium text-slate-700">
-            Add people
+            <span aria-hidden="true">➕ </span>Add people
           </label>
           <div className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-start">
             <div className="flex-1">
@@ -746,7 +837,10 @@ function Organizer({
           </div>
           <p className="mt-1 text-xs text-slate-500">
             Everyone, or any mix of offices, job roles and people. Somebody already in it stays as
-            they are.
+            they are.{' '}
+            {open
+              ? 'Each is told on the bell.'
+              : 'The names are drawn, so each is slotted into the draw and told who they drew.'}
           </p>
         </div>
       )}
@@ -900,7 +994,9 @@ function EmergencyLookUp({
         </div>
       ) : (
         <p className="mt-2 text-sm text-slate-600">
-          Available from {formatCalendarDate(exchange.exchangeOn)}.
+          {exchange.exchangeOn
+            ? `Available from ${formatCalendarDate(exchange.exchangeOn)}.`
+            : 'Available from the day of the exchange.'}
         </p>
       )}
       {exchange.lookups.length > 0 && (
@@ -958,7 +1054,7 @@ function SecretSantaEditor({
   onCancel: () => void;
 }) {
   const year = practiceDate().slice(0, 4);
-  const [title, setTitle] = useState(exchange?.title ?? `Secret Santa ${year}`);
+  const [title, setTitle] = useState(exchange?.title ?? `Domi Secret Santa ${year}`);
   const [exchangeOn, setExchangeOn] = useState(exchange?.exchangeOn ?? '');
   const [budget, setBudget] = useState(String(exchange?.budgetDollars ?? 25));
   const [locationId, setLocationId] = useState(exchange?.location?.id ?? '');
@@ -981,7 +1077,7 @@ function SecretSantaEditor({
     }
     const body: SecretSantaInput = {
       title: title.trim(),
-      exchangeOn,
+      exchangeOn: exchangeOn || null,
       budgetDollars: dollars,
       locationId: locationId || null,
       place: place.trim() || null,
@@ -1025,12 +1121,19 @@ function SecretSantaEditor({
               />
             )}
           </Field>
-          <Field label="Day of the exchange" hint="When the gifts are given.">
+          <Field
+            label="Day of the exchange"
+            hint={
+              drawn
+                ? 'When the gifts are given.'
+                : 'Optional for now. It has to be set before you draw the names.'
+            }
+          >
             {(props) => (
               <input
                 {...props}
                 type="date"
-                required
+                required={drawn}
                 value={exchangeOn}
                 onChange={(event) => setExchangeOn(event.target.value)}
                 className={inputClass}

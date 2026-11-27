@@ -2627,15 +2627,18 @@ Beyond the phases, the parts worth knowing about before picking up work:
   'closed' staff are told anonymously who they drew (can be via email)";
   version 1.53.0): **Manage → Surveys & reading → Secret Santa**
   (`/secret-santa`, managers and admins set up; everybody opens their own).
-  A name, the day of the exchange, a **budget** in whole dollars, an optional
-  office and "where exactly", a note, who is in it (Everyone or any mix of
+  A name, a **budget** in whole dollars, the **day of the exchange** (optional
+  until the draw, version 1.54.0: "the date should be left optional initially
+  but has to be put to close the drawing"), an optional office and "where
+  exactly", a note, who is in it (Everyone or any mix of
   offices, job roles and people) and **Let staff sign themselves up** (on to
   start, optional last day); people added are told on the bell, and with
   sign-ups on so is everybody else, and it is on Home. Members write optional
   **gift ideas** for whoever draws them. **Draw the names** (3 people at
   least) closes it: one random circle, nobody draws themselves, each told on
   the **bell without the name** (it reaches lock screens) and **by email with
-  the name** and their gift ideas; in the app **Show who I drew** asks for
+  the name**, once, never their gift ideas (they change through the season, so
+  only the page has them, always current); in the app **Show who I drew** asks for
   **their PIN** first (Dominguez: "it should require a pin in the app for all
   users"; the pay lock, `PayLockGuard` on `GET /secret-santa/:id/mine`),
   with **Email it to me again**. **Nobody sees who drew whom**, organizers
@@ -2645,8 +2648,11 @@ Beyond the phases, the parts worth knowing about before picking up work:
   from the day of the exchange, looks up **one person** at a time behind
   their own PIN, never themselves; each look-up is kept (`SecretSantaLookup`,
   never the answer), listed for every organizer, and the person is told on
-  the bell. **Take out** after the draw gives the leaver's Santa their
-  person and tells only them;
+  the bell. **Add people** works any time (1.54.0: "make sure there is a way
+  to add people even after setting it up"): after the draw a newcomer is
+  slotted into the circle after a random person, who is told by email, and
+  nobody else changes. **Take out** after the draw gives the leaver's Santa
+  their person and tells only them;
   refused below 3. Changing the day, budget or place tells everybody in it;
   **Cancel** deletes it and tells them. Signing up closing on its last day
   does not draw by itself: an organizer presses Draw. Never a shared account.
@@ -2655,7 +2661,15 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `SecretSanta`, `SecretSantaMember`, `SecretSantaLookup` (pinned by the
   schema guard), notification kind `SECRET_SANTA`, migrations
   `20261127010000_secret_santa_kind`, `20261127020000_secret_santa`,
-  `20261127030000_secret_santa_lookups`;
+  `20261127030000_secret_santa_lookups`,
+  `20261127040000_secret_santa_date_optional`. **Festive** since 1.54.0 ("make
+  it more festive"): green-to-red banner with snow (still under reduced
+  motion), a present that unwraps, a festive Home card, and the email in
+  HTML: the Domi mark, a festive header, the name on a gift tag, a pointer to
+  the page for their gift ideas, "Happy Holidays from Domi!"
+  (`secret-santa-email.ts`). Branded **"Domi"**, not Domi Healthcare
+  (Dominguez): "Domi Secret Santa" on the screens, "Domi Secret Santa 2026"
+  as the starting name, "Happy holidays from Domi" in the email;
   `src/secret-santa/` (`secret-santa.ts` rules, pure),
   `pages/SecretSantaPage.tsx`, `components/SecretSantaCard.tsx`; staff parts
   in Spanish ("Amigo secreto", **needs a native speaker's read**); Help in

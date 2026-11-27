@@ -1,3 +1,4 @@
+import { santaEmailHtml } from './secret-santa-email';
 import { randomInt } from 'node:crypto';
 
 /**
@@ -63,9 +64,28 @@ export function closeOver(
   return { ok: true, santa, newRecipient: theirs };
 }
 
+/**
+ * Somebody added after the draw (27 November 2026, Dominguez: "a way to add
+ * people even after setting it up"): a random person in the circle now gives
+ * to them, and they give to whoever that person had. Still one circle; only
+ * the one Santa's person changes, and only they are told.
+ */
+export function spliceIn(
+  pairs: ReadonlyMap<string, string>,
+  joining: string,
+  pick: Pick = cryptoPick,
+): { santa: string; joinerGives: string } {
+  if (pairs.has(joining)) throw new Error('They are in the draw already.');
+  const givers = [...pairs.keys()];
+  if (givers.length === 0) throw new Error('Nobody has been drawn yet.');
+  const santa = givers[pick(givers.length)];
+  return { santa, joinerGives: pairs.get(santa)! };
+}
+
 export interface SecretSantaFields {
   title: string;
-  exchangeOn: string;
+  /// Optional while people sign up; needed to draw.
+  exchangeOn?: string | null;
   budgetDollars: number;
   signUpUntil?: string | null;
 }
@@ -74,17 +94,32 @@ export interface SecretSantaFields {
 /// Jersey's, as YYYY-MM-DD.
 export function setUpProblem(fields: SecretSantaFields, today: string): string | null {
   if (!fields.title.trim()) return 'Give it a name.';
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(fields.exchangeOn)) return 'Choose the day of the exchange.';
-  if (fields.exchangeOn < today) return 'The exchange has to be today or later.';
+  if (fields.exchangeOn) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fields.exchangeOn)) return 'That day is not a date.';
+    if (fields.exchangeOn < today) return 'The exchange has to be today or later.';
+  }
   if (!Number.isInteger(fields.budgetDollars) || fields.budgetDollars < 1) {
     return 'Set a budget of at least $1.';
   }
   if (fields.budgetDollars > MAX_BUDGET) return `Keep the budget to $${MAX_BUDGET} or less.`;
   if (fields.signUpUntil) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fields.signUpUntil)) return 'That sign-up day is not a date.';
-    if (fields.signUpUntil > fields.exchangeOn) {
+    if (fields.exchangeOn && fields.signUpUntil > fields.exchangeOn) {
       return 'Sign-ups have to close by the day of the exchange.';
     }
+  }
+  return null;
+}
+
+/// Why the names cannot be drawn yet, or null.
+export function drawProblem(exchangeOn: string | null, people: number): string | null {
+  if (!exchangeOn) {
+    return 'Set the day of the exchange first (Edit details), so everybody knows when to bring their gift.';
+  }
+  if (people < MIN_MEMBERS) {
+    return `A Secret Santa needs at least ${MIN_MEMBERS} people, so nobody can work out who drew them. ${
+      people === 1 ? 'There is 1' : `There are ${people}`
+    } in it.`;
   }
   return null;
 }
@@ -105,8 +140,8 @@ export interface ExchangeWords {
   id: string;
   title: string;
   budgetDollars: number;
-  /// "Fri, Dec 18", already in words.
-  when: string;
+  /// "Fri, Dec 18", already in words; null while the day is still to be set.
+  when: string | null;
   /// "North Bergen, break room", if anywhere.
   where: string | null;
 }
@@ -114,9 +149,9 @@ export interface ExchangeWords {
 const budget = (dollars: number) => `$${dollars}`;
 
 const details = (exchange: ExchangeWords) =>
-  `Budget ${budget(exchange.budgetDollars)}, exchanging gifts ${exchange.when}${
-    exchange.where ? ` at ${exchange.where}` : ''
-  }.`;
+  `Budget ${budget(exchange.budgetDollars)}, ${
+    exchange.when ? `exchanging gifts ${exchange.when}` : 'the day of the exchange still to be set'
+  }${exchange.where ? ` at ${exchange.where}` : ''}.`;
 
 /// On the bell (and so on a phone's lock screen): never the name drawn.
 export function drawnBell(exchange: ExchangeWords) {
@@ -127,35 +162,34 @@ export function drawnBell(exchange: ExchangeWords) {
   };
 }
 
-/// The email: the name drawn, and their gift ideas if they wrote any.
-export function drawnEmail(
-  exchange: ExchangeWords,
-  recipient: { name: string; wishes: string | null },
-  changed = false,
-) {
+/// The email: the name drawn, once. Their gift ideas are not in it: they
+/// change through the season, so the page always has the latest (Dominguez,
+/// 27 November 2026).
+export function drawnEmail(exchange: ExchangeWords, recipient: { name: string }, changed = false) {
   return {
     subject: changed
       ? `${exchange.title}: you have a new person`
       : `${exchange.title}: who you drew`,
     lines: [
       changed
-        ? `Somebody has left ${exchange.title}, so you are now buying for ${recipient.name}.`
+        ? `The people in ${exchange.title} have changed, so you are now buying for ${recipient.name}.`
         : `You drew ${recipient.name}.`,
       '',
-      recipient.wishes
-        ? `Their gift ideas: ${recipient.wishes}`
-        : 'They have not written any gift ideas yet. Domi Staff will show them if they do.',
+      'Their gift ideas can change through the season, so look in Domi Staff for the latest: Secret Santa, Show who I drew.',
       '',
       details(exchange),
       'Keep it a secret: nobody else is shown who you drew. If you forget on the day, an organizer can look it up for you, and you are told they did.',
     ],
+    /// The same, laid out festively for mail clients that show HTML.
+    html: (to: { firstName: string; appUrl: string; link: string }) =>
+      santaEmailHtml({ exchange, recipient, changed, ...to }),
   };
 }
 
 export function changedBell(exchange: ExchangeWords) {
   return {
     title: `${exchange.title}: you have a new person`,
-    body: 'Somebody has left the Secret Santa, so who you are buying for has changed. Open it to see who.',
+    body: 'The people in the Secret Santa have changed, so who you are buying for has changed. Open it to see who.',
     link: `/secret-santa/${exchange.id}`,
   };
 }
@@ -189,6 +223,15 @@ export function lookedUpBell(exchange: ExchangeWords, organizer: string) {
   return {
     title: `${exchange.title}: your draw was looked up`,
     body: `${organizer} looked up who you are buying for, to remind you. Nobody else was told.`,
+    link: `/secret-santa/${exchange.id}`,
+  };
+}
+
+/// To somebody added after the draw: their name is ready too.
+export function lateJoinBell(exchange: ExchangeWords) {
+  return {
+    title: `You are in ${exchange.title}`,
+    body: `You were added after the names were drawn, and you have somebody to buy for. Open it to see who. ${details(exchange)} Keep it a secret!`,
     link: `/secret-santa/${exchange.id}`,
   };
 }

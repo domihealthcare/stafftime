@@ -113,7 +113,16 @@ await step('approving asks what happens to both shifts, and leaving them open do
   await dialog.waitFor({ timeout: 10000 });
   if ((await dialog.getByRole('listitem').count()) !== 2) throw new Error('both shifts should be listed');
   await dialog.screenshot({ path: `${OUT}/approve-time-off.png` });
+  // The dialog closes as soon as the choice is made and the approval is sent
+  // after, so the database is read only once that answer is back: reading it
+  // when the dialog closed failed in CI whenever the save had not landed yet.
+  const reviewed = mgr.waitForResponse(
+    (r) => /\/api\/pto\/[^/]+\/review$/.test(r.url()) && r.request().method() === 'PATCH',
+    { timeout: 15000 },
+  );
   await dialog.getByRole('button', { name: 'Approve, and leave them as open shifts' }).click();
+  const answer = await reviewed;
+  if (answer.status() !== 200) throw new Error(`the approval answered ${answer.status()}`);
   await dialog.waitFor({ state: 'detached', timeout: 10000 });
   const rows = sql(`select coalesce("employeeId"::text, 'open') || ':' || status from shifts where id in ('${published}', '${draft}') order by "startsAt"`);
   if (rows !== 'open:PUBLISHED\nopen:DRAFT') throw new Error(`shifts now: ${rows.replace('\n', ', ')}`);
