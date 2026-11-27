@@ -20,6 +20,7 @@ import {
   NewSecretSantaInput,
   SecretSantaInput,
   SecretSantaPeopleInput,
+  SecretSantaReplyInput,
   SecretSantaWishesInput,
 } from './dto/secret-santa.dto';
 import { SecretSantaService } from './secret-santa.service';
@@ -55,6 +56,23 @@ export class SecretSantaController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.santas.lookUp(id, employeeId, user);
+  }
+
+  /// What this person is asked about when they sign in.
+  @Get('invitations')
+  invitations(@CurrentUser() user: AuthUser) {
+    return this.santas.invitations(user);
+  }
+
+  /// Their answer: in or not, and why, if they say.
+  @Post(':id/reply')
+  @HttpCode(HttpStatus.OK)
+  reply(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SecretSantaReplyInput,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.santas.reply(id, dto.answer, dto.reason ?? null, user);
   }
 
   @Get(':id')

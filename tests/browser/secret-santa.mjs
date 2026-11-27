@@ -86,7 +86,8 @@ people.ma = (await call(manager, '/employees')).body.find(
 );
 const keyOf = (id) => Object.keys(people).find((key) => people[key].id === id);
 
-const TITLE = 'Domi Secret Santa';
+// The name a new one starts with: "Domi Secret Santa" and the year.
+const TITLE = `Domi Secret Santa ${new Date().getUTCFullYear()}`;
 let id = null;
 
 await step('staff cannot set one up or draw names', async () => {
@@ -139,16 +140,72 @@ await step('staff are told sign-ups are open, on the bell', async () => {
   if (!/Sign up/.test(told.body)) throw new Error(told.body);
 });
 
-await step('staff sign up from Home and write gift ideas', async () => {
+await step('staff are asked when they sign in, and say yes with a reason', async () => {
   await staff.reload({ waitUntil: 'networkidle' });
-  const card = staff.getByTestId('home-secret-santa');
-  await card.getByRole('link', { name: 'Sign up →' }).click();
-  await staff.getByRole('button', { name: 'Sign me up' }).click();
-  await staff.getByText('You are in! Add some gift ideas').waitFor({ timeout: 10000 });
+  const invite = staff.getByTestId('secret-santa-invite');
+  await invite.waitFor({ timeout: 15000 });
+  await invite.getByText(TITLE).waitFor();
+  await invite.getByText('Day of the exchange still to be set').waitFor();
+  await staff.screenshot({ path: `${OUT}/secret-santa-invite.png`, fullPage: false });
+  await invite.getByLabel('Why or why not? (optional)').fill('Love a Secret Santa!');
+  await invite.getByRole('button', { name: /Count me in/ }).click();
+  await invite.getByText('You are in!').waitFor({ timeout: 10000 });
+  await invite.getByRole('link', { name: 'Add my gift ideas' }).click();
+  await staff.waitForURL(new RegExp(`/secret-santa/${id}$`));
   await staff.getByLabel('Your gift ideas, for whoever draws you').fill('Coffee, no candles');
   await staff.getByRole('button', { name: 'Save my gift ideas' }).click();
   await staff.getByText('Your gift ideas are saved.').waitFor({ timeout: 10000 });
   await staff.getByTestId('secret-santa-members').getByText('Frankie').waitFor();
+  // Answered, so not asked again; Home now offers the gift ideas instead.
+  await staff.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+  await staff
+    .getByTestId('home-secret-santa')
+    .getByRole('link', { name: 'You are in. Add gift ideas →' })
+    .waitFor();
+  if (await staff.getByTestId('secret-santa-invite').count()) throw new Error('asked again');
+});
+
+await step('somebody can say no, with why, and is not asked again', async () => {
+  await admin.reload({ waitUntil: 'networkidle' });
+  const invite = admin.getByTestId('secret-santa-invite');
+  await invite.waitFor({ timeout: 15000 });
+  await invite.getByLabel('Why or why not? (optional)').fill('Away that week');
+  await invite.getByRole('button', { name: 'No thanks' }).click();
+  await invite.getByText('Thanks for letting us know').waitFor({ timeout: 10000 });
+  await invite.getByRole('button', { name: 'Close', exact: true }).first().click();
+  await admin.reload({ waitUntil: 'networkidle' });
+  await admin.waitForTimeout(1500);
+  if (await admin.getByTestId('secret-santa-invite').count()) throw new Error('asked again');
+});
+
+await step('Decide later puts it off until tomorrow', async () => {
+  await manager.reload({ waitUntil: 'networkidle' });
+  const invite = manager.getByTestId('secret-santa-invite');
+  await invite.waitFor({ timeout: 15000 });
+  await invite.getByRole('button', { name: 'Decide later' }).click();
+  await invite.waitFor({ state: 'detached', timeout: 10000 });
+  await manager.reload({ waitUntil: 'networkidle' });
+  await manager.waitForTimeout(1500);
+  if (await manager.getByTestId('secret-santa-invite').count()) throw new Error('asked again');
+  const still = (await call(manager, '/secret-santa/invitations')).body;
+  if (!still.some((invitation) => invitation.id === id))
+    throw new Error('putting it off should not answer it');
+});
+
+await step('the organizers see who answered and why', async () => {
+  const answers = (await call(manager, `/secret-santa/${id}`)).body.answers;
+  const ada = answers.list.find((row) => row.name.startsWith(people.admin.firstName));
+  if (ada?.answer !== 'DECLINE' || ada.reason !== 'Away that week')
+    throw new Error(JSON.stringify(ada));
+  const frankie = answers.list.find((row) => row.name.startsWith(people.staff.firstName));
+  if (frankie?.answer !== 'JOIN' || frankie.reason !== 'Love a Secret Santa!')
+    throw new Error(JSON.stringify(frankie));
+  if (answers.waiting < 2) throw new Error(`waiting ${answers.waiting}`); // Morgan and Max
+  await manager.goto(`${BASE}/secret-santa/${id}`, { waitUntil: 'networkidle' });
+  const list = manager.getByTestId('secret-santa-answers');
+  await list.getByText('“Away that week”').waitFor();
+  const forStaff = (await call(staff, `/secret-santa/${id}`)).body;
+  if (forStaff.answers !== null) throw new Error('staff were sent the answers');
 });
 
 await step('staff can leave and join again before the draw', async () => {

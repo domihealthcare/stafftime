@@ -5,6 +5,7 @@ import { BadgesProvider, useBadgePoll } from '../lib/badges';
 import { AccountMenu } from './AccountMenu';
 import { ViewAsBanner } from './ViewAsBanner';
 import { DowntimeBanner } from './DowntimeBanner';
+import { SecretSantaInvite } from './SecretSantaInvite';
 import { SloganStrip, Wordmark } from './Brand';
 import { NavIcon } from './NavIcons';
 import { NavMenu, type NavMenuItem } from './NavMenu';
@@ -237,6 +238,8 @@ export function Layout() {
             <Outlet />
           </Suspense>
         </main>
+        {/* Asks about a Secret Santa on signing in, until answered (November 2026). */}
+        <SecretSantaInvite />
         {isPhone && <PhoneTabBar pendingPto={pendingPto} manageItems={manageItems} />}
       </div>
     </BadgesProvider>

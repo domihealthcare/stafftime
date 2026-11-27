@@ -55,7 +55,10 @@ export const MANAGE_SECTIONS: ManageSection[] = [
     ],
   },
   {
-    label: 'Surveys & reading',
+    // "Surveys & reading" until 27 November 2026, when Secret Santa joined it
+    // (Dominguez: "Surveys and reading isn't quite accurate to the context of
+    // that section").
+    label: 'Engagement',
     tabs: [
       { to: '/surveys', label: 'Surveys', need: 'manager' },
       { to: '/required', label: 'Required reading', need: 'manager' },

@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
+  IsIn,
   IsArray,
   IsBoolean,
   IsInt,
@@ -14,7 +15,7 @@ import {
   MinLength,
   ValidateNested,
 } from 'class-validator';
-import { MAX_BUDGET, MAX_WISHES } from '../secret-santa';
+import { MAX_BUDGET, MAX_REASON, MAX_WISHES } from '../secret-santa';
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -97,4 +98,15 @@ export class SecretSantaWishesInput {
   @IsString()
   @MaxLength(MAX_WISHES)
   wishes!: string;
+}
+
+/// An answer to the invitation shown on signing in, and why, if they say.
+export class SecretSantaReplyInput {
+  @IsIn(['JOIN', 'DECLINE'])
+  answer!: 'JOIN' | 'DECLINE';
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(MAX_REASON)
+  reason?: string | null;
 }

@@ -6620,6 +6620,24 @@ buying for, to remind you"). An organizer looking people up one by one to
 find who drew them would leave a line for each, and each person would be
 told. Before the day the person has the app and the email.
 
+**Asked on signing in** (27 November 2026, Dominguez: "all potential staff
+should be prompted when they sign into portal to either accept or deny
+participation in the secret santa - and given an option to say why or why
+not"). `SecretSantaInvite`, mounted in `Layout`, asks for
+`GET /secret-santa/invitations` once per page load (a background request, so
+it never keeps a session awake) and shows a pop-up for each Secret Santa
+`shouldAsk` names: before the draw, not answered yet, and either added by an
+organizer (who may say no) or open to sign up to. **Count me in** /
+**No thanks**, an optional reason (300 characters), and **Decide later**,
+which hides it on that browser until tomorrow (`localStorage`, wrapped).
+`POST /secret-santa/:id/reply` keeps one `SecretSantaReply` per person
+(answer, reason, when; pinned by the schema guard): yes signs them up, no
+takes them out. Sign me up and Take me out write the same reply without a
+reason, so nobody is asked about one they already decided. Organizers see
+**Answers to the invitation** (who, in or not, why) and how many have not
+answered; staff are never sent the answers. Not while viewing as somebody,
+never a shared account.
+
 **Somebody added afterwards** (27 November 2026, Dominguez: "make sure
 there is a way to add people even after setting it up"). **Add people** on
 the organizer's card works before the draw and after it, until the day has
@@ -6661,5 +6679,6 @@ sign-ups only: the names are still drawn by an organizer pressing Draw.
 `lib/i18n/es/secret-santa.ts` (staff parts; the organizer's tools are English),
 migrations `20261127010000_secret_santa_kind`, `20261127020000_secret_santa`,
 `20261127030000_secret_santa_lookups`, `20261127040000_secret_santa_date_optional`,
+`20261127050000_secret_santa_replies`, `components/SecretSantaInvite.tsx`,
 schema guard pins the three tables,
 `pay-routes.spec.ts` pins the PIN on `mine` and `lookUp`; `tests/browser/secret-santa.mjs`.

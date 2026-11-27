@@ -873,6 +873,36 @@ function Organizer({
         </div>
       )}
 
+      {exchange.answers && (exchange.answers.list.length > 0 || exchange.answers.waiting > 0) && (
+        <div data-testid="secret-santa-answers">
+          <p className="text-sm font-medium text-slate-700">Answers to the invitation</p>
+          <p className="mt-1 text-xs text-slate-600">
+            Everybody who could take part is asked when they sign in, and can say why or why not.
+            {exchange.answers.waiting > 0 &&
+              ` ${exchange.answers.waiting} ${exchange.answers.waiting === 1 ? 'person has' : 'people have'} not answered yet.`}
+          </p>
+          {exchange.answers.list.length > 0 && (
+            <ul className="mt-2 divide-y divide-slate-100 rounded-lg ring-1 ring-slate-200">
+              {exchange.answers.list.map((row) => (
+                <li key={row.id} className="px-3 py-2 text-sm">
+                  <span className="font-medium text-slate-900">{row.name}</span>{' '}
+                  {row.answer === 'JOIN' ? (
+                    <Badge tone="success">In</Badge>
+                  ) : (
+                    <Badge>No thanks</Badge>
+                  )}
+                  {row.reason && (
+                    <span className="mt-0.5 block whitespace-pre-line text-slate-700">
+                      “{row.reason}”
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       {!open && (
         <EmergencyLookUp
           exchange={exchange}

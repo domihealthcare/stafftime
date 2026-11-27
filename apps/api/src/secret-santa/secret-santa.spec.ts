@@ -2,6 +2,7 @@ import {
   closeOver,
   drawCircle,
   drawProblem,
+  shouldAsk,
   spliceIn,
   drawnBell,
   drawnEmail,
@@ -152,6 +153,29 @@ describe('setUpProblem', () => {
     expect(setUpProblem({ ...fine, budgetDollars: 2.5 }, today)).toContain('at least $1');
     expect(setUpProblem({ ...fine, budgetDollars: 5000 }, today)).toContain('$1000 or less');
     expect(setUpProblem({ ...fine, signUpUntil: '2026-12-19' }, today)).toContain('by the day');
+  });
+});
+
+describe('shouldAsk', () => {
+  const open = { status: 'OPEN' as const, selfSignUp: true, signUpUntil: '2026-12-10' };
+  const today = '2026-12-01';
+  const nobody = { member: null, answered: false };
+
+  it('asks everybody not in it while staff can sign up', () => {
+    expect(shouldAsk(open, nobody, today)).toBe(true);
+    expect(shouldAsk(open, nobody, '2026-12-11')).toBe(false);
+    expect(shouldAsk({ ...open, selfSignUp: false }, nobody, today)).toBe(false);
+  });
+
+  it('asks somebody an organizer added, who may say no', () => {
+    const added = { member: { signedUpSelf: false }, answered: false };
+    expect(shouldAsk({ ...open, selfSignUp: false }, added, today)).toBe(true);
+  });
+
+  it('never asks twice, after signing up, or once drawn', () => {
+    expect(shouldAsk(open, { ...nobody, answered: true }, today)).toBe(false);
+    expect(shouldAsk(open, { member: { signedUpSelf: true }, answered: false }, today)).toBe(false);
+    expect(shouldAsk({ ...open, status: 'DRAWN' }, nobody, today)).toBe(false);
   });
 });
 
