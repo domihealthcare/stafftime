@@ -858,10 +858,12 @@ const STAFF: Section[] = [
         answer: (
           <>
             <p>
-              When a Secret Santa is on, it is on Home. If staff may sign themselves up, press{' '}
-              <strong>Sign up</strong> on the card, then <strong>Sign me up</strong>; otherwise a
-              manager adds you and you are told on the bell. While the names are not drawn yet you
-              can take yourself out again with <strong>Take me out</strong>.
+              When a Secret Santa is set up, you are asked when you sign in whether you would like
+              to take part: <strong>Count me in</strong>, or <strong>No thanks</strong>, which asks
+              you to confirm you will not take part and lets you say why not if you like (whoever
+              organizes it reads it). <strong>Decide later</strong> asks again tomorrow. You can
+              also sign up from the card on Home while sign-ups are open, and take yourself out
+              again with <strong>Take me out</strong> until the names are drawn.
             </p>
             <p>
               Write some <strong>gift ideas</strong> for whoever draws you (things you like, or
@@ -1815,8 +1817,7 @@ const MANAGERS: Section[] = [
                 Reps.
               </li>
               <li>
-                <strong>Surveys &amp; reading</strong> - Surveys, Required reading, Quizzes and
-                Secret Santa.
+                <strong>Engagement</strong> - Surveys, Required reading, Quizzes and Secret Santa.
               </li>
               <li>
                 <strong>Finances</strong> - Pay &amp; raises (for the people chosen to see the
@@ -3052,7 +3053,7 @@ const MANAGERS: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Manage → Surveys & reading → Required reading</Screen> →{' '}
+              <Screen>Manage → Engagement → Required reading</Screen> →{' '}
               <strong>+ Ask people to read or do something</strong>. Pick{' '}
               <strong>something to read</strong> (they press “I’ve read it”) or{' '}
               <strong>something to do</strong> (“Done”), give it a title, and point it at a News
@@ -3078,7 +3079,7 @@ const MANAGERS: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Manage → Surveys & reading → Quizzes</Screen>. The{' '}
+              <Screen>Manage → Engagement → Quizzes</Screen>. The{' '}
               <strong>Downtime procedures</strong> quiz is there ready: questions for everyone, and
               some only for the front desk, medical assistants, providers, or managers and admins.
               Press <strong>Try it</strong> to see it as staff will, and <strong>Edit</strong> to
@@ -3102,15 +3103,19 @@ const MANAGERS: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Manage → Surveys & reading → Secret Santa</Screen>, then{' '}
+              <Screen>Manage → Engagement → Secret Santa</Screen>, then{' '}
               <strong>+ Set up a Secret Santa</strong>: a name and the budget in dollars, and
               optionally the day of the exchange, an office, where exactly and a note. The day can
               wait while people sign up, but it has to be set (<strong>Edit details</strong>) before
               you can draw. Choose who is in it from the start (Everyone, or any mix of offices, job
               roles and people), and tick <strong>Let staff sign themselves up</strong> to let
               anybody join from Home, with a last day to sign up if you want one. Everybody you add
-              is told on the bell, and with sign-ups on so is everybody else. Add more people at any
-              time under <strong>Add people</strong> on its page, or take them out.
+              is told on the bell, and with sign-ups on so is everybody else. Each of them is also
+              asked when they next sign in, <strong>Count me in</strong> or{' '}
+              <strong>No thanks</strong> (confirmed, with an optional why not);{' '}
+              <strong>Answers to the invitation</strong> on its page lists who said what and how
+              many have not answered yet (somebody you added who says no is taken out). Add more
+              people at any time under <strong>Add people</strong> on its page, or take them out.
             </p>
             <p>
               When everybody is in and the day is set, press <strong>Draw the names</strong> (at
@@ -3267,11 +3272,10 @@ const MANAGERS: Section[] = [
         question: 'Running a survey',
         answer: (
           <p>
-            On <Screen>Manage → Surveys & reading → Surveys</Screen>, write the questions (1–5
-            rating, pick one, or a written answer) and choose who it is for: everyone, a job role or
-            a location. You see how many have answered, never who. Results appear once you close it,
-            and only if at least three people answered - ask a small group and there may be nothing
-            to show.
+            On <Screen>Manage → Engagement → Surveys</Screen>, write the questions (1–5 rating, pick
+            one, or a written answer) and choose who it is for: everyone, a job role or a location.
+            You see how many have answered, never who. Results appear once you close it, and only if
+            at least three people answered - ask a small group and there may be nothing to show.
           </p>
         ),
       },
@@ -3280,13 +3284,13 @@ const MANAGERS: Section[] = [
         answer: (
           <>
             <p>
-              On <Screen>Manage → Surveys & reading → Surveys</Screen>, under{' '}
-              <strong>360 feedback</strong>, press <strong>Start a 360</strong>. It starts with five
-              1–5 ratings (teamwork, communication, reliability, helpfulness, professionalism) and
-              two written answers, each asked about a colleague and, in the first person, about
-              yourself - change, add or remove any before starting. Everybody here then is asked
-              about everybody else, and told under the bell. One can be open at a time; give it a
-              closing day, or press <strong>Close</strong>.
+              On <Screen>Manage → Engagement → Surveys</Screen>, under <strong>360 feedback</strong>
+              , press <strong>Start a 360</strong>. It starts with five 1–5 ratings (teamwork,
+              communication, reliability, helpfulness, professionalism) and two written answers,
+              each asked about a colleague and, in the first person, about yourself - change, add or
+              remove any before starting. Everybody here then is asked about everybody else, and
+              told under the bell. One can be open at a time; give it a closing day, or press{' '}
+              <strong>Close</strong>.
             </p>
             <p>
               Once closed, <strong>Reports</strong> lists everybody but you, with how many
@@ -3320,12 +3324,12 @@ const MANAGERS: Section[] = [
         question: 'The suggestion box',
         answer: (
           <p>
-            Notes from the suggestion box are under{' '}
-            <Screen>Manage → Surveys & reading → Surveys</Screen>, at the bottom, with what sort of
-            note each is (an idea, something not working, a shout-out or a question) and the day it
-            arrived - never who sent it or when in the day. While any are waiting, Home says how
-            many, and the nightly email says so too, without the words. Press{' '}
-            <strong>Mark as dealt with</strong> once you have, and it stops being chased.
+            Notes from the suggestion box are under <Screen>Manage → Engagement → Surveys</Screen>,
+            at the bottom, with what sort of note each is (an idea, something not working, a
+            shout-out or a question) and the day it arrived - never who sent it or when in the day.
+            While any are waiting, Home says how many, and the nightly email says so too, without
+            the words. Press <strong>Mark as dealt with</strong> once you have, and it stops being
+            chased.
           </p>
         ),
       },

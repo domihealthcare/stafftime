@@ -10,6 +10,7 @@ import {
   NotificationKind,
   Prisma,
   Role,
+  SecretSantaAnswer,
   SecretSantaStatus,
 } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
@@ -32,6 +33,7 @@ import {
   detailsChangedBell,
   drawProblem,
   lateJoinBell,
+  shouldAsk,
   spliceIn,
   lookedUpBell,
   drawCircle,
@@ -437,13 +439,118 @@ export class SecretSantaService {
           : 'Sign-ups for this Secret Santa are closed. Ask whoever set it up to add you.',
       );
     }
-    await this.prisma.secretSantaMember.upsert({
-      where: { exchangeId_employeeId: { exchangeId: id, employeeId: user.id } },
-      create: { exchangeId: id, employeeId: user.id, signedUpSelf: true },
-      update: {},
-    });
+    await this.prisma.$transaction([
+      this.prisma.secretSantaMember.upsert({
+        where: { exchangeId_employeeId: { exchangeId: id, employeeId: user.id } },
+        create: { exchangeId: id, employeeId: user.id, signedUpSelf: true },
+        update: {},
+      }),
+      this.answer(id, user.id, SecretSantaAnswer.JOIN, null),
+    ]);
     this.logger.log(`Secret Santa ${id}: ${user.id} signed up`);
     return this.shape(await this.require(id), user);
+  }
+
+  /// The Secret Santas this person is asked about when they sign in: before
+  /// the draw, not answered yet, and either added by an organizer or open to
+  /// sign up to. Never a shared account.
+  async invitations(user: AuthUser) {
+    const shared = await this.prisma.employee.count({
+      where: { id: user.id, isSharedAccount: true },
+    });
+    if (shared > 0) return [];
+    const exchanges = await this.prisma.secretSanta.findMany({
+      where: { status: SecretSantaStatus.OPEN },
+      select: {
+        ...EXCHANGE,
+        replies: { where: { employeeId: user.id }, select: { answer: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    const day = today();
+    return exchanges
+      .filter((exchange) => {
+        const member = exchange.members.find((row) => row.employeeId === user.id) ?? null;
+        return shouldAsk(
+          this.state(exchange),
+          { member, answered: exchange.replies.length > 0 },
+          day,
+        );
+      })
+      .map((exchange) => {
+        const state = this.state(exchange);
+        return {
+          id: exchange.id,
+          title: exchange.title,
+          exchangeOn: state.exchangeOn,
+          budgetDollars: exchange.budgetDollars,
+          location: exchange.location,
+          place: exchange.place,
+          notes: exchange.notes,
+          signUpUntil: state.signUpUntil,
+          added: exchange.members.some((row) => row.employeeId === user.id),
+          people: exchange.members.length,
+        };
+      });
+  }
+
+  /// Their answer to the invitation: in (signing them up, or keeping them in
+  /// when an organizer added them) or not (taking them out), with why if
+  /// they say. Only before the draw.
+  async reply(id: string, answer: 'JOIN' | 'DECLINE', reason: string | null, user: AuthUser) {
+    await assertAPerson(
+      this.prisma,
+      user.id,
+      'A shared account does not take part in Secret Santa. Sign in as yourself.',
+    );
+    const exchange = await this.require(id);
+    if (exchange.status !== SecretSantaStatus.OPEN) {
+      throw new ConflictException(
+        'The names are already drawn. Ask whoever set it up if anything needs to change.',
+      );
+    }
+    const member = exchange.members.find((row) => row.employeeId === user.id);
+    // Only a "no" says why (Dominguez: "the why not only after they click no
+    // thanks").
+    const why = answer === 'DECLINE' ? reason?.trim() || null : null;
+    if (answer === 'JOIN') {
+      if (!member && !signUpOpen(this.state(exchange), today())) {
+        throw new ConflictException(
+          'Sign-ups for this Secret Santa are closed. Ask whoever set it up to add you.',
+        );
+      }
+      await this.prisma.$transaction([
+        this.prisma.secretSantaMember.upsert({
+          where: { exchangeId_employeeId: { exchangeId: id, employeeId: user.id } },
+          create: { exchangeId: id, employeeId: user.id, signedUpSelf: true },
+          update: {},
+        }),
+        this.answer(id, user.id, SecretSantaAnswer.JOIN, why),
+      ]);
+    } else {
+      await this.prisma.$transaction([
+        this.prisma.secretSantaMember.deleteMany({
+          where: { exchangeId: id, employeeId: user.id },
+        }),
+        this.answer(id, user.id, SecretSantaAnswer.DECLINE, why),
+      ]);
+    }
+    this.logger.log(`Secret Santa ${id}: ${user.id} answered ${answer}`);
+    return this.shape(await this.require(id), user);
+  }
+
+  /// Keeps one answer per person, the latest.
+  private answer(
+    exchangeId: string,
+    employeeId: string,
+    answer: SecretSantaAnswer,
+    reason: string | null,
+  ) {
+    return this.prisma.secretSantaReply.upsert({
+      where: { exchangeId_employeeId: { exchangeId, employeeId } },
+      create: { exchangeId, employeeId, answer, reason },
+      update: { answer, reason, answeredAt: new Date() },
+    });
   }
 
   /// Taking yourself out before the draw. Afterwards it is an organizer's
@@ -455,9 +562,12 @@ export class SecretSantaService {
         'The names are already drawn. Ask whoever set it up to take you out, so whoever drew you is given somebody else.',
       );
     }
-    await this.prisma.secretSantaMember.deleteMany({
-      where: { exchangeId: id, employeeId: user.id },
-    });
+    await this.prisma.$transaction([
+      this.prisma.secretSantaMember.deleteMany({
+        where: { exchangeId: id, employeeId: user.id },
+      }),
+      this.answer(id, user.id, SecretSantaAnswer.DECLINE, null),
+    ]);
     this.logger.log(`Secret Santa ${id}: ${user.id} left`);
     return this.shape(await this.require(id), user);
   }
@@ -653,11 +763,48 @@ export class SecretSantaService {
         drawn: Boolean(mine?.recipientId) && exchange.status === SecretSantaStatus.DRAWN,
       },
       lookups: isManager(user) ? await this.lookupsOf(exchange.id) : [],
+      answers: isManager(user) ? await this.answersOf(exchange, open) : null,
       canLookUp:
         isManager(user) &&
         exchange.status === SecretSantaStatus.DRAWN &&
         state.exchangeOn !== null &&
         state.exchangeOn <= today(),
+    };
+  }
+
+  /// For organizers: who said yes or no to the invitation and why, and how
+  /// many are still to answer.
+  private async answersOf(exchange: Exchange, open: boolean) {
+    const rows = await this.prisma.secretSantaReply.findMany({
+      where: { exchangeId: exchange.id },
+      select: { answer: true, reason: true, answeredAt: true, employee: { select: PERSON } },
+      orderBy: { answeredAt: 'desc' },
+    });
+    const answered = new Set(rows.map((row) => row.employee.id));
+    const addedWaiting = exchange.members.filter(
+      (member) => !member.signedUpSelf && !answered.has(member.employeeId),
+    ).length;
+    const othersWaiting =
+      exchange.status === SecretSantaStatus.OPEN && open
+        ? await this.prisma.employee.count({
+            where: {
+              employmentStatus: HERE,
+              ...A_PERSON,
+              id: {
+                notIn: [...answered, ...exchange.members.map((member) => member.employeeId)],
+              },
+            },
+          })
+        : 0;
+    return {
+      list: rows.map((row) => ({
+        id: row.employee.id,
+        name: nameOf(row.employee),
+        answer: row.answer,
+        reason: row.reason,
+        at: row.answeredAt,
+      })),
+      waiting: exchange.status === SecretSantaStatus.OPEN ? addedWaiting + othersWaiting : 0,
     };
   }
 

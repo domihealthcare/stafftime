@@ -516,6 +516,7 @@ model Employee {
   secretSantaDrawnBy   SecretSantaMember[] @relation("SecretSantaRecipient")
   secretSantaLookupsBy SecretSantaLookup[] @relation("SecretSantaLookupBy")
   secretSantaLookupsOf SecretSantaLookup[] @relation("SecretSantaLookupOf")
+  secretSantaReplies   SecretSantaReply[]
 
   /// Phones and computers that get the bell's notifications as push
   /// notifications (October 2026).
@@ -4966,6 +4967,7 @@ model SecretSanta {
 
   members SecretSantaMember[]
   lookups SecretSantaLookup[]
+  replies SecretSantaReply[]
 
   @@map("secret_santas")
 }
@@ -5017,4 +5019,28 @@ model SecretSantaLookup {
 
   @@index([exchangeId, createdAt])
   @@map("secret_santa_lookups")
+}
+
+enum SecretSantaAnswer {
+  JOIN
+  DECLINE
+}
+
+/// Somebody's answer to the Secret Santa invitation that greets them on
+/// signing in (27 November 2026, Dominguez: "all potential staff should be
+/// prompted when they sign into portal to either accept or deny participation
+/// in the secret santa - and given an option to say why or why not"). Kept so
+/// they are asked once, and so the organizers see who said no and why.
+model SecretSantaReply {
+  exchangeId String            @db.Uuid
+  exchange   SecretSanta       @relation(fields: [exchangeId], references: [id], onDelete: Cascade)
+  employeeId String            @db.Uuid
+  employee   Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  answer     SecretSantaAnswer
+  /// Why or why not, in their words; optional.
+  reason     String?
+  answeredAt DateTime          @default(now())
+
+  @@id([exchangeId, employeeId])
+  @@map("secret_santa_replies")
 }

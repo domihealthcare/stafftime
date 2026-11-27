@@ -169,6 +169,7 @@ describe('what this app deliberately does not store', () => {
         'members',
         'notes',
         'place',
+        'replies',
         'selfSignUp',
         'signUpUntil',
         'status',
@@ -189,6 +190,10 @@ describe('what this app deliberately does not store', () => {
         'signedUpSelf',
         'wishes',
       ].sort(),
+    );
+    // An answer to the invitation: in or not, and why, in their words.
+    expect(fieldsOf('SecretSantaReply')).toEqual(
+      ['answer', 'answeredAt', 'employee', 'employeeId', 'exchange', 'exchangeId', 'reason'].sort(),
     );
     // An emergency look-up keeps who looked and whose, never the answer.
     expect(fieldsOf('SecretSantaLookup')).toEqual(

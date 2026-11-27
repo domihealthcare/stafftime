@@ -85,8 +85,23 @@ export async function navLink(page, name) {
   if (await manage.isVisible().catch(() => false)) {
     if ((await manage.getAttribute('aria-expanded')) !== 'true') await manage.click();
   }
+  // A screen that is the first tab of its Manage heading is reached by the
+  // heading. Surveys was found by its old heading's name, "Surveys &
+  // reading", until that became Engagement (November 2026).
+  const heading = typeof name === 'string' ? OPENS_ON[name] : undefined;
+  if (
+    heading &&
+    !(await find()
+      .isVisible()
+      .catch(() => false))
+  ) {
+    return page.getByRole('navigation').getByRole('link', { name: heading, exact: true }).first();
+  }
   return find();
 }
+
+/// Screens a Manage heading opens on, by that heading.
+const OPENS_ON = { Surveys: 'Engagement' };
 
 /// Clicks through to a screen from the navigation.
 export async function goTo(page, name) {
@@ -156,10 +171,10 @@ export const SECTION_OF = {
   Kiosks: 'Offices',
   'Closing checklists': 'Offices',
   Reps: 'Offices',
-  Surveys: 'Surveys & reading',
-  'Required reading': 'Surveys & reading',
-  Quizzes: 'Surveys & reading',
-  'Secret Santa': 'Surveys & reading',
+  Surveys: 'Engagement',
+  'Required reading': 'Engagement',
+  Quizzes: 'Engagement',
+  'Secret Santa': 'Engagement',
   Export: 'Finances',
   Reimbursements: 'Finances',
   'Vendor payments': 'Finances',

@@ -25,7 +25,7 @@ const step = async (name, fn) => {
  * options - job roles can be with staff, locations and kiosks together, etc."):
  * Dashboard, Staff (Staff with the job roles, Licenses, CME, Onboarding &
  * Offboarding), Offices (Locations, Kiosks, Closing checklists, Reps),
- * Surveys & reading, and Finances (Export, Reimbursements, Invoices, Vendor
+ * Engagement, and Finances (Export, Reimbursements, Invoices, Vendor
  * payments, Provider productivity). Each heading opens a screen with a strip
  * of tabs to the rest. People and Money were renamed on 22 October 2026.
  */
@@ -63,7 +63,7 @@ const manager = await signIn('manager@domihealthcare.com');
 
 await step('Manage is five entries, not fifteen', async () => {
   const links = await menuLinks(admin);
-  for (const name of ['Dashboard', 'Staff', 'Offices', 'Surveys & reading', 'Finances'])
+  for (const name of ['Dashboard', 'Staff', 'Offices', 'Engagement', 'Finances'])
     if (!links.includes(name)) throw new Error(`Manage lacks ${name}: ${links.join(', ')}`);
   for (const old of [
     'People',
@@ -111,7 +111,7 @@ await step(
   'Surveys, Required reading, Quizzes and Secret Santa share a heading; Export, Reimbursements, Vendor payments and Provider productivity are Finances for an admin (Invoices and Expenses only for the people on their lists)',
   async () => {
     await goToManage(admin, 'Required reading');
-    const surveys = (await tabs(admin, 'Surveys & reading')).join('|');
+    const surveys = (await tabs(admin, 'Engagement')).join('|');
     if (surveys !== 'Surveys|Required reading|Quizzes|Secret Santa')
       throw new Error(`surveys: ${surveys}`);
     await goToManage(admin, 'Vendor payments');
@@ -141,7 +141,7 @@ await step('the heading stays lit on every one of its screens', async () => {
 
 await step('a manager sees the same headings with only the tabs they may open', async () => {
   const links = await menuLinks(manager);
-  for (const name of ['Dashboard', 'Staff', 'Offices', 'Surveys & reading', 'Finances'])
+  for (const name of ['Dashboard', 'Staff', 'Offices', 'Engagement', 'Finances'])
     if (!links.includes(name)) throw new Error(`manager lacks ${name}: ${links.join(', ')}`);
   await goToManage(manager, 'Job roles');
   await manager

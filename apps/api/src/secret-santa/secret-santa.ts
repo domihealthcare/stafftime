@@ -136,6 +136,26 @@ export function signUpOpen(
   );
 }
 
+export const MAX_REASON = 300;
+
+/**
+ * Whether somebody is asked, when they sign in, to join a Secret Santa or
+ * not (27 November 2026, Dominguez: "all potential staff should be prompted
+ * when they sign into portal to either accept or deny participation"). Only
+ * before the draw, and only until they have answered: somebody an organizer
+ * added (they may say no), or, while staff can sign themselves up, anybody
+ * not in it yet. Somebody who signed up themselves has already said yes.
+ */
+export function shouldAsk(
+  exchange: { status: 'OPEN' | 'DRAWN'; selfSignUp: boolean; signUpUntil: string | null },
+  person: { member: { signedUpSelf: boolean } | null; answered: boolean },
+  today: string,
+): boolean {
+  if (exchange.status !== 'OPEN' || person.answered) return false;
+  if (person.member) return !person.member.signedUpSelf;
+  return signUpOpen(exchange, today);
+}
+
 export interface ExchangeWords {
   id: string;
   title: string;

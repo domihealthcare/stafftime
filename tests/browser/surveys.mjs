@@ -26,7 +26,7 @@ async function signIn(page, email) {
 }
 
 async function openSurveys(page) {
-  // Managers reach it under Manage → Surveys & reading, staff under More or Home.
+  // Managers reach it under Manage → Engagement, staff under More or Home.
   await goTo(page, 'Surveys');
   await page.getByRole('heading', { name: 'Surveys and feedback' }).waitFor({ timeout: 15000 });
 }

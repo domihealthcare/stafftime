@@ -135,6 +135,7 @@ import type {
   SecretSanta,
   SecretSantaDrawn,
   SecretSantaInput,
+  SecretSantaInvitation,
   SecretSantaLookup,
   SecretSantaPerson,
   SecretSantaPeople,
@@ -2007,6 +2008,14 @@ export const api = {
     request<SecretSanta>(`/secret-santa/${id}/wishes`, {
       method: 'PUT',
       body: JSON.stringify({ wishes }),
+    }),
+  /// What this person is asked about when they sign in.
+  secretSantaInvitations: () =>
+    request<SecretSantaInvitation[]>('/secret-santa/invitations', { background: true }),
+  replySecretSanta: (id: string, answer: 'JOIN' | 'DECLINE', reason?: string | null) =>
+    request<SecretSanta>(`/secret-santa/${id}/reply`, {
+      method: 'POST',
+      body: JSON.stringify({ answer, reason: reason || null }),
     }),
   /// Behind the PIN.
   mySecretSanta: (id: string) => request<SecretSantaDrawn>(`/secret-santa/${id}/mine`),

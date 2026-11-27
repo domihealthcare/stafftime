@@ -1486,6 +1486,11 @@ Beyond the phases, the parts worth knowing about before picking up work:
   the next (`addressLines` in `lib/phone-book.ts`, on the cards and the
   printout; only when the end reads like "Union City, NJ 07087", else one
   line; the stored text is untouched). `tests/browser/phone-book.mjs`.
+- **Surveys & reading is Engagement** (27 November 2026, Dominguez:
+  "Surveys and reading isn't quite accurate to the context of that section",
+  version 1.55.0, once Secret Santa joined it): Surveys, Required reading,
+  Quizzes and Secret Santa. Older entries in this file still say "Surveys &
+  reading": read them as Engagement.
 - **Manage's headings renamed** (22 October 2026, Dominguez): **People is
   Staff** and **Money is Finances**, and **Provider productivity moved to
   Finances** (Export, Reimbursements, Invoices, Vendor payments, Provider
@@ -2648,7 +2653,15 @@ Beyond the phases, the parts worth knowing about before picking up work:
   from the day of the exchange, looks up **one person** at a time behind
   their own PIN, never themselves; each look-up is kept (`SecretSantaLookup`,
   never the answer), listed for every organizer, and the person is told on
-  the bell. **Add people** works any time (1.54.0: "make sure there is a way
+  the bell. **Asked on signing in** (1.55.0: "all potential staff should be
+  prompted when they sign into portal to either accept or deny participation
+  ... and given an option to say why or why not"): a pop-up for everybody who
+  could take part and has not answered, **Count me in**, or **No thanks**,
+  which asks them to confirm they will not take part with an optional "why
+  not" the organizers read (**Answers to the invitation**),
+  **Decide later** until tomorrow (`SecretSantaReply`,
+  `components/SecretSantaInvite.tsx`, migration
+  `20261127050000_secret_santa_replies`). **Add people** works any time (1.54.0: "make sure there is a way
   to add people even after setting it up"): after the draw a newcomer is
   slotted into the circle after a random person, who is told by email, and
   nobody else changes. **Take out** after the draw gives the leaver's Santa

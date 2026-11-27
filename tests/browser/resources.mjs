@@ -308,7 +308,7 @@ await step('the admin header is a single row on a phone, with Manage under More'
   if (height > 24 + 28 + 44) throw new Error(`the header is ${height}px tall`);
 
   await openMenu(adm, 'Manage');
-  for (const name of ['Staff', 'Offices', 'Surveys & reading', 'Finances']) {
+  for (const name of ['Staff', 'Offices', 'Engagement', 'Finances']) {
     const link = adm.getByRole('link', { name, exact: true });
     await link.waitFor({ timeout: 5000 });
     const box = await link.boundingBox();

@@ -71,4 +71,25 @@ export const SECRET_SANTA: Record<string, string> = {
   'See who you drew →': 'Ver a quién sacaste →',
   'You are in. Add gift ideas →': 'Participas. Añade ideas de regalo →',
   'Sign up →': 'Inscribirme →',
+  // The invitation on signing in (November 2026)
+  'You are in!': '¡Ya participas!',
+  'You are told who you drew once the names are drawn. Meanwhile, add some gift ideas for whoever draws you.':
+    'Te diremos a quién sacaste cuando se sorteen los nombres. Mientras tanto, añade algunas ideas de regalo para quien te saque.',
+  'You will not take part. Thanks for letting us know. You can still sign up later while sign-ups are open.':
+    'No participarás. Gracias por avisarnos. Todavía puedes inscribirte más tarde mientras las inscripciones estén abiertas.',
+  'Add my gift ideas': 'Añadir mis ideas de regalo',
+  'Could not save your answer.': 'No se pudo guardar tu respuesta.',
+  'You have been added to the Secret Santa. Would you like to take part?':
+    'Te han incluido en el amigo secreto. ¿Quieres participar?',
+  'Would you like to take part in the Secret Santa?': '¿Quieres participar en el amigo secreto?',
+  'Everyone in it draws one colleague at random and secretly buys them a gift within the budget.':
+    'Cada participante saca al azar el nombre de un compañero y le compra un regalo en secreto, dentro del presupuesto.',
+  'Sign up by {day}.': 'Inscríbete antes del {day}.',
+  'Are you sure you will not take part?': '¿Seguro que no quieres participar?',
+  'Why not? (optional)': '¿Por qué no? (opcional)',
+  'Yes, I will not take part': 'Sí, no participaré',
+  'Whoever organizes it reads this.': 'Quien lo organiza lo leerá.',
+  'Count me in': 'Cuenta conmigo',
+  'No thanks': 'No, gracias',
+  'Decide later': 'Decidir más tarde',
 };

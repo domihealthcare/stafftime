@@ -3387,6 +3387,33 @@ export interface SecretSanta {
   lookups: SecretSantaLookup[];
   /// Organizers, once drawn, from the day of the exchange.
   canLookUp: boolean;
+  /// Organizers only: who answered the invitation and why, and how many
+  /// still have to.
+  answers: {
+    list: {
+      id: string;
+      name: string;
+      answer: 'JOIN' | 'DECLINE';
+      reason: string | null;
+      at: string;
+    }[];
+    waiting: number;
+  } | null;
+}
+
+/// A Secret Santa somebody is asked about when they sign in (November 2026).
+export interface SecretSantaInvitation {
+  id: string;
+  title: string;
+  exchangeOn: string | null;
+  budgetDollars: number;
+  location: { id: string; name: string } | null;
+  place: string | null;
+  notes: string | null;
+  signUpUntil: string | null;
+  /// An organizer put them in it; saying no takes them out.
+  added: boolean;
+  people: number;
 }
 
 /// Who an organizer looked up, never the answer.
