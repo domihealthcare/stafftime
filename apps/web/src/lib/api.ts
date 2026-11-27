@@ -132,6 +132,9 @@ import type {
   Phlebotomist,
   Rep,
   RepInput,
+  SecretSanta,
+  SecretSantaInput,
+  SecretSantaPeople,
   Student,
   StudentInput,
   StudentListed,
@@ -614,7 +617,8 @@ export interface AppNotification {
     | 'EXPENSE'
     | 'DOWNTIME'
     | 'ACCOUNT'
-    | 'PAY';
+    | 'PAY'
+    | 'SECRET_SANTA';
   title: string;
   body: string | null;
   link: string | null;
@@ -1974,6 +1978,36 @@ export const api = {
   phlebotomists: () => request<Phlebotomist[]>('/phlebotomists'),
   deletePhlebotomist: (id: string) =>
     request<{ removed: boolean }>(`/phlebotomists/${id}`, { method: 'DELETE' }),
+  // Secret Santa (November 2026).
+  secretSantas: () => request<SecretSanta[]>('/secret-santa'),
+  secretSanta: (id: string) => request<SecretSanta>(`/secret-santa/${id}`),
+  createSecretSanta: (body: SecretSantaInput) =>
+    request<SecretSanta>('/secret-santa', { method: 'POST', body: JSON.stringify(body) }),
+  updateSecretSanta: (id: string, body: SecretSantaInput) =>
+    request<SecretSanta>(`/secret-santa/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  cancelSecretSanta: (id: string) =>
+    request<{ removed: boolean }>(`/secret-santa/${id}`, { method: 'DELETE' }),
+  addSecretSantaPeople: (id: string, body: SecretSantaPeople) =>
+    request<{ added: number; exchange: SecretSanta }>(`/secret-santa/${id}/people`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  removeSecretSantaPerson: (id: string, employeeId: string) =>
+    request<SecretSanta>(`/secret-santa/${id}/people/${employeeId}`, { method: 'DELETE' }),
+  drawSecretSanta: (id: string) =>
+    request<SecretSanta>(`/secret-santa/${id}/draw`, { method: 'POST' }),
+  joinSecretSanta: (id: string) =>
+    request<SecretSanta>(`/secret-santa/${id}/join`, { method: 'POST' }),
+  leaveSecretSanta: (id: string) =>
+    request<SecretSanta>(`/secret-santa/${id}/leave`, { method: 'POST' }),
+  saveSecretSantaWishes: (id: string, wishes: string) =>
+    request<SecretSanta>(`/secret-santa/${id}/wishes`, {
+      method: 'PUT',
+      body: JSON.stringify({ wishes }),
+    }),
+  emailMySecretSanta: (id: string) =>
+    request<{ sent: boolean }>(`/secret-santa/${id}/email-me`, { method: 'POST' }),
+
   /// Students and residents on rotation, and the providers they can be with:
   /// managers and admins (November 2026).
   students: () => request<StudentListed[]>('/students'),

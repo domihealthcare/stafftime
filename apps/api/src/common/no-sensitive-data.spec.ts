@@ -143,6 +143,54 @@ describe('what this app deliberately does not store', () => {
     );
   });
 
+  /// Secret Santa (November 2026, Dominguez): the exchange's details, who is
+  /// in it, their gift ideas and who they drew. No addresses to send a gift
+  /// to, no sizes, nothing about anybody's health.
+  it('keeps Secret Santa to the exchange, who is in it and who they drew', () => {
+    const fieldsOf = (name: string) =>
+      model(name)
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('//') && !line.startsWith('@@'))
+        .map((line) => line.split(/\s+/)[0])
+        .sort();
+    expect(fieldsOf('SecretSanta')).toEqual(
+      [
+        'budgetDollars',
+        'createdAt',
+        'createdBy',
+        'createdById',
+        'drawnAt',
+        'exchangeOn',
+        'id',
+        'location',
+        'locationId',
+        'members',
+        'notes',
+        'place',
+        'selfSignUp',
+        'signUpUntil',
+        'status',
+        'title',
+        'updatedAt',
+      ].sort(),
+    );
+    expect(fieldsOf('SecretSantaMember')).toEqual(
+      [
+        'employee',
+        'employeeId',
+        'exchange',
+        'exchangeId',
+        'id',
+        'joinedAt',
+        'recipient',
+        'recipientId',
+        'signedUpSelf',
+        'wishes',
+      ].sort(),
+    );
+  });
+
   /// The after-hours phone line (November 2026, Dominguez): who was tried
   /// and who took the call, and the caller's number (his choice, so providers
   /// can call back). Never a name, a recording, a transcript or a voicemail:

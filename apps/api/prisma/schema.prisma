@@ -171,6 +171,9 @@ model Location {
   officeAdmins    OfficeAdmin[]
   officeAdminDays OfficeAdminDay[]
 
+  /// Secret Santa exchanges held at this office (November 2026).
+  secretSantas SecretSanta[]
+
   @@map("locations")
 }
 
@@ -506,6 +509,11 @@ model Employee {
   savedSignature     SavedSignature?    @relation("SavedSignatureOwner")
   signatureUsesOf    SignatureUse[]     @relation("SignatureUseOwner")
   signatureUsesBy    SignatureUse[]     @relation("SignatureUseBy")
+  /// Secret Santa (November 2026): the exchanges somebody set up, the ones
+  /// they are in, and the colleague they drew (never who drew them).
+  secretSantasSetUp  SecretSanta[]       @relation("SecretSantaOrganizer")
+  secretSantaMembers SecretSantaMember[] @relation("SecretSantaMember")
+  secretSantaDrawnBy SecretSantaMember[] @relation("SecretSantaRecipient")
 
   /// Phones and computers that get the bell's notifications as push
   /// notifications (October 2026).
@@ -2675,6 +2683,10 @@ enum NotificationKind {
   /// Somebody on Pay & raises wants you to read a note on a person's pay
   /// (November 2026). Who and whose pay only, never the words or amounts.
   PAY
+  /// Secret Santa (November 2026): sign-ups open, added to one, your name is
+  /// drawn, it changed, it was cancelled. The bell never names who you drew
+  /// (it reaches phones' lock screens); the email and the page do.
+  SECRET_SANTA
 }
 
 /// Something the app wants one person to know, shown under the bell in the
@@ -4906,4 +4918,77 @@ model SignatureUse {
   @@index([ownerId, usedAt])
   @@index([usedAt])
   @@map("signature_uses")
+}
+
+enum SecretSantaStatus {
+  /// Being set up: people are added, or sign themselves up.
+  OPEN
+  /// Names drawn and everybody told; nobody joins or leaves but by an
+  /// organizer taking somebody out.
+  DRAWN
+}
+
+/// A Secret Santa gift exchange (November 2026, Dominguez: "Admin/managers
+/// should be able to set it up (date, budget, location, members participating
+/// - but also can provide opportunity to allow staff to sign up them selves)
+/// once its 'closed' staff are told anonymously who they drew (can be via
+/// email)").
+///
+/// Managers and admins set it up and draw the names; nobody, organizers and
+/// admins included, is ever shown who drew whom - each person sees only the
+/// colleague they drew. See `src/secret-santa/`.
+model SecretSanta {
+  id            String            @id @default(uuid()) @db.Uuid
+  title         String
+  /// The day the gifts are exchanged.
+  exchangeOn    DateTime          @db.Date
+  /// The spending limit, in whole dollars.
+  budgetDollars Int
+  /// The office it is held at, if one.
+  locationId    String?           @db.Uuid
+  location      Location?         @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  /// Where exactly, as typed: "Break room, at the holiday lunch".
+  place         String?
+  notes         String?
+  /// Staff may sign themselves up (and leave) until the names are drawn.
+  selfSignUp    Boolean           @default(false)
+  /// The last day to sign up, if one. The names are still drawn by hand.
+  signUpUntil   DateTime?         @db.Date
+  status        SecretSantaStatus @default(OPEN)
+  drawnAt       DateTime?
+  createdById   String?           @db.Uuid
+  createdBy     Employee?         @relation("SecretSantaOrganizer", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  members SecretSantaMember[]
+
+  @@map("secret_santas")
+}
+
+/// Somebody taking part in a Secret Santa, with their gift ideas for whoever
+/// draws them and, once drawn, who they are buying for. The draw is one
+/// circle (each person gives to the next), so somebody taken out afterwards
+/// is closed over: their Santa is given their person.
+///
+/// `recipientId` is only ever shown to this member. No screen and no route
+/// shows anybody who drew them.
+model SecretSantaMember {
+  id           String      @id @default(uuid()) @db.Uuid
+  exchangeId   String      @db.Uuid
+  exchange     SecretSanta @relation(fields: [exchangeId], references: [id], onDelete: Cascade)
+  employeeId   String      @db.Uuid
+  employee     Employee    @relation("SecretSantaMember", fields: [employeeId], references: [id], onDelete: Cascade)
+  /// Signed up themselves, rather than added by an organizer.
+  signedUpSelf Boolean     @default(false)
+  /// Gift ideas for whoever draws them: "Coffee, anything purple, no candles".
+  wishes       String?
+  /// Who they drew. Set by the draw.
+  recipientId  String?     @db.Uuid
+  recipient    Employee?   @relation("SecretSantaRecipient", fields: [recipientId], references: [id], onDelete: SetNull)
+  joinedAt     DateTime    @default(now())
+
+  @@unique([exchangeId, employeeId])
+  @@unique([exchangeId, recipientId])
+  @@map("secret_santa_members")
 }

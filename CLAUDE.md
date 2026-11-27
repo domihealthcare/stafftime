@@ -69,6 +69,9 @@ app does not hold*, its own database) are unchanged by this.
 - **OnCallCover** / **CallLog** (November 2026) - the after-hours phone line:
   a time-range override of who is on call, and one row per call (who was
   tried, who took it, the caller's number). No recording of any kind
+- **SecretSanta** / **SecretSantaMember** (November 2026) - a holiday gift
+  exchange: the day, budget and place, who is in it, their gift ideas, and
+  who each drew, shown only to them
 - **PayrollExport** — export batch record: date range, target system, status,
   generated file reference (for audit trail / re-export)
 
@@ -2617,6 +2620,37 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `pages/MyPayPage.tsx` (Spanish too, **needs a native speaker's read**);
   Help in both guides; `tests/browser/pay.mjs`. Worth carrying to the EMR
   module with Pay & raises.
+- **Secret Santa** (27 November 2026, Dominguez: "Admin/managers should be
+  able to set it up (date, budget, location, members participating - but also
+  can provide opportunity to allow staff to sign up them selves) once its
+  'closed' staff are told anonymously who they drew (can be via email)";
+  version 1.53.0): **Manage → Surveys & reading → Secret Santa**
+  (`/secret-santa`, managers and admins set up; everybody opens their own).
+  A name, the day of the exchange, a **budget** in whole dollars, an optional
+  office and "where exactly", a note, who is in it (Everyone or any mix of
+  offices, job roles and people) and **Let staff sign themselves up** (on to
+  start, optional last day); people added are told on the bell, and with
+  sign-ups on so is everybody else, and it is on Home. Members write optional
+  **gift ideas** for whoever draws them. **Draw the names** (3 people at
+  least) closes it: one random circle, nobody draws themselves, each told on
+  the **bell without the name** (it reaches lock screens) and **by email with
+  the name** and their gift ideas; the page hides it behind **Show who I
+  drew**, with **Email it to me again**. **Nobody sees who drew whom**,
+  organizers and admins included (Claude's reading of "anonymously"; each
+  person's draw is stored only so they can look it up). **Take out** after
+  the draw gives the leaver's Santa their person and tells only them;
+  refused below 3. Changing the day, budget or place tells everybody in it;
+  **Cancel** deletes it and tells them. Signing up closing on its last day
+  does not draw by itself: an organizer presses Draw. Never a shared account.
+  Claude's choices, not asked: no exclusions (couples, the same office), no
+  reveal afterwards, no automatic draw. `SecretSanta`, `SecretSantaMember`
+  (pinned by the schema guard), notification kind `SECRET_SANTA`, migrations
+  `20261127010000_secret_santa_kind`, `20261127020000_secret_santa`;
+  `src/secret-santa/` (`secret-santa.ts` rules, pure),
+  `pages/SecretSantaPage.tsx`, `components/SecretSantaCard.tsx`; staff parts
+  in Spanish ("Amigo secreto", **needs a native speaker's read**); Help in
+  both guides; see *Secret Santa* in `docs/architecture.md`;
+  `tests/browser/secret-santa.mjs`.
 - **Time off over New Year, checked year by year** (12 November 2026,
   Dominguez, version 1.51.1; chosen over refusing such requests: "check each
   year separately"): a request across the end of the policy year had no

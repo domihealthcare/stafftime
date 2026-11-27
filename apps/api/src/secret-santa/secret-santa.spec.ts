@@ -1,0 +1,155 @@
+import {
+  closeOver,
+  drawCircle,
+  drawnBell,
+  drawnEmail,
+  setUpProblem,
+  signUpOpen,
+  type ExchangeWords,
+} from './secret-santa';
+
+/// Follows the circle from the first giver and returns everybody met.
+function walk(pairs: Map<string, string>): string[] {
+  const start = [...pairs.keys()][0];
+  const seen = [start];
+  let next = pairs.get(start)!;
+  while (next !== start) {
+    seen.push(next);
+    next = pairs.get(next)!;
+  }
+  return seen;
+}
+
+describe('drawCircle', () => {
+  const people = ['a', 'b', 'c', 'd', 'e', 'f'];
+
+  it('is one circle through everybody, nobody drawing themselves', () => {
+    for (let run = 0; run < 200; run += 1) {
+      const pairs = drawCircle(people);
+      expect(pairs.size).toBe(people.length);
+      for (const [giver, recipient] of pairs) expect(giver).not.toBe(recipient);
+      expect(new Set(pairs.values()).size).toBe(people.length);
+      expect(walk(pairs).sort()).toEqual([...people].sort());
+    }
+  });
+
+  it('gives every circle a chance', () => {
+    // Three people make two circles: a->b->c and a->c->b.
+    const seen = new Set<string>();
+    for (let run = 0; run < 200; run += 1) seen.add(drawCircle(['a', 'b', 'c']).get('a')!);
+    expect(seen).toEqual(new Set(['b', 'c']));
+  });
+
+  it('uses the random numbers it is given', () => {
+    const pairs = drawCircle(['a', 'b', 'c', 'd'], () => 0);
+    // i=3: swap 3,0 -> d b c a; i=2: swap 2,0 -> c b d a; i=1: swap 1,0 -> b c d a
+    expect([...pairs]).toEqual([
+      ['b', 'c'],
+      ['c', 'd'],
+      ['d', 'a'],
+      ['a', 'b'],
+    ]);
+  });
+
+  it('makes every circle equally likely', () => {
+    // Four people make six circles; 6,000 draws should land each near 1,000.
+    const counts = new Map<string, number>();
+    for (let run = 0; run < 6000; run += 1) {
+      const pairs = drawCircle(['a', 'b', 'c', 'd']);
+      const key = walk(pairs).join('');
+      const fromA = key.slice(key.indexOf('a')) + key.slice(0, key.indexOf('a'));
+      counts.set(fromA, (counts.get(fromA) ?? 0) + 1);
+    }
+    expect(counts.size).toBe(6);
+    for (const count of counts.values()) expect(count).toBeGreaterThan(800);
+  });
+
+  it('refuses fewer than three, or somebody twice', () => {
+    expect(() => drawCircle(['a', 'b'])).toThrow('at least 3');
+    expect(() => drawCircle(['a', 'b', 'a'])).toThrow('twice');
+  });
+});
+
+describe('closeOver', () => {
+  const pairs = new Map([
+    ['a', 'b'],
+    ['b', 'c'],
+    ['c', 'd'],
+    ['d', 'a'],
+  ]);
+
+  it('gives the leaver their Santa their person', () => {
+    expect(closeOver(pairs, 'c')).toEqual({ ok: true, santa: 'b', newRecipient: 'd' });
+  });
+
+  it('is nothing for somebody not in it', () => {
+    expect(closeOver(pairs, 'z')).toBeNull();
+  });
+
+  it('refuses to leave fewer than three', () => {
+    const three = new Map([
+      ['a', 'b'],
+      ['b', 'c'],
+      ['c', 'a'],
+    ]);
+    expect(closeOver(three, 'a')).toEqual({ ok: false, reason: expect.stringContaining('Cancel') });
+  });
+});
+
+describe('setUpProblem', () => {
+  const today = '2026-11-27';
+  const fine = { title: 'Secret Santa 2026', exchangeOn: '2026-12-18', budgetDollars: 25 };
+
+  it('takes a sensible one', () => {
+    expect(setUpProblem(fine, today)).toBeNull();
+    expect(setUpProblem({ ...fine, signUpUntil: '2026-12-18' }, today)).toBeNull();
+  });
+
+  it('says what is wrong', () => {
+    expect(setUpProblem({ ...fine, title: ' ' }, today)).toBe('Give it a name.');
+    expect(setUpProblem({ ...fine, exchangeOn: '2026-11-26' }, today)).toContain('today or later');
+    expect(setUpProblem({ ...fine, budgetDollars: 0 }, today)).toContain('at least $1');
+    expect(setUpProblem({ ...fine, budgetDollars: 2.5 }, today)).toContain('at least $1');
+    expect(setUpProblem({ ...fine, budgetDollars: 5000 }, today)).toContain('$1000 or less');
+    expect(setUpProblem({ ...fine, signUpUntil: '2026-12-19' }, today)).toContain('by the day');
+  });
+});
+
+describe('signUpOpen', () => {
+  const open = { status: 'OPEN' as const, selfSignUp: true, signUpUntil: '2026-12-10' };
+
+  it('is open until the last day, inclusive', () => {
+    expect(signUpOpen(open, '2026-12-10')).toBe(true);
+    expect(signUpOpen(open, '2026-12-11')).toBe(false);
+    expect(signUpOpen({ ...open, signUpUntil: null }, '2027-01-01')).toBe(true);
+  });
+
+  it('is closed once drawn, or when staff cannot sign up', () => {
+    expect(signUpOpen({ ...open, status: 'DRAWN' }, '2026-12-01')).toBe(false);
+    expect(signUpOpen({ ...open, selfSignUp: false }, '2026-12-01')).toBe(false);
+  });
+});
+
+describe('the words', () => {
+  const exchange: ExchangeWords = {
+    id: 'x1',
+    title: 'Secret Santa 2026',
+    budgetDollars: 25,
+    when: 'Fri, Dec 18',
+    where: 'North Bergen',
+  };
+
+  it('never names who was drawn on the bell', () => {
+    const bell = drawnBell(exchange);
+    expect(`${bell.title} ${bell.body}`).not.toContain('Casey');
+    expect(bell.body).toContain('$25');
+    expect(bell.link).toBe('/secret-santa/x1');
+  });
+
+  it('names them in the email, with their gift ideas', () => {
+    const email = drawnEmail(exchange, { name: 'Casey Smith', wishes: 'Coffee' });
+    expect(email.lines.join('\n')).toContain('You drew Casey Smith.');
+    expect(email.lines.join('\n')).toContain('Their gift ideas: Coffee');
+    expect(email.lines.join('\n')).toContain('at North Bergen');
+  });
+});

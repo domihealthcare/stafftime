@@ -854,6 +854,33 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'Secret Santa',
+        answer: (
+          <>
+            <p>
+              When a Secret Santa is on, it is on Home. If staff may sign themselves up, press{' '}
+              <strong>Sign up</strong> on the card, then <strong>Sign me up</strong>; otherwise a
+              manager adds you and you are told on the bell. While the names are not drawn yet you
+              can take yourself out again with <strong>Take me out</strong>.
+            </p>
+            <p>
+              Write some <strong>gift ideas</strong> for whoever draws you (things you like, or
+              would rather not get). Only the person who drew you sees them, and you can change them
+              any time.
+            </p>
+            <p>
+              Once a manager draws the names you are told on the bell that yours is ready, and the
+              email names the colleague you drew. On the Secret Santa page,{' '}
+              <strong>Show who I drew</strong> shows them with their gift ideas (the name is hidden
+              until you press it, in case somebody is looking at your screen), and{' '}
+              <strong>Email it to me again</strong> sends it once more. Nobody is ever shown who
+              drew whom, not even the managers who set it up: keep yours a secret, and stay within
+              the budget.
+            </p>
+          </>
+        ),
+      },
+      {
         question: 'How do I find a colleague?',
         answer: (
           <p>
@@ -1788,7 +1815,8 @@ const MANAGERS: Section[] = [
                 Reps.
               </li>
               <li>
-                <strong>Surveys &amp; reading</strong> - Surveys, Required reading and Quizzes.
+                <strong>Surveys &amp; reading</strong> - Surveys, Required reading, Quizzes and
+                Secret Santa.
               </li>
               <li>
                 <strong>Finances</strong> - Pay &amp; raises (for the people chosen to see the
@@ -3065,6 +3093,34 @@ const MANAGERS: Section[] = [
               try again as often as they need. <strong>Scores</strong> shows, by name, who has
               passed and when, who is still trying (best and last score), who has not started, and
               the questions missed most: worth going over at the next meeting.
+            </p>
+          </>
+        ),
+      },
+      {
+        question: 'Setting up a Secret Santa',
+        answer: (
+          <>
+            <p>
+              <Screen>Manage → Surveys & reading → Secret Santa</Screen>, then{' '}
+              <strong>+ Set up a Secret Santa</strong>: a name, the day of the exchange, the budget
+              in dollars, and optionally an office, where exactly and a note. Choose who is in it
+              from the start (Everyone, or any mix of offices, job roles and people), and tick{' '}
+              <strong>Let staff sign themselves up</strong> to let anybody join from Home, with a
+              last day to sign up if you want one. Everybody you add is told on the bell, and with
+              sign-ups on so is everybody else. You can add or take people out until the names are
+              drawn.
+            </p>
+            <p>
+              When everybody is in, press <strong>Draw the names</strong> (at least 3 people). That
+              closes it: nobody else joins, and each person is told on the bell that their name is
+              ready and by email who they drew, with that person's gift ideas. The draw is one
+              circle, so nobody draws themselves. <strong>Nobody is shown who drew whom</strong>,
+              you and other admins included. If somebody has to drop out afterwards, press{' '}
+              <strong>Take out</strong> beside them: whoever drew them is given the person they had
+              drawn and told by email, and you still learn nothing. A change to the day, budget or
+              place tells everybody in it; <strong>Cancel this Secret Santa</strong> removes it and
+              tells them it will not go ahead.
             </p>
           </>
         ),

@@ -281,6 +281,39 @@ export class NotificationsService {
     }
   }
 
+  /// One person told on the bell in words safe for a phone's lock screen,
+  /// and by email in fuller words the bell must not carry: who they drew in
+  /// a Secret Santa (November 2026).
+  async privately(
+    employeeId: string,
+    kind: NotificationKind,
+    bell: { title: string; body: string; link: string },
+    email: { subject: string; lines: string[] },
+  ): Promise<void> {
+    await this.inbox.notify([employeeId], { kind, ...bell });
+    await this.emailOnly(employeeId, email, bell.link);
+  }
+
+  /// The email part of `privately` alone: "Email it to me again".
+  async emailOnly(
+    employeeId: string,
+    email: { subject: string; lines: string[] },
+    link: string,
+  ): Promise<void> {
+    const person = await this.prisma.employee.findFirst({
+      where: { id: employeeId, employmentStatus: EmploymentStatus.ACTIVE },
+      select: { email: true, firstName: true, preferredName: true },
+    });
+    if (!person) return;
+    await this.dispatch(person.email, email.subject, [
+      `Hello ${person.preferredName ?? person.firstName},`,
+      '',
+      ...email.lines,
+      '',
+      `${this.appUrl}${link}`,
+    ]);
+  }
+
   /// Somebody asked for a correction to their hours: on the bell of the
   /// managers down for hours in the round-up (Email settings), or all of them
   /// when nobody is. The Timesheet banner and nightly email list it too.
