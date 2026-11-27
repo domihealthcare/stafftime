@@ -56,7 +56,7 @@ export const HANDOUT_STRINGS = {
     footer: 'Domi Healthcare - Memory Care Plan',
   },
   es: {
-    title: 'Su plan de cuidado de la memoria',
+    title: 'Su Plan de Cuidado de la Memoria',
     preparedFor: (name: string, date: string, provider: string) =>
       `Preparado para ${name} el ${date} por ${provider}.`,
     intro:
@@ -89,7 +89,7 @@ export const HANDOUT_STRINGS = {
     notYet: 'Todavía no',
     header: (name: string, dob: string, date: string) =>
       `${name}  |  Fecha de nacimiento: ${dob}  |  Visita: ${date}`,
-    footer: 'Domi Healthcare - plan de cuidado de la memoria',
+    footer: 'Domi Healthcare - Plan de Cuidado de la Memoria',
   },
 };
 

@@ -3425,8 +3425,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
   (optional)", on the downtime paper form too); one that is chosen must
   still be finished, and with none the note leaves the line out. The
   handout's English title and footer read **Your Memory Care Plan**, like its
-  file name; the Spanish keeps Spanish capitals ("Su plan de cuidado de la
-  memoria"). CPT 99483 expects a standardized depression screen as part of
+  file name, and the Spanish half's **Su Plan de Cuidado de la Memoria**
+  (Dominguez: "the spanish one should be as a title too"). CPT 99483 expects a standardized depression screen as part of
   the neuropsychiatric evaluation, so leaving it out is the provider's call.
   `cognitive-assessment/validate.test.ts`; `tests/browser/clinical.mjs`.
 - **"CCM care plan" is now "APCM Care Plan"** (October 2026, Dominguez — the

@@ -496,9 +496,9 @@ await step('and in English and Spanish, with a "not yet checked" note on the for
   const pages = await pdfPages(path);
   const all = pages.join(' ');
   // English first, then the Spanish starting on a page of its own.
-  const spanishStarts = pages.findIndex((text) => text.includes('Su plan de cuidado de la memoria'));
+  const spanishStarts = pages.findIndex((text) => text.includes('Su Plan de Cuidado de la Memoria'));
   if (spanishStarts < 1 || !pages[0].includes('Your Memory Care Plan')) throw new Error(`Spanish starts on page ${spanishStarts + 1}`);
-  for (const piece of ['Your Memory Care Plan', 'Our goals', 'Su plan de cuidado de la memoria', 'Preparado por', 'Nuestras metas', 'Qué puede hacer', 'Planificar con anticipación', 'Consejos de seguridad', 'En 3 meses', 'Le recomendamos repetir la evaluación de memoria BrainCheck', 'Confidencial', 'al 201-528-3664', 'Electronically signed by Frankie', 'Firmado electrónicamente por Frankie']) {
+  for (const piece of ['Your Memory Care Plan', 'Our goals', 'Su Plan de Cuidado de la Memoria', 'Preparado por', 'Nuestras metas', 'Qué puede hacer', 'Planificar con anticipación', 'Consejos de seguridad', 'En 3 meses', 'Le recomendamos repetir la evaluación de memoria BrainCheck', 'Confidencial', 'al 201-528-3664', 'Electronically signed by Frankie', 'Firmado electrónicamente por Frankie']) {
     if (!all.includes(piece)) throw new Error(`the Spanish handout lacks "${piece}"`);
   }
   if (all.includes('native speaker') || all.includes('not yet been checked')) throw new Error('the review note is on the handout');
