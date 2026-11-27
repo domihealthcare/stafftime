@@ -6685,3 +6685,27 @@ migrations `20261127010000_secret_santa_kind`, `20261127020000_secret_santa`,
 `20261127050000_secret_santa_replies`, `components/SecretSantaInvite.tsx`,
 schema guard pins the three tables,
 `pay-routes.spec.ts` pins the PIN on `mine` and `lookUp`; `tests/browser/secret-santa.mjs`.
+
+## Help: search, and a check that it is accurate (November 2026)
+
+Dominguez, 27 November 2026: "update all help docs with all of it and make
+sure it continues to be accurate - also in the help section, is there a way
+you can search for things?"
+
+**Search.** A box at the top of Help. A topic matches when every word typed
+is in its question or answer, in any order, ignoring capitals, accents,
+punctuation and a plural "s" (`topicMatches` in `lib/help-text.ts`, which
+already turns the guides' JSX into text for Ask Domi Staff). Matching topics
+are shown open, grouped by their section; the search is kept in the address
+(`?q=`), so Back and a reload return to it. Staff search their own guide; a
+manager searches both, the managers' sections marked "For managers".
+
+**Staying accurate.** `pages/help-accuracy.test.ts` (Vitest) reads every
+topic in every guide (`allHelpTopics()`, whoever it is for) and fails on a
+"Manage → A" or "Manage → A → B" direction where A is not a heading or B
+not one of its screens in `lib/manage-sections.ts`, so a rename or a move
+cannot leave Help behind silently. It also pins the Secret Santa topics'
+key steps. The first run found four directions that named a button as a
+screen ("Manage → Staff → Edit"); they now read "Manage → Staff → Staff,
+Edit on their card". `vitest.config.ts` defines `__BUILD__` for it, and the
+test stands in a `window.location` before loading the page.

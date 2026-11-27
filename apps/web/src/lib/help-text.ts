@@ -89,3 +89,34 @@ export function pickHelpTopics(
     .slice(0, limit)
     .map(({ topic }) => ({ question: topic.question, answer: topic.answer.slice(0, maxLength) }));
 }
+
+/// The words of a search, lower case, without accents or punctuation, and a
+/// plural "s" dropped so "surveys" finds "survey".
+function searchWords(text: string): string[] {
+  return normalise(text)
+    .split(' ')
+    .filter(Boolean)
+    .map((word) => (word.length > 3 && word.endsWith('s') ? word.slice(0, -1) : word));
+}
+
+function normalise(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+/**
+ * Whether a Help topic answers a search (November 2026, Dominguez: "in the
+ * help section, is there a way you can search for things?"): every word of
+ * the search is somewhere in its question or answer, in any order, whatever
+ * the capitals or accents.
+ */
+export function topicMatches(topic: HelpTopicText, query: string): boolean {
+  const words = searchWords(query);
+  if (words.length === 0) return true;
+  const text = ` ${normalise(`${topic.question} ${topic.answer}`)} `;
+  return words.every((word) => text.includes(word));
+}

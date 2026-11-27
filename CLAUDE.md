@@ -1486,6 +1486,21 @@ Beyond the phases, the parts worth knowing about before picking up work:
   the next (`addressLines` in `lib/phone-book.ts`, on the cards and the
   printout; only when the end reads like "Union City, NJ 07087", else one
   line; the stored text is untouched). `tests/browser/phone-book.mjs`.
+- **Help is searchable, and checked against the app** (27 November 2026,
+  Dominguez: "update all help docs with all of it and make sure it continues
+  to be accurate - also in the help section, is there a way you can search for
+  things?", version 1.56.0): a **search box** at the top of Help finds topics
+  with every word in their question or answer (any order, capitals, accents
+  and a plural "s" ignored; `topicMatches` in `lib/help-text.ts`), opens them,
+  and keeps the search in the address (`?q=`); a manager searches both guides
+  at once, the managers' sections marked "For managers". Secret Santa's Help
+  is three topics: *Taking part in Secret Santa* (staff), *Setting up a
+  Secret Santa* and *Secret Santa: after the names are drawn* (managers).
+  **`pages/help-accuracy.test.ts`** reads every topic in every guide and fails
+  when a "Manage → heading → screen" direction names a heading or screen not
+  in `lib/manage-sections.ts`, and when Secret Santa's topics lose their key
+  steps; it found and fixed four directions ("Manage → Staff → Edit" and the
+  like). When a screen moves or is renamed, this fails until Help follows.
 - **Surveys & reading is Engagement** (27 November 2026, Dominguez:
   "Surveys and reading isn't quite accurate to the context of that section",
   version 1.55.0, once Secret Santa joined it): Surveys, Required reading,

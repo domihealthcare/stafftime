@@ -114,6 +114,28 @@ await step('it fits a phone', async () => {
   if (wide) throw new Error('the help page scrolls sideways on a phone');
 });
 await emp.screenshot({ path: `${OUT}/96-help-staff.png`, fullPage: true });
+await step('staff search Help and the matching topics open', async () => {
+  await emp.goto(`${BASE}/help`, { waitUntil: 'networkidle' });
+  await emp.getByLabel('Search Help').fill('secret santa');
+  const results = emp.getByTestId('help-results');
+  await results.getByText('Taking part in Secret Santa').waitFor({ timeout: 10000 });
+  // Opened, so the answer is there to read.
+  await results.getByText('Show who I drew', { exact: false }).first().waitFor();
+  // Staff never see the managers' topics.
+  if (await results.getByText('Setting up a Secret Santa').count())
+    throw new Error('a managers topic in the staff search');
+  // Kept in the address, so a reload or Back returns to it.
+  await emp.reload({ waitUntil: 'networkidle' });
+  if ((await emp.getByLabel('Search Help').inputValue()) !== 'secret santa')
+    throw new Error('the search was not kept');
+  await emp.getByLabel('Search Help').fill('zzqx nothing');
+  await emp.getByText('Nothing in Help matches').waitFor();
+  await emp.getByRole('button', { name: 'Clear the search' }).click();
+  await emp.getByRole('heading', { name: 'Getting started' }).waitFor().catch(() => {});
+  if (await emp.getByTestId('help-results').count()) throw new Error('still searching');
+  await emp.screenshot({ path: `${OUT}/97-help-search-phone.png`, fullPage: false });
+});
+
 await empCtx.close();
 
 // --- a manager ---
@@ -139,6 +161,17 @@ await step('the managers guide survives a reload', async () => {
   await mgr.getByRole('heading', { name: 'Hours and payroll' }).waitFor({ timeout: 10000 });
 });
 await mgr.screenshot({ path: `${OUT}/97-help-managers.png`, fullPage: true });
+
+await step('a manager searches both guides at once', async () => {
+  await mgr.goto(`${BASE}/help`, { waitUntil: 'networkidle' });
+  await mgr.getByLabel('Search Help').fill('secret santa');
+  const results = mgr.getByTestId('help-results');
+  await results.getByText('Taking part in Secret Santa').waitFor({ timeout: 10000 });
+  await results.getByText('Setting up a Secret Santa').waitFor();
+  await results.getByText('Secret Santa: after the names are drawn').waitFor();
+  await mgr.getByText(/topics match, from both guides/).waitFor();
+  await mgr.screenshot({ path: `${OUT}/97-help-search.png`, fullPage: true });
+});
 
 await browser.close();
 console.log(`\n${errors.length === 0 ? 'ALL HELP CHECKS PASSED' : `PROBLEMS (${errors.length}):`}`);
